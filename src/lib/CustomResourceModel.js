@@ -3,7 +3,7 @@ import { getToken } from '../auth.js';
 
 // Fetch and cache the default unknown resource image
 let defaultResourceImageBase64 = null;
-const defaultImageUrl = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.crm4.dynamics.com/Webresources/msdyn_/fps/ScheduleBoard/css/images/unknownResource.jpg`;
+const defaultImageUrl = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.crm6.dynamics.com/Webresources/msdyn_/fps/ScheduleBoard/css/images/unknownResource.jpg`;
 
 // Function to load the default image (called after authentication)
 export async function loadDefaultImage() {
@@ -37,8 +37,8 @@ export async function loadDefaultImage() {
             reader.readAsDataURL(blob);
         });
     }
-    catch (error) {
-        console.error('Failed to fetch default resource image:', error);
+    catch {
+        // Silently continue if the default image cannot be loaded
     }
 }
 

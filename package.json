@@ -15,6 +15,10 @@
   },
   "dependencies": {
     "@azure/msal-browser": "^4.26.0",
-    "@bryntum/schedulerpro": "^7.0.1"
+    "@bryntum/schedulerpro": "npm:@bryntum/schedulerpro-trial@^7.1.3",
+    "@rollup/wasm-node": "^4.57.1"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.57.1"
   }
 }

@@ -23,7 +23,7 @@ async function displayUI() {
     const [resourcesData, bookingsData] = await Promise.all([
         getResources(),
         getBookings(),
-        loadDefaultImage()
+        loadDefaultImage().catch(() => {})
     ]);
 
     // Initialize Scheduler Pro with raw D365 data
@@ -32,7 +32,8 @@ async function displayUI() {
         ...schedulerproConfig,
         resourceStore : {
             modelClass : CustomResourceModel,
-            data       : resourcesData.value
+            data       : resourcesData.value,
+            sorters    : [{ field : 'name', ascending : true }]
         },
         eventStore : {
             modelClass : CustomEventModel,

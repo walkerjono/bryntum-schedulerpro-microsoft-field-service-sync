@@ -22,14 +22,14 @@ export const schedulerproConfig = {
     appendTo   : 'app',
     startDate  : new Date(today.getFullYear(), today.getMonth(), today.getDate(), 8),
     endDate    : new Date(today.getFullYear(), today.getMonth(), today.getDate(), 21),
-    viewPreset : 'hourAndDay',
+    viewPreset : 'weekAndDay',
     columns    : [
         {
             text          : 'Name',
             field         : 'name',
             readOnly      : true,
-            cellMenuItems : false,
-            width         : 200,
+            cellMenuItems : true,
+            width         : 300,
             htmlEncode    : false,
             renderer({ record }) {
                 const imageUrl = record.imageUrl;

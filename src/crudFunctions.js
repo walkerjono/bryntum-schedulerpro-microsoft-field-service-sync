@@ -1,6 +1,6 @@
 import { getToken } from './auth.js';
 
-const orgUrl = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.api.crm4.dynamics.com`;
+const orgUrl = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.api.crm6.dynamics.com`;
 const apiVersion = 'v9.2';
 
 export async function getResources() {

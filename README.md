@@ -2,6 +2,8 @@
 
 The code for the complete app is on the `completed-app` branch.
 
+Based on the following [instructions](https://bryntum.com/blog/how-to-connect-bryntum-scheduler-pro-to-a-microsoft-dynamics-365-field-service-project/)
+
 ## Getting started
 
 The starter repository uses [Vite](https://vitejs.dev/), which is a development server and JavaScript bundler. You’ll need Node.js version 20.19+ for Vite to work. 
