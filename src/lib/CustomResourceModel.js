@@ -73,7 +73,9 @@ export default class CustomResourceModel extends ResourceModel {
         // Tree grouping fields (used by synthetic nodes)
         { name : 'isLeafNode', type : 'boolean', defaultValue : true },
         { name : 'isProject', type : 'boolean', defaultValue : false },
+        { name : 'isPractice', type : 'boolean', defaultValue : false },
         { name : 'projectName', type : 'string', defaultValue : '' },
+        { name : 'practiceName', type : 'string', defaultValue : '' },
         { name : 'eventColor', type : 'string' }
     ];
 }

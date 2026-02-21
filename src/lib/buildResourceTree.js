@@ -18,14 +18,15 @@ const PROJECT_COLORS = [
 const SEPARATOR = '____';
 
 /**
- * Build a 2-level resource tree and remap events to leaf nodes.
+ * Build a hierarchical resource tree and remap events to leaf nodes.
  *
  * @param {Array} resources     - Flat array of raw D365 resource records (already mapped by CustomResourceModel)
  * @param {Array} events        - Flat array of raw D365 assignment records (already mapped by CustomEventModel)
  * @param {'resource'|'project'} mode - Grouping mode
+ * @param {Map} [practiceMap]   - Optional Map<resourceId, practiceName> for Practice grouping (resource mode only)
  * @returns {{ treeData: Array, remappedEvents: Array, projectColorMap: Map }}
  */
-export function buildResourceTree(resources, events, mode = 'resource') {
+export function buildResourceTree(resources, events, mode = 'resource', practiceMap = null) {
     // Build lookup maps
     const resourceMap = new Map();
     for (const r of resources) {
@@ -40,17 +41,21 @@ export function buildResourceTree(resources, events, mode = 'resource') {
     });
 
     if (mode === 'resource') {
-        return buildResourceFirst(resources, events, resourceMap, projectColorMap);
+        return buildResourceFirst(resources, events, resourceMap, projectColorMap, practiceMap);
     }
 
     return buildProjectFirst(resources, events, resourceMap, projectColorMap);
 }
 
 /**
- * Resource → Project hierarchy
- * Parent rows = resources, leaf rows = projects (one per unique resource+project combo)
+ * Practice → Resource → Project hierarchy (3-level when practiceMap provided)
+ * or Resource → Project hierarchy (2-level fallback)
+ *
+ * Top level  = Practice (team/practice group)
+ * Mid level  = Resources (people)
+ * Leaf level = Projects (one per unique resource+project combo)
  */
-function buildResourceFirst(resources, events, resourceMap, projectColorMap) {
+function buildResourceFirst(resources, events, resourceMap, projectColorMap, practiceMap) {
     // Group events by resourceId, then by projectName
     const resourceGroups = new Map();
 
@@ -68,10 +73,10 @@ function buildResourceFirst(resources, events, resourceMap, projectColorMap) {
         projMap.get(projName).push(evt);
     }
 
-    const treeData = [];
     const remappedEvents = [];
 
-    // Create parent node for each resource that has assignments
+    // Build resource-level nodes (each with project-leaf children)
+    const resourceNodes = [];
     for (const [resId, projMap] of resourceGroups) {
         const resource = resourceMap.get(resId);
         if (!resource) continue;
@@ -85,6 +90,7 @@ function buildResourceFirst(resources, events, resourceMap, projectColorMap) {
                 imageUrl    : null,
                 isLeafNode  : true,
                 isProject   : true,
+                isPractice  : false,
                 projectName : projName,
                 eventColor  : projectColorMap.get(projName)
             });
@@ -102,21 +108,60 @@ function buildResourceFirst(resources, events, resourceMap, projectColorMap) {
         // Sort children alphabetically by project name
         children.sort((a, b) => a.name.localeCompare(b.name));
 
-        treeData.push({
+        resourceNodes.push({
             id         : resId,
             name       : resource.name,
             imageUrl   : resource.imageUrl,
             isLeafNode : false,
             isProject  : false,
+            isPractice : false,
             expanded   : false,
             children
         });
     }
 
-    // Sort parent resources alphabetically
-    treeData.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort resource nodes alphabetically
+    resourceNodes.sort((a, b) => a.name.localeCompare(b.name));
 
-    return { treeData, remappedEvents, projectColorMap };
+    // If we have a practiceMap, wrap resource nodes in Practice-level parents
+    if (practiceMap && practiceMap.size > 0) {
+        const practiceGroups = new Map();
+
+        for (const resNode of resourceNodes) {
+            const practiceName = practiceMap.get(resNode.id) || 'Unassigned';
+            if (!practiceGroups.has(practiceName)) {
+                practiceGroups.set(practiceName, []);
+            }
+            practiceGroups.get(practiceName).push(resNode);
+        }
+
+        const treeData = [];
+        for (const [practiceName, resChildren] of practiceGroups) {
+            treeData.push({
+                id           : `practice_${practiceName}`,
+                name         : practiceName,
+                imageUrl     : null,
+                isLeafNode   : false,
+                isProject    : false,
+                isPractice   : true,
+                practiceName : practiceName,
+                expanded     : false,
+                children     : resChildren
+            });
+        }
+
+        // Sort practices alphabetically, but push 'Unassigned' to the end
+        treeData.sort((a, b) => {
+            if (a.name === 'Unassigned') return 1;
+            if (b.name === 'Unassigned') return -1;
+            return a.name.localeCompare(b.name);
+        });
+
+        return { treeData, remappedEvents, projectColorMap };
+    }
+
+    // Fallback: no practice grouping, return 2-level tree
+    return { treeData : resourceNodes, remappedEvents, projectColorMap };
 }
 
 /**

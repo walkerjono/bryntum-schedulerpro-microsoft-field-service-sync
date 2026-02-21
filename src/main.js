@@ -2,7 +2,7 @@ import { SchedulerPro } from '@bryntum/schedulerpro';
 import './style.css';
 import { schedulerproConfig } from './schedulerproConfig';
 import { signIn } from './auth.js';
-import { getResources, getAssignments } from './crudFunctions.js';
+import { getResources, getAssignments, getResourcePractices } from './crudFunctions.js';
 import CustomEventModel from './lib/CustomEventModel.js';
 import CustomResourceModel, { loadDefaultImage } from './lib/CustomResourceModel.js';
 import { buildResourceTree } from './lib/buildResourceTree.js';
@@ -13,12 +13,13 @@ const loaderContainer = document.querySelector('.loader-container');
 // Keep raw data for regrouping without re-fetching
 let rawResources = [];
 let rawEvents = [];
+let practiceMap = new Map(); // Map<resourceId, practiceName>
 let currentMode = 'resource'; // 'resource' or 'project'
 
 /**
  * Apply a grouping mode to the scheduler, rebuilding the tree and event mappings.
  */
-function applyGrouping(mode) {
+async function applyGrouping(mode) {
     const scheduler = window.schedulerPro;
     if (!scheduler) return;
 
@@ -56,25 +57,19 @@ function applyGrouping(mode) {
         return raw;
     });
 
-    const { treeData, remappedEvents, projectColorMap } = buildResourceTree(
+    const { treeData, remappedEvents } = buildResourceTree(
         resolvedResources,
         resolvedEvents,
-        mode
+        mode,
+        practiceMap
     );
 
-    // Suspend rendering during data swap to avoid flicker
-    scheduler.suspendRefresh();
-
-    scheduler.resourceStore.tree = true;
+    // Replace store data and let the project engine process the changes
     scheduler.resourceStore.data = treeData;
-    scheduler.eventStore.data = remappedEvents.map(evt => ({
-        ...evt,
-        originalResourceId : evt.resourceId?.includes?.('____')
-            ? evt.resourceId
-            : evt.resourceId // preserve for later re-mapping
-    }));
+    scheduler.eventStore.data = remappedEvents;
 
-    scheduler.resumeRefresh(true);
+    // Wait for the scheduling engine to commit & repaint
+    await scheduler.project.commitAsync();
 
     // Update toggle button text
     const toggleBtn = scheduler.widgetMap?.groupToggle;
@@ -102,12 +97,19 @@ async function displayUI() {
 
     // Display Scheduler Pro after sign in
     // Wait for resources, bookings, and default image to load
-    const [resourcesData, assignmentsData] = await Promise.all([
+    const [resourcesData, assignmentsData, practiceMapResult] = await Promise.all([
         getResources(),
         getAssignments(),
+        getResourcePractices().catch(err => {
+            console.warn('[main] Failed to load practices, continuing without practice grouping:', err);
+            return new Map();
+        }),
         loadDefaultImage().catch(() => {})
     ]);
-    console.log(`[main] Loaded ${resourcesData.value.length} resources, ${assignmentsData.value.length} assignments`);
+    console.log(`[main] Loaded ${resourcesData.value.length} resources, ${assignmentsData.value.length} assignments, ${practiceMapResult.size} practice mappings`);
+
+    // Store the practice map at module level for regrouping
+    practiceMap = practiceMapResult;
 
     // Store raw data for regrouping
     rawResources = resourcesData.value;
@@ -137,7 +139,8 @@ async function displayUI() {
     const { treeData, remappedEvents } = buildResourceTree(
         resolvedResources,
         resolvedEvents,
-        currentMode
+        currentMode,
+        practiceMap
     );
 
     // Initialize Scheduler Pro with tree data

@@ -26,8 +26,10 @@ export default class CustomEventModel extends EventModel {
         {
             name    : 'projectName',
             type    : 'string',
-            convert : (_value, data) => {
-                return data?.['_msdyn_projectid_value@OData.Community.Display.V1.FormattedValue'] || '';
+            convert : (value, data) => {
+                return data?.['_msdyn_projectid_value@OData.Community.Display.V1.FormattedValue']
+                    || value
+                    || '';
             }
         },
         {

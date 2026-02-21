@@ -14,8 +14,17 @@ function nameRenderer({ record }) {
     const isProject = record.data?.isProject;
     const eventColor = record.data?.eventColor;
 
+    const isPractice = record.data?.isPractice;
+
     // Parent node
     if (!isLeaf) {
+        // Practice parent (top-level group in resource-first mode)
+        if (isPractice) {
+            return `<div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa fa-users" style="font-size: 16px; color: #666; width: 20px; text-align: center;"></i>
+                <strong>${name}</strong>
+            </div>`;
+        }
         if (imageUrl) {
             // Resource parent (resource-first mode)
             return `<div style="display: flex; align-items: center; gap: 8px;">

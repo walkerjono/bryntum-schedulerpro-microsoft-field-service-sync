@@ -28,6 +28,58 @@ export async function getResources() {
     return await response.json();
 }
 
+/**
+ * Fetch default bookableresourcecategoryassn records with expanded category to get ws_practice.
+ * Returns a map of resourceId → practice display name.
+ */
+export async function getResourcePractices() {
+    console.log('[crud] Fetching resource practices…');
+    const token = await getToken();
+
+    const response = await fetch(
+        `${orgUrl}/api/data/${apiVersion}/bookableresourcecategoryassns?` +
+        `$filter=msdyn_isdefault eq true&` +
+        `$select=_resource_value,_resourcecategory_value&` +
+        `$expand=ResourceCategory($select=bookableresourcecategoryid,name,ws_practice)`,
+        {
+            headers : {
+                'Authorization'    : `Bearer ${token}`,
+                'Accept'           : 'application/json',
+                'OData-MaxVersion' : '4.0',
+                'OData-Version'    : '4.0',
+                'Prefer'           : 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
+            }
+        }
+    );
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Resource practices API Error:', errorText);
+        throw new Error(`Failed to fetch resource practices: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Build a Map<resourceId, practiceDisplayName>
+    const practiceMap = new Map();
+    for (const assn of data.value) {
+        const resourceId = assn._resource_value;
+        const category = assn.ResourceCategory;
+        if (resourceId && category) {
+            // Use the formatted annotation value for ws_practice, fall back to raw value
+            const practiceLabel = category['ws_practice@OData.Community.Display.V1.FormattedValue']
+                || category.ws_practice
+                || null;
+            if (practiceLabel) {
+                practiceMap.set(resourceId, String(practiceLabel));
+            }
+        }
+    }
+
+    console.log(`[crud] Built practice map for ${practiceMap.size} resources`);
+    return practiceMap;
+}
+
 export async function getAssignments() {
     console.log('[crud] Fetching assignments…');
     const token = await getToken();

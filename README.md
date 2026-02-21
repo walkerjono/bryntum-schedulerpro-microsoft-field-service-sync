@@ -1,13 +1,13 @@
 # How to connect a Bryntum Scheduler Pro project to a Dynamics 365 Field Service project
 
-The code for the complete app is on the `completed-app` branch.
+The code for the complete example app is on the `completed-app` branch.
 
-Based on the following [instructions](https://bryntum.com/blog/how-to-connect-bryntum-scheduler-pro-to-a-microsoft-dynamics-365-field-service-project/)
+Please read the [PRD](./prd.md) for current state of the project
 
 ## Getting started
 
-The starter repository uses [Vite](https://vitejs.dev/), which is a development server and JavaScript bundler. You’ll need Node.js version 20.19+ for Vite to work. 
-Install the Vite dev dependency by running the following command: 
+The starter repository uses [Vite](https://vitejs.dev/), which is a development server and JavaScript bundler. You’ll need Node.js version 20.19+ for Vite to work.
+Install the Vite dev dependency by running the following command:
 
 ```sh
 npm install
