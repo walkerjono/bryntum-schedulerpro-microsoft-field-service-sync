@@ -4,6 +4,7 @@ const orgUrl = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.api.cr
 const apiVersion = 'v9.2';
 
 export async function getResources() {
+    console.log('[crud] Fetching resources…');
     const token = await getToken();
 
     const response = await fetch(
@@ -27,109 +28,29 @@ export async function getResources() {
     return await response.json();
 }
 
-export async function getBookings() {
+export async function getAssignments() {
+    console.log('[crud] Fetching assignments…');
     const token = await getToken();
 
     const response = await fetch(
-        `${orgUrl}/api/data/${apiVersion}/bookableresourcebookings?` +
-        `$select=bookableresourcebookingid,name,starttime,endtime,duration,msdyn_estimatedtravelduration,msdyn_estimatedarrivaltime&` +
-        `$expand=Resource($select=bookableresourceid)`,
+        `${orgUrl}/api/data/${apiVersion}/msdyn_resourceassignments?` +
+        `$select=msdyn_resourceassignmentid,msdyn_name,msdyn_start,msdyn_finish,msdyn_effort,_msdyn_bookableresourceid_value,_msdyn_taskid_value,_msdyn_projectid_value`,
         {
             headers : {
                 'Authorization'    : `Bearer ${token}`,
                 'Accept'           : 'application/json',
                 'OData-MaxVersion' : '4.0',
-                'OData-Version'    : '4.0'
+                'OData-Version'    : '4.0',
+                'Prefer'           : 'odata.include-annotations="OData.Community.Display.V1.FormattedValue,Microsoft.Dynamics.CRM.lookuplogicalname"'
             }
         }
     );
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.error('Bookings API Error:', errorText);
-        throw new Error(`Failed to fetch bookings: ${response.statusText}`);
+        console.error('Assignments API Error:', errorText);
+        throw new Error(`Failed to fetch assignments: ${response.statusText}`);
     }
 
     return await response.json();
-}
-
-export async function createBooking(bookingData) {
-    const token = await getToken();
-
-    const response = await fetch(
-      `${orgUrl}/api/data/${apiVersion}/bookableresourcebookings`,
-      {
-          method  : 'POST',
-          headers : {
-              'Authorization'    : `Bearer ${token}`,
-              'Content-Type'     : 'application/json',
-              'OData-MaxVersion' : '4.0',
-              'OData-Version'    : '4.0',
-              'Prefer'           : 'return=representation'
-          },
-          body : JSON.stringify(bookingData)
-      }
-    );
-
-    if (!response.ok) {
-        throw new Error(`Failed to create booking: ${response.statusText}`);
-    }
-
-    return await response.json();
-}
-
-export async function updateBooking(bookingId, updates) {
-    // Safety check: don't try to update records that haven't been created yet
-    if (`${bookingId}`.startsWith('_generated')) {
-        console.error('Cannot update booking with generated ID:', bookingId);
-        throw new Error('Cannot update a booking that has not been created in D365. Use createBooking instead.');
-    }
-
-    const token = await getToken();
-
-    const response = await fetch(
-        `${orgUrl}/api/data/${apiVersion}/bookableresourcebookings(${bookingId})`,
-        {
-            method  : 'PATCH',
-            headers : {
-                'Authorization'    : `Bearer ${token}`,
-                'Content-Type'     : 'application/json',
-                'Accept'           : 'application/json',
-                'OData-MaxVersion' : '4.0',
-                'OData-Version'    : '4.0'
-            },
-            body : JSON.stringify(updates)
-        }
-    );
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Update booking failed:', response.status, errorText);
-        throw new Error(`Failed to update booking: ${response.status} ${response.statusText}`);
-    }
-}
-
-export async function deleteBooking(bookingId) {
-    // Don't try to delete records that were never created
-    if (`${bookingId}`.startsWith('_generated')) {
-        return;
-    }
-
-    const token = await getToken();
-
-    const response = await fetch(
-        `${orgUrl}/api/data/${apiVersion}/bookableresourcebookings(${bookingId})`,
-        {
-            method  : 'DELETE',
-            headers : {
-                'Authorization'    : `Bearer ${token}`,
-                'OData-MaxVersion' : '4.0',
-                'OData-Version'    : '4.0'
-            }
-        }
-    );
-
-    if (!response.ok) {
-        throw new Error(`Failed to delete booking: ${response.statusText}`);
-    }
 }

@@ -1,35 +1,40 @@
 import { EventModel } from '@bryntum/schedulerpro';
 
-// Custom event model for D365 Field Service bookings
+// Custom event model for D365 Project Operations resource assignments
 export default class CustomEventModel extends EventModel {
     static $name = 'CustomEventModel';
 
     static fields = [
-        { name : 'id', dataSource : 'bookableresourcebookingid' },
-        { name : 'bookableresourcebookingid', type : 'string' },
-        { name : 'startDate', dataSource : 'msdyn_estimatedarrivaltime', type : 'date' },
-        { name : 'endDate', dataSource : 'endtime', type : 'date' },
-        { name : 'durationUnit', defaultValue : 'minute' },
-        // Store the raw travel duration value
-        { name : 'travelDuration', dataSource : 'msdyn_estimatedtravelduration', type : 'number' },
+        { name : 'id', dataSource : 'msdyn_resourceassignmentid' },
+        { name : 'msdyn_resourceassignmentid', type : 'string' },
+        { name : 'startDate', dataSource : 'msdyn_start', type : 'date' },
+        { name : 'endDate', dataSource : 'msdyn_finish', type : 'date' },
+        { name : 'durationUnit', defaultValue : 'hour' },
+        { name : 'effort', dataSource : 'msdyn_effort', type : 'number' },
+        { name : 'resourceId', dataSource : '_msdyn_bookableresourceid_value' },
         {
-            name    : 'preamble',
+            name    : 'name',
             type    : 'string',
-            convert : (_value, data) => {
-                // Only convert when loading from D365 (data will have msdyn_estimatedtravelduration)
-                if (data && data.msdyn_estimatedtravelduration != null) {
-                    return `${data.msdyn_estimatedtravelduration} minutes`;
-                }
-                // Return null to let the raw value pass through
-                return null;
+            convert : (value, data) => {
+                // Use task formatted name, fall back to msdyn_name, then existing value
+                return data?.['_msdyn_taskid_value@OData.Community.Display.V1.FormattedValue']
+                    || data?.msdyn_name
+                    || value
+                    || 'Unnamed Assignment';
             }
         },
-        { name : 'resourceId', dataSource : 'Resource.bookableresourceid' },
+        {
+            name    : 'projectName',
+            type    : 'string',
+            convert : (_value, data) => {
+                return data?.['_msdyn_projectid_value@OData.Community.Display.V1.FormattedValue'] || '';
+            }
+        },
         {
             name    : 'etag',
             type    : 'string',
             convert : (_value, data) => {
-                const raw = data['@odata.etag'];
+                const raw = data?.['@odata.etag'];
                 return raw ? raw.replace(/\\"/g, '"') : null;
             }
         }

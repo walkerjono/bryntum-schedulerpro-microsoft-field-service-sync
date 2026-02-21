@@ -22,8 +22,10 @@ const msalRequest = { scopes : [`https://${
 
 // Log the user in
 export async function signIn() {
+    console.log('[auth] Opening login popup…');
     const authResult = await msalInstance.loginPopup(msalRequest);
     sessionStorage.setItem('msalAccount', authResult.account.username);
+    console.log('[auth] Signed in as', authResult.account.username);
 }
 
 export async function getToken() {

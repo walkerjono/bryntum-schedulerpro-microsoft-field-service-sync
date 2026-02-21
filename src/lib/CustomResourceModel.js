@@ -69,6 +69,11 @@ export default class CustomResourceModel extends ResourceModel {
                 const raw = data['@odata.etag'];
                 return raw ? raw.replace(/\\"/g, '"') : null;
             }
-        }
+        },
+        // Tree grouping fields (used by synthetic nodes)
+        { name : 'isLeafNode', type : 'boolean', defaultValue : true },
+        { name : 'isProject', type : 'boolean', defaultValue : false },
+        { name : 'projectName', type : 'string', defaultValue : '' },
+        { name : 'eventColor', type : 'string' }
     ];
 }
