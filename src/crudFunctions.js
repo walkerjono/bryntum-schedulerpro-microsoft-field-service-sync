@@ -29,8 +29,8 @@ export async function getResources() {
 }
 
 /**
- * Fetch default bookableresourcecategoryassn records with expanded category to get ws_practice.
- * Returns a map of resourceId → practice display name.
+ * Fetch default bookableresourcecategoryassn records with expanded category.
+ * Returns { practiceMap: Map<resourceId, string>, roleMap: Map<resourceId, string> }.
  */
 export async function getResourcePractices() {
     console.log('[crud] Fetching resource practices…');
@@ -60,8 +60,9 @@ export async function getResourcePractices() {
 
     const data = await response.json();
 
-    // Build a Map<resourceId, practiceDisplayName>
+    // Build Map<resourceId, practiceDisplayName> and Map<resourceId, roleName>
     const practiceMap = new Map();
+    const roleMap = new Map();
     for (const assn of data.value) {
         const resourceId = assn._resource_value;
         const category = assn.ResourceCategory;
@@ -73,11 +74,15 @@ export async function getResourcePractices() {
             if (practiceLabel) {
                 practiceMap.set(resourceId, String(practiceLabel));
             }
+
+            // Role name from the bookableresourcecategory.name field
+            const roleName = category.name || 'Unassigned';
+            roleMap.set(resourceId, String(roleName));
         }
     }
 
-    console.log(`[crud] Built practice map for ${practiceMap.size} resources`);
-    return practiceMap;
+    console.log(`[crud] Built practice map for ${practiceMap.size} resources, role map for ${roleMap.size} resources`);
+    return { practiceMap, roleMap };
 }
 
 export async function getAssignments() {

@@ -74,8 +74,10 @@ export default class CustomResourceModel extends ResourceModel {
         { name : 'isLeafNode', type : 'boolean', defaultValue : true },
         { name : 'isProject', type : 'boolean', defaultValue : false },
         { name : 'isPractice', type : 'boolean', defaultValue : false },
+        { name : 'isRole', type : 'boolean', defaultValue : false },
         { name : 'projectName', type : 'string', defaultValue : '' },
         { name : 'practiceName', type : 'string', defaultValue : '' },
+        { name : 'roleName', type : 'string', defaultValue : '' },
         { name : 'eventColor', type : 'string' }
     ];
 }

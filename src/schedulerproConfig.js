@@ -15,6 +15,7 @@ function nameRenderer({ record }) {
     const eventColor = record.data?.eventColor;
 
     const isPractice = record.data?.isPractice;
+    const isRole = record.data?.isRole;
 
     // Parent node
     if (!isLeaf) {
@@ -22,6 +23,13 @@ function nameRenderer({ record }) {
         if (isPractice) {
             return `<div style="display: flex; align-items: center; gap: 8px;">
                 <i class="fa fa-users" style="font-size: 16px; color: #666; width: 20px; text-align: center;"></i>
+                <strong>${name}</strong>
+            </div>`;
+        }
+        // Role parent (second-level group in resource-first mode)
+        if (isRole) {
+            return `<div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa fa-briefcase" style="font-size: 14px; color: #888; width: 20px; text-align: center;"></i>
                 <strong>${name}</strong>
             </div>`;
         }

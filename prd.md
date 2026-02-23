@@ -72,12 +72,14 @@ Fetched via `getAssignments()`. Represents task assignments (events on the timel
 
 ### 4.3 Resource Category Assignments (`bookableresourcecategoryassns`)
 
-Fetched via `getResourcePractices()`. Used to group resources by "Practice".
+Fetched via `getResourcePractices()`. Used to group resources by "Practice" and "Role".
+Returns `{ practiceMap, roleMap }` — two `Map<resourceId, string>` lookups.
 
 | D365 Field                     | Mapped To       | Notes                                                         |
 | ------------------------------ | --------------- | ------------------------------------------------------------- |
 | `_resource_value`              | Resource ID key | Links to bookableresource                                     |
 | `ResourceCategory.ws_practice` | Practice name   | Custom field — formatted value preferred via OData annotation |
+| `ResourceCategory.name`        | Role name       | Default role/category name; falls back to "Unassigned"        |
 
 Only records where `msdyn_isdefault eq true` are fetched.
 
@@ -92,11 +94,12 @@ Two grouping modes, switchable via a toolbar toggle button:
 **Resource-first mode** (default):
 
 ```text
-Practice → Resource → Project (3-level tree)
+Practice → Role → Resource → Project (4-level tree)
 ```
 
 - Top-level: Practice groups (from `ws_practice` custom field)
-- Mid-level: Individual resources (with avatar)
+- 2nd-level: Role groups (from `bookableresourcecategory.name`; "Unassigned" fallback)
+- 3rd-level: Individual resources (with avatar)
 - Leaf-level: Project sub-rows (color-coded dot)
 
 **Project-first mode:**
@@ -123,6 +126,7 @@ A palette of 15 distinct colors is cycled across projects. Colors are applied to
 The Name column (400px, read-only) renders context-aware HTML:
 
 - **Practice nodes:** Users icon (`fa-users`) + bold name
+- **Role nodes:** Briefcase icon (`fa-briefcase`) + bold name
 - **Resource parents:** Avatar image (32×32 circle) + bold name
 - **Project parents:** Color dot + bold name
 - **Project leaves:** Color dot + regular name

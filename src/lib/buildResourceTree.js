@@ -24,9 +24,10 @@ const SEPARATOR = '____';
  * @param {Array} events        - Flat array of raw D365 assignment records (already mapped by CustomEventModel)
  * @param {'resource'|'project'} mode - Grouping mode
  * @param {Map} [practiceMap]   - Optional Map<resourceId, practiceName> for Practice grouping (resource mode only)
+ * @param {Map} [roleMap]       - Optional Map<resourceId, roleName> for Role grouping (resource mode only)
  * @returns {{ treeData: Array, remappedEvents: Array, projectColorMap: Map }}
  */
-export function buildResourceTree(resources, events, mode = 'resource', practiceMap = null) {
+export function buildResourceTree(resources, events, mode = 'resource', practiceMap = null, roleMap = null) {
     // Build lookup maps
     const resourceMap = new Map();
     for (const r of resources) {
@@ -41,21 +42,23 @@ export function buildResourceTree(resources, events, mode = 'resource', practice
     });
 
     if (mode === 'resource') {
-        return buildResourceFirst(resources, events, resourceMap, projectColorMap, practiceMap);
+        return buildResourceFirst(resources, events, resourceMap, projectColorMap, practiceMap, roleMap);
     }
 
     return buildProjectFirst(resources, events, resourceMap, projectColorMap);
 }
 
 /**
- * Practice → Resource → Project hierarchy (3-level when practiceMap provided)
+ * Practice → Role → Resource → Project hierarchy (4-level when practiceMap & roleMap provided)
+ * or Practice → Resource → Project hierarchy (3-level when only practiceMap)
  * or Resource → Project hierarchy (2-level fallback)
  *
  * Top level  = Practice (team/practice group)
- * Mid level  = Resources (people)
+ * 2nd level  = Role (default bookable resource category name)
+ * 3rd level  = Resources (people)
  * Leaf level = Projects (one per unique resource+project combo)
  */
-function buildResourceFirst(resources, events, resourceMap, projectColorMap, practiceMap) {
+function buildResourceFirst(resources, events, resourceMap, projectColorMap, practiceMap, roleMap) {
     // Group events by resourceId, then by projectName
     const resourceGroups = new Map();
 
@@ -124,19 +127,52 @@ function buildResourceFirst(resources, events, resourceMap, projectColorMap, pra
     resourceNodes.sort((a, b) => a.name.localeCompare(b.name));
 
     // If we have a practiceMap, wrap resource nodes in Practice-level parents
+    // If we also have a roleMap, insert Role-level nodes between Practice and Resource
     if (practiceMap && practiceMap.size > 0) {
+        // Group resource nodes by practice, then by role
+        // Structure: Practice → Role → Resource
         const practiceGroups = new Map();
 
         for (const resNode of resourceNodes) {
             const practiceName = practiceMap.get(resNode.id) || 'Unassigned';
+            const roleName = (roleMap && roleMap.get(resNode.id)) || 'Unassigned';
+
             if (!practiceGroups.has(practiceName)) {
-                practiceGroups.set(practiceName, []);
+                practiceGroups.set(practiceName, new Map());
             }
-            practiceGroups.get(practiceName).push(resNode);
+            const roleGroups = practiceGroups.get(practiceName);
+            if (!roleGroups.has(roleName)) {
+                roleGroups.set(roleName, []);
+            }
+            roleGroups.get(roleName).push(resNode);
         }
 
         const treeData = [];
-        for (const [practiceName, resChildren] of practiceGroups) {
+        for (const [practiceName, roleGroups] of practiceGroups) {
+            // Build role-level children for this practice
+            const roleChildren = [];
+            for (const [roleName, resChildren] of roleGroups) {
+                roleChildren.push({
+                    id         : `role_${practiceName}_${roleName}`,
+                    name       : roleName,
+                    imageUrl   : null,
+                    isLeafNode : false,
+                    isProject  : false,
+                    isPractice : false,
+                    isRole     : true,
+                    roleName   : roleName,
+                    expanded   : false,
+                    children   : resChildren
+                });
+            }
+
+            // Sort roles alphabetically, but push 'Unassigned' to the end
+            roleChildren.sort((a, b) => {
+                if (a.name === 'Unassigned') return 1;
+                if (b.name === 'Unassigned') return -1;
+                return a.name.localeCompare(b.name);
+            });
+
             treeData.push({
                 id           : `practice_${practiceName}`,
                 name         : practiceName,
@@ -144,9 +180,10 @@ function buildResourceFirst(resources, events, resourceMap, projectColorMap, pra
                 isLeafNode   : false,
                 isProject    : false,
                 isPractice   : true,
+                isRole       : false,
                 practiceName : practiceName,
                 expanded     : false,
-                children     : resChildren
+                children     : roleChildren
             });
         }
 

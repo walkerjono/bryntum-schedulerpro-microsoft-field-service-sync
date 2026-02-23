@@ -14,6 +14,7 @@ const loaderContainer = document.querySelector('.loader-container');
 let rawResources = [];
 let rawEvents = [];
 let practiceMap = new Map(); // Map<resourceId, practiceName>
+let roleMap = new Map();     // Map<resourceId, roleName>
 let currentMode = 'resource'; // 'resource' or 'project'
 
 /**
@@ -61,7 +62,8 @@ async function applyGrouping(mode) {
         resolvedResources,
         resolvedEvents,
         mode,
-        practiceMap
+        practiceMap,
+        roleMap
     );
 
     // Replace store data and let the project engine process the changes
@@ -97,19 +99,20 @@ async function displayUI() {
 
     // Display Scheduler Pro after sign in
     // Wait for resources, bookings, and default image to load
-    const [resourcesData, assignmentsData, practiceMapResult] = await Promise.all([
+    const [resourcesData, assignmentsData, practiceRoleResult] = await Promise.all([
         getResources(),
         getAssignments(),
         getResourcePractices().catch(err => {
             console.warn('[main] Failed to load practices, continuing without practice grouping:', err);
-            return new Map();
+            return { practiceMap : new Map(), roleMap : new Map() };
         }),
         loadDefaultImage().catch(() => {})
     ]);
-    console.log(`[main] Loaded ${resourcesData.value.length} resources, ${assignmentsData.value.length} assignments, ${practiceMapResult.size} practice mappings`);
+    console.log(`[main] Loaded ${resourcesData.value.length} resources, ${assignmentsData.value.length} assignments, ${practiceRoleResult.practiceMap.size} practice mappings, ${practiceRoleResult.roleMap.size} role mappings`);
 
-    // Store the practice map at module level for regrouping
-    practiceMap = practiceMapResult;
+    // Store the practice and role maps at module level for regrouping
+    practiceMap = practiceRoleResult.practiceMap;
+    roleMap = practiceRoleResult.roleMap;
 
     // Store raw data for regrouping
     rawResources = resourcesData.value;
@@ -140,7 +143,8 @@ async function displayUI() {
         resolvedResources,
         resolvedEvents,
         currentMode,
-        practiceMap
+        practiceMap,
+        roleMap
     );
 
     // Initialize Scheduler Pro with tree data
