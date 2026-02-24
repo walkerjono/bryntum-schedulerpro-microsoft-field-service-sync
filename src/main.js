@@ -349,8 +349,13 @@ async function displayUI() {
                     filterBy : (r) => value.includes(r.practiceName)
                 });
 
-                // Auto-expand filtered tree
-                scheduler.expandAll();
+                // Auto-expand filtered tree to Role level in both scheduler and histogram
+                // expandToLevel lives on the Tree feature, not the grid itself
+                // Level 0 = expand Practice parents to reveal Role children
+                setTimeout(() => {
+                    scheduler.features.tree.expandToLevel(0);
+                    histogram.features.tree.expandToLevel(0);
+                }, 100);
             }
 
             // Update role filter options based on selected practices
@@ -393,8 +398,8 @@ async function displayUI() {
                     filterBy : (r) => value.includes(r.roleName)
                 });
 
-                // Auto-expand filtered tree
-                scheduler.expandAll();
+                // Auto-expand filtered tree (deferred to let TreeGroup rebuild)
+                setTimeout(() => scheduler.expandAll(), 100);
             }
 
             // Update resource filter options based on selected roles
@@ -444,8 +449,8 @@ async function displayUI() {
                     filterBy : (r) => value.includes(r.name)
                 });
 
-                // Auto-expand filtered tree
-                scheduler.expandAll();
+                // Auto-expand filtered tree (deferred to let TreeGroup rebuild)
+                setTimeout(() => scheduler.expandAll(), 100);
             }
             else {
                 // When no resources selected, collapse all (optional)
@@ -673,6 +678,26 @@ async function displayUI() {
         partner : scheduler
     });
     console.log('[main] ResourceHistogram initialized');
+
+    // ── Auto-expand tree if filters were restored from URL params ────────
+    // Deferred to let TreeGroup finish its initial build after page load
+    const hasActiveFilters = (practiceCombo?.value?.length > 0)
+        || (roleCombo?.value?.length > 0)
+        || (resourceCombo?.value?.length > 0);
+    if (hasActiveFilters) {
+        setTimeout(() => {
+            if (practiceCombo?.value?.length > 0) {
+                // Expand to Role level for practice filter
+                scheduler.features.tree.expandToLevel(0);
+                histogram.features.tree.expandToLevel(0);
+            }
+            else {
+                // Role or Resource filter – expand all
+                scheduler.expandAll();
+                histogram.expandAll();
+            }
+        }, 200);
+    }
 
     // Expose for debugging
     window.schedulerPro = scheduler;
