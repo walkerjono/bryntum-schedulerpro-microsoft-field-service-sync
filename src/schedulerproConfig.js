@@ -118,6 +118,21 @@ export const schedulerproConfig = {
                     return record.text;
                 }
             },
+            roleFilter : {
+                type        : 'combo',
+                ref         : 'roleFilter',
+                label       : 'Role',
+                multiSelect : true,
+                editable    : false,
+                clearable   : true,
+                width       : 350,
+                placeholder : 'All Roles',
+                items       : [],
+                chipView    : { closable : true },
+                listItemTpl(record) {
+                    return record.text;
+                }
+            },
             spacer        : { type : 'widget', flex : 1 },
             signoutButton : {
                 text : 'Signout',

@@ -113,7 +113,7 @@ async function displayUI() {
     const tempResourceModels = resourcesData.value.map(
         (raw) => new CustomResourceModel(raw)
     );
-    const flatResources = resourcesData.value.map((raw, i) => {
+    let flatResources = resourcesData.value.map((raw, i) => {
         const model = tempResourceModels[i];
         const id = raw.bookableresourceid;
 
@@ -206,6 +206,44 @@ async function displayUI() {
     await scheduler.project.commitAsync();
     console.log('[main] SchedulerPro initialized');
 
+    // ── Helper: sync filter values to/from URL query parameters ────────
+    function readFilterParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            practices : params.get('practice')?.split(',').filter(Boolean) || [],
+            roles     : params.get('role')?.split(',').filter(Boolean) || []
+        };
+    }
+
+    function writeFilterParams() {
+        const params  = new URLSearchParams(window.location.search);
+        const pValues = practiceCombo?.value;
+        const rValues = roleCombo?.value;
+
+        if (pValues && pValues.length > 0) {
+            params.set('practice', pValues.join(','));
+        }
+        else {
+            params.delete('practice');
+        }
+
+        if (rValues && rValues.length > 0) {
+            params.set('role', rValues.join(','));
+        }
+        else {
+            params.delete('role');
+        }
+
+        const qs = params.toString();
+        const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+        window.history.replaceState(null, '', url);
+    }
+
+    const initialParams = readFilterParams();
+
+    // ── Role filter (declare early so practice filter can reference it) ──
+    const roleCombo = scheduler.widgetMap.roleFilter;
+
     // ── Practice filter ─────────────────────────────────────────────────
     const practiceCombo = scheduler.widgetMap.practiceFilter;
     if (practiceCombo) {
@@ -216,14 +254,62 @@ async function displayUI() {
 
         practiceCombo.on('change', ({ value }) => {
             const store = scheduler.project.resourceStore;
-            store.clearFilters();
+            store.removeFilter('practiceFilter');
             if (value && value.length > 0) {
                 store.filter({
                     id       : 'practiceFilter',
                     filterBy : (r) => value.includes(r.practiceName)
                 });
             }
+
+            // Update role filter options based on selected practices
+            if (roleCombo) {
+                const filteredResources = (value && value.length > 0)
+                    ? flatResources.filter((r) => value.includes(r.practiceName))
+                    : flatResources;
+                const roleNames = [
+                    ...new Set(filteredResources.map((r) => r.roleName).filter(Boolean))
+                ].sort();
+                roleCombo.items = roleNames.map((r) => ({ value : r, text : r }));
+
+                // Clear any role selections that are no longer valid
+                if (roleCombo.value && roleCombo.value.length > 0) {
+                    const validValues = roleCombo.value.filter((v) => roleNames.includes(v));
+                    roleCombo.value = validValues.length > 0 ? validValues : null;
+                }
+            }
+
+            writeFilterParams();
         });
+    }
+
+    // ── Role filter listener ──────────────────────────────────────────
+    if (roleCombo) {
+        const roleNames = [
+            ...new Set(flatResources.map((r) => r.roleName).filter(Boolean))
+        ].sort();
+        roleCombo.items = roleNames.map((r) => ({ value : r, text : r }));
+
+        roleCombo.on('change', ({ value }) => {
+            const store = scheduler.project.resourceStore;
+            store.removeFilter('roleFilter');
+            if (value && value.length > 0) {
+                store.filter({
+                    id       : 'roleFilter',
+                    filterBy : (r) => value.includes(r.roleName)
+                });
+            }
+
+            writeFilterParams();
+        });
+    }
+
+    // ── Restore filters from URL query parameters ───────────────────────
+    if (initialParams.practices.length > 0 && practiceCombo) {
+        practiceCombo.value = initialParams.practices;
+    }
+    if (initialParams.roles.length > 0 && roleCombo) {
+        roleCombo.value = initialParams.roles;
     }
 
     // ── Refresh button ──────────────────────────────────────────────────
@@ -325,6 +411,17 @@ async function displayUI() {
                         ...new Set(newFlatResources.map((r) => r.practiceName).filter(Boolean))
                     ].sort();
                     practiceCombo.items = updatedPractices.map((p) => ({ value : p, text : p }));
+                }
+
+                // Update flatResources reference so filters use fresh data
+                flatResources = newFlatResources;
+
+                // Refresh role filter options
+                if (roleCombo) {
+                    const updatedRoles = [
+                        ...new Set(newFlatResources.map((r) => r.roleName).filter(Boolean))
+                    ].sort();
+                    roleCombo.items = updatedRoles.map((r) => ({ value : r, text : r }));
                 }
 
                 console.log('[main] Data refreshed successfully');
