@@ -99,3 +99,25 @@ main {
 .b-sch-vertical .b-sch-event-wrap .b-sch-event-buffer-before:not(.b-buffer-thin){
   border-top:3px solid #ccc;
 }
+
+/* Current time line styling */
+.b-sch-timerange.b-sch-current-time {
+  background: #94CA14 !important;
+  opacity: 0.5;
+}
+
+.b-sch-timerange.b-sch-current-time line {
+  stroke: #94CA14 !important;
+}
+
+.b-sch-timerange.b-sch-current-time label {
+  color: #94CA14 !important;
+}
+
+/* Hide current time label on scheduler only */
+#app .b-sch-timerange.b-sch-current-time label {
+  display: none !important;
+}
+.b-timeline-base:not(.b-sch-vertical) .b-time-ranges-header-canvas .b-sch-line {
+  display: none;
+}

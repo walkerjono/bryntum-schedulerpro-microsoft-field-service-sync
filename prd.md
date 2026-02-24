@@ -195,9 +195,6 @@ The Name column (400px, read-only) renders context-aware HTML:
 
 ## 8. Known Limitations / Not Yet Implemented
 
-1. **Read-only** — No create, update, or delete operations back to D365
-1. **No pagination** — All resources/assignments fetched in a single request (may not scale)
-1. **No filtering** — No date range filter, resource search, or project filter
 1. **No error UI** — API errors logged to console only, no user-facing error states
 1. **Trial license** — Currently uses `@bryntum/schedulerpro-trial`
 1. **Hardcoded CRM region** — API URLs use `.crm6.dynamics.com` (Australia region)
@@ -206,9 +203,13 @@ The Name column (400px, read-only) renders context-aware HTML:
 
 ## TODO: changes
 
-- [x] Add effort to rollover
-- [x] Add project name to assignment bar
-- [ ] Add Practice Filter
-- [ ] Add Exclude MSC filter - TBC on field to use
-- [ ] Add grid refresh button
-- [ ] add effort remaining from task. display in tooltip, grey out scheduler bars when effort remaining = 0, add page toggle to update historgram between effort/remaining
+1. [ ] **Read-only** — No create, update, or delete operations back to D365
+1. [ ] **No pagination** — All resources/assignments fetched in a single request (may not scale)
+1. [ ] **No filtering** — No date range filter, resource search, or project filter
+1. [x] Add effort to rollover
+1. [x] Add project name to assignment bar
+1. [x] today visual indicator
+1. [x] Add Practice Filter
+1. [ ] Add Exclude MSC filter - TBC on field to use
+1. [x] Add grid refresh button
+1. [ ] add effort remaining from task. display in tooltip, grey out scheduler bars when effort remaining = 0, add page toggle to update historgram between effort/remaining

@@ -68,6 +68,9 @@ export const schedulerproConfig = {
         dependencies : false,
         taskEdit     : true,
         tree         : true,
+        timeRanges   : {
+            showCurrentTimeLine : true
+        },
         eventTooltip : {
             template({ eventRecord }) {
                 const start  = eventRecord.startDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.startDate) : '';
@@ -86,7 +89,7 @@ export const schedulerproConfig = {
                 </div>`;
             }
         },
-        treeGroup    : {
+        treeGroup : {
             levels         : ['practiceName', 'roleName'],
             expandParents  : false,
             parentRenderer : treeGroupParentRenderer
@@ -94,10 +97,31 @@ export const schedulerproConfig = {
     },
     tbar : {
         items : {
+            refreshButton : {
+                type    : 'button',
+                icon    : 'fa fa-sync',
+                tooltip : 'Refresh data',
+                cls     : 'b-transparent'
+            },
+            practiceFilter : {
+                type        : 'combo',
+                ref         : 'practiceFilter',
+                label       : 'Practice',
+                multiSelect : true,
+                editable    : false,
+                clearable   : true,
+                width       : 350,
+                placeholder : 'All Practices',
+                items       : [],
+                chipView    : { closable : true },
+                listItemTpl(record) {
+                    return record.text;
+                }
+            },
+            spacer        : { type : 'widget', flex : 1 },
             signoutButton : {
-                text  : 'Signout',
-                icon  : 'fa fa-sign-out',
-                style : 'margin-left: auto;',
+                text : 'Signout',
+                icon : 'fa fa-sign-out',
                 onClick() {
                     signOut().then(() => {
                         location.reload();

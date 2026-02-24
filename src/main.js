@@ -206,6 +206,139 @@ async function displayUI() {
     await scheduler.project.commitAsync();
     console.log('[main] SchedulerPro initialized');
 
+    // ── Practice filter ─────────────────────────────────────────────────
+    const practiceCombo = scheduler.widgetMap.practiceFilter;
+    if (practiceCombo) {
+        const practiceNames = [
+            ...new Set(flatResources.map((r) => r.practiceName).filter(Boolean))
+        ].sort();
+        practiceCombo.items = practiceNames.map((p) => ({ value : p, text : p }));
+
+        practiceCombo.on('change', ({ value }) => {
+            const store = scheduler.project.resourceStore;
+            store.clearFilters();
+            if (value && value.length > 0) {
+                store.filter({
+                    id       : 'practiceFilter',
+                    filterBy : (r) => value.includes(r.practiceName)
+                });
+            }
+        });
+    }
+
+    // ── Refresh button ──────────────────────────────────────────────────
+    const refreshBtn = scheduler.widgetMap.refreshButton;
+    if (refreshBtn) {
+        refreshBtn.on('click', async() => {
+            refreshBtn.disabled = true;
+            refreshBtn.icon = 'fa fa-sync fa-spin';
+            try {
+                console.log('[main] Refreshing data…');
+
+                const [newResources, newAssignments, newPracticeRoleResult] =
+                    await Promise.all([
+                        getResources(),
+                        getAssignments(),
+                        getResourcePractices().catch((err) => {
+                            console.warn('[main] Failed to refresh practices:', err);
+                            return { practiceMap : new Map(), roleMap : new Map() };
+                        })
+                    ]);
+
+                const { practiceMap: newPracticeMap, roleMap: newRoleMap } = newPracticeRoleResult;
+
+                // Re-resolve events
+                const newResolvedEvents = [];
+                const newAssignmentRecords = [];
+
+                newAssignments.value.forEach((raw) => {
+                    const e = new CustomEventModel(raw);
+                    const workingDays = countWeekdays(e.startDate, e.endDate);
+                    const workingHours = workingDays * HOURS_PER_DAY;
+                    const units = e.effort > 0 ? (e.effort / workingHours) * 100 : 0;
+
+                    newResolvedEvents.push({
+                        id            : e.id,
+                        startDate     : e.startDate,
+                        endDate       : e.endDate,
+                        name          : e.name,
+                        projectName   : e.projectName,
+                        projectNumber : e.projectNumber,
+                        clientName    : e.clientName,
+                        effort        : e.effort
+                    });
+
+                    newAssignmentRecords.push({
+                        id       : `assign-${e.id}`,
+                        event    : e.id,
+                        resource : e.resourceId,
+                        units
+                    });
+                });
+
+                // Re-apply project colours
+                const newProjectNames = [
+                    ...new Set(newResolvedEvents.map((e) => e.projectName).filter(Boolean))
+                ].sort();
+                const newProjectColorMap = new Map();
+                newProjectNames.forEach((p, i) =>
+                    newProjectColorMap.set(p, PROJECT_COLORS[i % PROJECT_COLORS.length])
+                );
+                newResolvedEvents.forEach((e) => {
+                    e.eventColor = newProjectColorMap.get(e.projectName) || '#888';
+                });
+
+                // Re-build flat resources
+                const newTempModels = newResources.value.map((raw) => new CustomResourceModel(raw));
+                const newFlatResources = newResources.value.map((raw, i) => {
+                    const model = newTempModels[i];
+                    const id = raw.bookableresourceid;
+                    let imageUrl = null;
+                    const entityImage = raw.ContactId?.entityimage;
+                    if (entityImage) {
+                        imageUrl = `data:image/jpeg;base64,${entityImage}`;
+                    }
+                    else {
+                        imageUrl = model.imageUrl || null;
+                    }
+                    return {
+                        id,
+                        name         : raw.name || 'Unnamed',
+                        imageUrl,
+                        practiceName : newPracticeMap.get(id) || 'Unassigned',
+                        roleName     : newRoleMap.get(id) || 'Unassigned',
+                        workingHours : raw.ws_workinghours ?? 40
+                    };
+                });
+
+                // Update stores
+                scheduler.project.assignmentStore.removeAll();
+                scheduler.project.eventStore.removeAll();
+                scheduler.project.resourceStore.data = newFlatResources;
+                scheduler.project.eventStore.data = newResolvedEvents;
+                scheduler.project.assignmentStore.data = newAssignmentRecords;
+                await scheduler.project.commitAsync();
+
+                // Refresh practice filter options
+                if (practiceCombo) {
+                    const updatedPractices = [
+                        ...new Set(newFlatResources.map((r) => r.practiceName).filter(Boolean))
+                    ].sort();
+                    practiceCombo.items = updatedPractices.map((p) => ({ value : p, text : p }));
+                }
+
+                console.log('[main] Data refreshed successfully');
+            }
+            catch (err) {
+                console.error('[main] Refresh failed:', err);
+            }
+            finally {
+                refreshBtn.icon = 'fa fa-sync';
+                refreshBtn.disabled = false;
+            }
+        });
+    }
+
     // ── Create partnered ResourceHistogram ───────────────────────────────
     const histogram = new ResourceHistogram({
         ...histogramConfig,

@@ -39,6 +39,11 @@ export const histogramConfig = {
         treeGroup : {
             levels        : ['practiceName', 'roleName'],
             expandParents : false
+        },
+        timeRanges : {
+            showCurrentTimeLine : {
+                name : new Intl.DateTimeFormat('en-AU', { day : 'numeric', month : 'short', year : 'numeric' }).format(new Date())
+            }
         }
     },
 
