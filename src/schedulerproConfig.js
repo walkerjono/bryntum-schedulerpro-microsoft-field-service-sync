@@ -52,6 +52,15 @@ export const schedulerproConfig = {
     endDate    : new Date(today.getFullYear(), today.getMonth() + 4, 0),
     viewPreset : 'weekAndMonth',
     barMargin  : 5,
+
+    eventRenderer({ eventRecord, renderData }) {
+        if (eventRecord.effortRemaining == null || eventRecord.effortRemaining === 0) {
+            renderData.eventColor = 'gray';
+            renderData.cls.add('b-inactive');
+        }
+        return eventRecord.name;
+    },
+
     columns    : [
         {
             type       : 'tree',
@@ -80,10 +89,14 @@ export const schedulerproConfig = {
                 const clientName   = eventRecord.clientName || '';
                 const projectName  = eventRecord.projectName || '';
                 const projectNum   = eventRecord.projectNumber || '';
-                const projectLabel = projectNum ? `${projectNum} - ${projectName}` : projectName;
+                const projectLabel = projectNum ? `${projectNum}: ${projectName}` : projectName;
+                const taskNum      = eventRecord.taskNumber || '';
+                const taskName     = eventRecord.name || '';
+                const taskLabel    = taskNum ? `${taskNum}: ${taskName}` : taskName;
                 return `<div class="b-sch-event-tooltip">
                     <div><strong>Client:</strong> ${clientName}</div>
                     <div><strong>Project:</strong> ${projectLabel}</div>
+                    <div><strong>Task:</strong> ${taskLabel}</div>
                     <div><strong>Start:</strong> ${start}</div>
                     <div><strong>End:</strong> ${end}</div>
                     <div><strong>Effort:</strong> ${effort}</div>

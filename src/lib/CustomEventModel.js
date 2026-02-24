@@ -52,6 +52,15 @@ export default class CustomEventModel extends EventModel {
             }
         },
         {
+            name    : 'taskNumber',
+            type    : 'string',
+            convert : (value, data) => {
+                return data?.msdyn_taskid?.ws_projecttasknumber
+                    || value
+                    || '';
+            }
+        },
+        {
             name    : 'effortRemaining',
             type    : 'number',
             convert : (value, data) => {

@@ -84,7 +84,8 @@ async function displayUI() {
             projectNumber : e.projectNumber,
             clientName       : e.clientName,
             effort           : e.effort,
-            effortRemaining  : e.effortRemaining
+            effortRemaining  : e.effortRemaining,
+            taskNumber       : e.taskNumber
         });
 
         // Units lives on the AssignmentModel, not the EventModel.
@@ -358,7 +359,8 @@ async function displayUI() {
                         projectNumber   : e.projectNumber,
                         clientName      : e.clientName,
                         effort          : e.effort,
-                        effortRemaining : e.effortRemaining
+                        effortRemaining : e.effortRemaining,
+                        taskNumber      : e.taskNumber
                     });
 
                     newAssignmentRecords.push({

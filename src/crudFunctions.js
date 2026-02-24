@@ -98,7 +98,7 @@ export async function getAssignments() {
     const response = await fetch(
         `${orgUrl}/api/data/${apiVersion}/msdyn_resourceassignments?` +
         `$select=msdyn_resourceassignmentid,msdyn_name,msdyn_start,msdyn_finish,msdyn_effort,_msdyn_bookableresourceid_value,_msdyn_taskid_value,_msdyn_projectid_value&` +
-        `$expand=msdyn_projectid($select=ws_projectid,msdyn_subject,_msdyn_customer_value),msdyn_taskid($select=msdyn_effortremaining)&` +
+        `$expand=msdyn_projectid($select=ws_projectid,msdyn_subject,_msdyn_customer_value),msdyn_taskid($select=msdyn_effortremaining,ws_projecttasknumber)&` +
         `$filter=msdyn_projectid/statecode eq 0`,
         {
             headers : {

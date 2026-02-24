@@ -28,6 +28,22 @@ html {
   font-size      : 14px;
 }
 
+/* Grey out scheduler bars with no effort remaining */
+.b-sch-event-wrap.b-inactive {
+  opacity : 0.6;
+}
+
+.b-sch-event.b-inactive.b-has-content {
+  background-image : repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 4px,
+    rgba(204, 204, 204, 0.5) 4px,
+    rgba(204, 204, 204, 0.5) 8px
+  ) !important;
+  background-color : #efefef !important;
+}
+
 #histogram {
   display        : flex;
   flex-direction : column;
