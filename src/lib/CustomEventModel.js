@@ -10,6 +10,9 @@ export default class CustomEventModel extends EventModel {
         { name : 'startDate', dataSource : 'msdyn_start', type : 'date' },
         { name : 'endDate', dataSource : 'msdyn_finish', type : 'date' },
         { name : 'durationUnit', defaultValue : 'hour' },
+        // Prevent the engine from deriving endDate from startDate + duration.
+        // We supply both dates from D365 and don't want the engine to move them.
+        { name : 'manuallyScheduled', defaultValue : true },
         { name : 'effort', dataSource : 'msdyn_effort', type : 'number' },
         { name : 'resourceId', dataSource : '_msdyn_bookableresourceid_value' },
         {
@@ -74,6 +77,9 @@ export default class CustomEventModel extends EventModel {
                 const raw = data?.['@odata.etag'];
                 return raw ? raw.replace(/\\"/g, '"') : null;
             }
-        }
+        },
+        // Stores the original D365 start date so we can restore it when toggling
+        // effort-remaining mode off (the visible startDate may be clamped to today).
+        { name : 'originalStartDate', type : 'date' }
     ];
 }

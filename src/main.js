@@ -27,6 +27,11 @@ let useRemainingEffort = import.meta.env.VITE_USE_EFFORT_REMAINING === 'true';
     }
 }
 
+// When using effort remaining mode, offset the start date by this many days in the past.
+// Set to 0 for current behavior (reset to today), positive values go N days into the past,
+// negative values go N days into the future.
+const EFFORT_REMAINING_OFFSET_DAYS = 7;
+
 async function displayUI() {
     console.log('[main] displayUI() called');
     const account = sessionStorage.getItem('msalAccount');
@@ -75,12 +80,29 @@ async function displayUI() {
     const HOURS_PER_DAY = 8;
 
     /**
+     * Return the later of `date` and the offset date (midnight-normalised).
+     * When using remaining effort we assume no past work remains, so the
+     * effective start of an assignment is at earliest EFFORT_REMAINING_OFFSET_DAYS days ago.
+     */
+    function clampStartToToday(date) {
+        const offsetDate = new Date();
+        offsetDate.setHours(0, 0, 0, 0);
+        offsetDate.setDate(offsetDate.getDate() - EFFORT_REMAINING_OFFSET_DAYS);
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() < offsetDate.getTime() ? offsetDate : d;
+    }
+
+    /**
      * Calculate allocation % (units) for a single assignment.
      * Reads the module-level `useRemainingEffort` flag to choose the effort source.
+     * When remaining-effort mode is active the start date is clamped to today so
+     * effort is spread only over future working days.
      */
     function calcUnits(effort, effortRemaining, startDate, endDate) {
         const effortSource = useRemainingEffort ? (effortRemaining ?? 0) : effort;
-        const workingDays  = countWeekdays(startDate, endDate);
+        const effectiveStart = useRemainingEffort ? clampStartToToday(startDate) : startDate;
+        const workingDays  = countWeekdays(effectiveStart, endDate);
         const workingHours = workingDays * HOURS_PER_DAY;
         return effortSource > 0 ? (effortSource / workingHours) * 100 : 0;
     }
@@ -92,20 +114,35 @@ async function displayUI() {
     assignmentsData.value.forEach((raw) => {
         const e = new CustomEventModel(raw);
 
+        // Only shift start date for incomplete assignments with remaining effort.
+        // Completed assignments (effortRemaining === 0) keep their original D365 dates.
+        let effectiveStart = e.startDate;
+        if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
+            effectiveStart = clampStartToToday(e.startDate);
+        }
+        // Ensure start never exceeds end to avoid scheduling errors
+        if (new Date(effectiveStart) > new Date(e.endDate)) {
+            effectiveStart = e.endDate;
+        }
         // Calculate allocation % so the histogram shows correct effort per tick.
         const units = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate);
-
+        // Calculate duration in hours (durationUnit is 'hour')
+        const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
         resolvedEvents.push({
-            id              : e.id,
-            startDate       : e.startDate,
-            endDate         : e.endDate,
-            name            : e.name,
-            projectName     : e.projectName,
-            projectNumber   : e.projectNumber,
-            clientName      : e.clientName,
-            effort          : e.effort,
-            effortRemaining : e.effortRemaining,
-            taskNumber      : e.taskNumber
+            id                : e.id,
+            startDate         : effectiveStart,
+            originalStartDate : e.startDate,
+            endDate           : e.endDate,
+            duration          : durationHours,
+            durationUnit      : 'hour',
+            name              : e.name,
+            projectName       : e.projectName,
+            projectNumber     : e.projectNumber,
+            clientName        : e.clientName,
+            effort            : e.effort,
+            effortRemaining   : e.effortRemaining,
+            taskNumber        : e.taskNumber,
+            manuallyScheduled : true
         });
 
         // Units lives on the AssignmentModel, not the EventModel.
@@ -311,6 +348,9 @@ async function displayUI() {
                     id       : 'practiceFilter',
                     filterBy : (r) => value.includes(r.practiceName)
                 });
+
+                // Auto-expand filtered tree
+                scheduler.expandAll();
             }
 
             // Update role filter options based on selected practices
@@ -352,6 +392,9 @@ async function displayUI() {
                     id       : 'roleFilter',
                     filterBy : (r) => value.includes(r.roleName)
                 });
+
+                // Auto-expand filtered tree
+                scheduler.expandAll();
             }
 
             // Update resource filter options based on selected roles
@@ -400,6 +443,13 @@ async function displayUI() {
                     id       : 'resourceFilter',
                     filterBy : (r) => value.includes(r.name)
                 });
+
+                // Auto-expand filtered tree
+                scheduler.expandAll();
+            }
+            else {
+                // When no resources selected, collapse all (optional)
+                // scheduler.getGrid().collapseAll();
             }
 
             writeFilterParams();
@@ -426,21 +476,50 @@ async function displayUI() {
         effortToggle.on('change', async({ checked }) => {
             useRemainingEffort = checked;
 
-            // Recalculate units for every existing assignment
+            // Shift event start dates: clamp to today when remaining-effort is
+            // active, or restore the original D365 start date when toggled off.
+            // Skip completed assignments (effortRemaining === 0) – they keep D365 dates.
+            // IMPORTANT: batch-set startDate + duration together so the engine
+            // doesn't recalculate endDate from the old duration.
             const { assignmentStore, eventStore } = scheduler.project;
+            eventStore.forEach((event) => {
+                if (event.originalStartDate) {
+                    const d365End = event.endDate;
+                    let newStart;
+                    if (checked && (event.effortRemaining ?? 0) > 0) {
+                        newStart = clampStartToToday(event.originalStartDate);
+                        // Ensure start never exceeds end
+                        if (new Date(newStart) > new Date(d365End)) {
+                            newStart = d365End;
+                        }
+                    }
+                    else {
+                        newStart = event.originalStartDate;
+                    }
+                    const durationHours = (new Date(d365End) - new Date(newStart)) / (1000 * 60 * 60);
+                    event.set({
+                        startDate : newStart,
+                        duration  : durationHours,
+                        endDate   : d365End
+                    });
+                }
+            });
+
+            // Recalculate units for every existing assignment
             assignmentStore.forEach((assignment) => {
                 const event = eventStore.getById(assignment.event?.id ?? assignment.event);
                 if (event) {
                     assignment.units = calcUnits(
                         event.effort,
                         event.effortRemaining,
-                        event.startDate,
+                        event.originalStartDate || event.startDate,
                         event.endDate
                     );
                 }
             });
 
             await scheduler.project.commitAsync();
+            // Debug: Log all event records after toggle
             writeFilterParams();
             console.log(`[main] Histogram switched to ${checked ? 'remaining effort' : 'total effort'}`);
         });
@@ -473,19 +552,33 @@ async function displayUI() {
 
                 newAssignments.value.forEach((raw) => {
                     const e = new CustomEventModel(raw);
+                    // Only shift start for incomplete assignments with remaining effort
+                    let effectiveStart = e.startDate;
+                    if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
+                        effectiveStart = clampStartToToday(e.startDate);
+                    }
+                    // Ensure start never exceeds end
+                    if (new Date(effectiveStart) > new Date(e.endDate)) {
+                        effectiveStart = e.endDate;
+                    }
                     const units = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate);
-
+                    // Calculate duration in hours (durationUnit is 'hour')
+                    const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
                     newResolvedEvents.push({
-                        id              : e.id,
-                        startDate       : e.startDate,
-                        endDate         : e.endDate,
-                        name            : e.name,
-                        projectName     : e.projectName,
-                        projectNumber   : e.projectNumber,
-                        clientName      : e.clientName,
-                        effort          : e.effort,
-                        effortRemaining : e.effortRemaining,
-                        taskNumber      : e.taskNumber
+                        id                : e.id,
+                        startDate         : effectiveStart,
+                        originalStartDate : e.startDate,
+                        endDate           : e.endDate,
+                        duration          : durationHours,
+                        durationUnit      : 'hour',
+                        name              : e.name,
+                        projectName       : e.projectName,
+                        projectNumber     : e.projectNumber,
+                        clientName        : e.clientName,
+                        effort            : e.effort,
+                        effortRemaining   : e.effortRemaining,
+                        taskNumber        : e.taskNumber,
+                        manuallyScheduled : true
                     });
 
                     newAssignmentRecords.push({
