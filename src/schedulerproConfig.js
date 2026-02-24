@@ -61,7 +61,7 @@ export const schedulerproConfig = {
         return eventRecord.name;
     },
 
-    columns    : [
+    columns : [
         {
             type       : 'tree',
             text       : 'Name',
@@ -147,6 +147,30 @@ export const schedulerproConfig = {
                 listItemTpl(record) {
                     return record.text;
                 }
+            },
+            resourceFilter : {
+                type           : 'combo',
+                ref            : 'resourceFilter',
+                label          : 'Resource',
+                multiSelect    : true,
+                editable       : true,
+                clearable      : true,
+                width          : 350,
+                placeholder    : 'All Resources',
+                items          : [],
+                chipView       : { closable : true },
+                filterOperator : '*',
+                listItemTpl(record) {
+                    return record.text;
+                }
+            },
+            effortToggle : {
+                type          : 'slidetoggle',
+                ref           : 'effortToggle',
+                label         : 'Use Effort Remaining ',
+                labelPosition : 'before',
+                tooltip       : 'Toggle histogram between total effort and remaining effort',
+                checked       : false
             },
             spacer        : { type : 'widget', flex : 1 },
             signoutButton : {

@@ -25,6 +25,12 @@ export const histogramConfig = {
     showBarTip  : true,
     showMaxEffort : true,
 
+    // Scale column ensures bars are sized proportionally to the resource's
+    // available capacity (from its calendar), not just the peak data value.
+    scaleColumn : {
+        hidden : true          // scale labels not needed but keeps proportional sizing
+    },
+
     columns : [
         {
             type  : 'tree',

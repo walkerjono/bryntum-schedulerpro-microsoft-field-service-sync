@@ -29,11 +29,11 @@ html {
 }
 
 /* Grey out scheduler bars with no effort remaining */
-.b-sch-event-wrap.b-inactive {
+.b-sch-event-wrap:has(.b-sch-event.b-inactive) {
   opacity : 0.6;
 }
 
-.b-sch-event.b-inactive.b-has-content {
+.b-sch-event.b-inactive {
   background-image : repeating-linear-gradient(
     -45deg,
     transparent,

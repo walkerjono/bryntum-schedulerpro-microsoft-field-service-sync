@@ -212,4 +212,6 @@ The Name column (400px, read-only) renders context-aware HTML:
 1. [x] Add Practice Filter
 1. [ ] Add Exclude MSC filter - TBC on field to use
 1. [x] Add grid refresh button
-1. [ ] add effort remaining from task. display in tooltip, grey out scheduler bars when effort remaining = 0, add page toggle to update historgram between effort/remaining
+1. [x] add effort remaining from task. display in tooltip, grey out scheduler bars when effort remaining = 0, add page toggle to update historgram between effort/remaining
+1. [ ] fix histogram fill
+1. [ ] fix histogram conditional formatting (traffic light)

@@ -16,6 +16,9 @@ import CustomResourceModel, {
 const signInLink = document.getElementById('signin');
 const loaderContainer = document.querySelector('.loader-container');
 
+// Default from env var; may be overridden by URL param or runtime toggle
+let useRemainingEffort = import.meta.env.VITE_USE_EFFORT_REMAINING === 'true';
+
 async function displayUI() {
     console.log('[main] displayUI() called');
     const account = sessionStorage.getItem('msalAccount');
@@ -63,6 +66,17 @@ async function displayUI() {
 
     const HOURS_PER_DAY = 8;
 
+    /**
+     * Calculate allocation % (units) for a single assignment.
+     * Reads the module-level `useRemainingEffort` flag to choose the effort source.
+     */
+    function calcUnits(effort, effortRemaining, startDate, endDate) {
+        const effortSource = useRemainingEffort ? (effortRemaining ?? 0) : effort;
+        const workingDays  = countWeekdays(startDate, endDate);
+        const workingHours = workingDays * HOURS_PER_DAY;
+        return effortSource > 0 ? (effortSource / workingHours) * 100 : 0;
+    }
+
     // ── Resolve events via temporary CustomEventModel (runs convert fns) ─
     const resolvedEvents = [];
     const assignments = [];
@@ -71,21 +85,19 @@ async function displayUI() {
         const e = new CustomEventModel(raw);
 
         // Calculate allocation % so the histogram shows correct effort per tick.
-        const workingDays = countWeekdays(e.startDate, e.endDate);
-        const workingHours = workingDays * HOURS_PER_DAY;
-        const units = e.effort > 0 ? (e.effort / workingHours) * 100 : 0;
+        const units = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate);
 
         resolvedEvents.push({
-            id            : e.id,
-            startDate     : e.startDate,
-            endDate       : e.endDate,
-            name          : e.name,
-            projectName   : e.projectName,
-            projectNumber : e.projectNumber,
-            clientName       : e.clientName,
-            effort           : e.effort,
-            effortRemaining  : e.effortRemaining,
-            taskNumber       : e.taskNumber
+            id              : e.id,
+            startDate       : e.startDate,
+            endDate         : e.endDate,
+            name            : e.name,
+            projectName     : e.projectName,
+            projectNumber   : e.projectNumber,
+            clientName      : e.clientName,
+            effort          : e.effort,
+            effortRemaining : e.effortRemaining,
+            taskNumber      : e.taskNumber
         });
 
         // Units lives on the AssignmentModel, not the EventModel.
@@ -216,16 +228,20 @@ async function displayUI() {
     // ── Helper: sync filter values to/from URL query parameters ────────
     function readFilterParams() {
         const params = new URLSearchParams(window.location.search);
+        const effortParam = params.get('useRemainingEffort');
         return {
-            practices : params.get('practice')?.split(',').filter(Boolean) || [],
-            roles     : params.get('role')?.split(',').filter(Boolean) || []
+            practices          : params.get('practice')?.split(',').filter(Boolean) || [],
+            roles              : params.get('role')?.split(',').filter(Boolean) || [],
+            resources          : params.get('resource')?.split(',').filter(Boolean) || [],
+            useRemainingEffort : effortParam != null ? effortParam === 'true' : null
         };
     }
 
     function writeFilterParams() {
-        const params  = new URLSearchParams(window.location.search);
-        const pValues = practiceCombo?.value;
-        const rValues = roleCombo?.value;
+        const params   = new URLSearchParams(window.location.search);
+        const pValues  = practiceCombo?.value;
+        const rValues  = roleCombo?.value;
+        const resValues = resourceCombo?.value;
 
         if (pValues && pValues.length > 0) {
             params.set('practice', pValues.join(','));
@@ -241,6 +257,20 @@ async function displayUI() {
             params.delete('role');
         }
 
+        if (resValues && resValues.length > 0) {
+            params.set('resource', resValues.join(','));
+        }
+        else {
+            params.delete('resource');
+        }
+
+        if (useRemainingEffort) {
+            params.set('useRemainingEffort', 'true');
+        }
+        else {
+            params.delete('useRemainingEffort');
+        }
+
         const qs = params.toString();
         const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
         window.history.replaceState(null, '', url);
@@ -248,8 +278,14 @@ async function displayUI() {
 
     const initialParams = readFilterParams();
 
-    // ── Role filter (declare early so practice filter can reference it) ──
-    const roleCombo = scheduler.widgetMap.roleFilter;
+    // Override env-var default with URL param if present
+    if (initialParams.useRemainingEffort != null) {
+        useRemainingEffort = initialParams.useRemainingEffort;
+    }
+
+    // ── Filter combos (declare early so cascading references work) ────
+    const roleCombo     = scheduler.widgetMap.roleFilter;
+    const resourceCombo = scheduler.widgetMap.resourceFilter;
 
     // ── Practice filter ─────────────────────────────────────────────────
     const practiceCombo = scheduler.widgetMap.practiceFilter;
@@ -286,6 +322,9 @@ async function displayUI() {
                 }
             }
 
+            // Update resource filter options based on selected practices
+            updateResourceFilterItems();
+
             writeFilterParams();
         });
     }
@@ -307,6 +346,54 @@ async function displayUI() {
                 });
             }
 
+            // Update resource filter options based on selected roles
+            updateResourceFilterItems();
+
+            writeFilterParams();
+        });
+    }
+
+    // ── Helper: rebuild resource filter items based on active practice/role selections ──
+    function updateResourceFilterItems() {
+        if (!resourceCombo) return;
+        let filtered = flatResources;
+        const pv = practiceCombo?.value;
+        const rv = roleCombo?.value;
+        if (pv && pv.length > 0) {
+            filtered = filtered.filter((r) => pv.includes(r.practiceName));
+        }
+        if (rv && rv.length > 0) {
+            filtered = filtered.filter((r) => rv.includes(r.roleName));
+        }
+        const resourceNames = [
+            ...new Set(filtered.map((r) => r.name).filter(Boolean))
+        ].sort();
+        resourceCombo.items = resourceNames.map((n) => ({ value : n, text : n }));
+
+        // Clear any resource selections that are no longer valid
+        if (resourceCombo.value && resourceCombo.value.length > 0) {
+            const validValues = resourceCombo.value.filter((v) => resourceNames.includes(v));
+            resourceCombo.value = validValues.length > 0 ? validValues : null;
+        }
+    }
+
+    // ── Resource filter listener ────────────────────────────────────────
+    if (resourceCombo) {
+        const resourceNames = [
+            ...new Set(flatResources.map((r) => r.name).filter(Boolean))
+        ].sort();
+        resourceCombo.items = resourceNames.map((n) => ({ value : n, text : n }));
+
+        resourceCombo.on('change', ({ value }) => {
+            const store = scheduler.project.resourceStore;
+            store.removeFilter('resourceFilter');
+            if (value && value.length > 0) {
+                store.filter({
+                    id       : 'resourceFilter',
+                    filterBy : (r) => value.includes(r.name)
+                });
+            }
+
             writeFilterParams();
         });
     }
@@ -317,6 +404,38 @@ async function displayUI() {
     }
     if (initialParams.roles.length > 0 && roleCombo) {
         roleCombo.value = initialParams.roles;
+    }
+    if (initialParams.resources.length > 0 && resourceCombo) {
+        resourceCombo.value = initialParams.resources;
+    }
+
+    // ── Effort / Remaining Effort toggle ────────────────────────────────
+    const effortToggle = scheduler.widgetMap.effortToggle;
+    if (effortToggle) {
+        // Restore toggle state from URL param (or env-var default already applied)
+        effortToggle.checked = useRemainingEffort;
+
+        effortToggle.on('change', async({ checked }) => {
+            useRemainingEffort = checked;
+
+            // Recalculate units for every existing assignment
+            const { assignmentStore, eventStore } = scheduler.project;
+            assignmentStore.forEach((assignment) => {
+                const event = eventStore.getById(assignment.event?.id ?? assignment.event);
+                if (event) {
+                    assignment.units = calcUnits(
+                        event.effort,
+                        event.effortRemaining,
+                        event.startDate,
+                        event.endDate
+                    );
+                }
+            });
+
+            await scheduler.project.commitAsync();
+            writeFilterParams();
+            console.log(`[main] Histogram switched to ${checked ? 'remaining effort' : 'total effort'}`);
+        });
     }
 
     // ── Refresh button ──────────────────────────────────────────────────
@@ -346,9 +465,7 @@ async function displayUI() {
 
                 newAssignments.value.forEach((raw) => {
                     const e = new CustomEventModel(raw);
-                    const workingDays = countWeekdays(e.startDate, e.endDate);
-                    const workingHours = workingDays * HOURS_PER_DAY;
-                    const units = e.effort > 0 ? (e.effort / workingHours) * 100 : 0;
+                    const units = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate);
 
                     newResolvedEvents.push({
                         id              : e.id,
@@ -432,6 +549,9 @@ async function displayUI() {
                     ].sort();
                     roleCombo.items = updatedRoles.map((r) => ({ value : r, text : r }));
                 }
+
+                // Refresh resource filter options
+                updateResourceFilterItems();
 
                 console.log('[main] Data refreshed successfully');
             }
