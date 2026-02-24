@@ -204,6 +204,6 @@ The Name column (400px, read-only) renders context-aware HTML:
 
 ## TODO: changes
 
-- [ ] Add effort to rollover
+- [x] Add effort to rollover
 - [ ] Add project name to assignment bar
 - [ ] Remove
