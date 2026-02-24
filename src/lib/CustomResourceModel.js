@@ -42,42 +42,23 @@ export async function loadDefaultImage() {
     }
 }
 
-// Custom resource model for D365 Field Service bookable resources
+/**
+ * Custom resource model for D365 Field Service bookable resources.
+ *
+ * Data is pre-processed in main.js — fields are plain values, no convert needed.
+ * TreeGroup uses practiceName & roleName to build Practice → Role → Resource tree.
+ */
 export default class CustomResourceModel extends ResourceModel {
     static $name = 'CustomResourceModel';
 
     static fields = [
-        { name : 'id', dataSource : 'bookableresourceid' },
-        { name : 'bookableresourceid', type : 'string' },
-        {
-            name    : 'imageUrl',
-            type    : 'string',
-            convert : (_value, data) => {
-                const entityImage = data.ContactId?.entityimage;
-                if (entityImage) {
-                    // entityimage is base64 encoded, convert to data URL
-                    return `data:image/jpeg;base64,${entityImage}`;
-                }
-                // Return the default resource image if available
-                return defaultResourceImageBase64;
-            }
-        },
-        {
-            name    : 'etag',
-            type    : 'string',
-            convert : (_value, data) => {
-                const raw = data['@odata.etag'];
-                return raw ? raw.replace(/\\"/g, '"') : null;
-            }
-        },
-        // Tree grouping fields (used by synthetic nodes)
-        { name : 'isLeafNode', type : 'boolean', defaultValue : true },
-        { name : 'isProject', type : 'boolean', defaultValue : false },
-        { name : 'isPractice', type : 'boolean', defaultValue : false },
-        { name : 'isRole', type : 'boolean', defaultValue : false },
-        { name : 'projectName', type : 'string', defaultValue : '' },
-        { name : 'practiceName', type : 'string', defaultValue : '' },
-        { name : 'roleName', type : 'string', defaultValue : '' },
-        { name : 'eventColor', type : 'string' }
+        { name : 'imageUrl', type : 'string' },
+        // Fields used by TreeGroup for Practice → Role grouping
+        { name : 'practiceName', type : 'string', defaultValue : 'Unassigned' },
+        { name : 'roleName', type : 'string', defaultValue : 'Unassigned' },
+        // Working hours per week (from D365 ws_workinghours)
+        { name : 'workingHours', type : 'number', defaultValue : 40 },
+        // Calendar reference – links resource to a working-time calendar
+        { name : 'calendar', type : 'string', defaultValue : 'business' }
     ];
 }

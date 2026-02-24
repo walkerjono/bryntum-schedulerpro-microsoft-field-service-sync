@@ -13,12 +13,28 @@ html {
   font-family: Poppins, "Open Sans", Helvetica, Arial, sans-serif;
 }
 
+#content {
+  display        : flex;
+  flex-direction : column;
+  height         : 100vh;
+}
+
 #app {
   margin         : 0;
   display        : flex;
   flex-direction : column;
-  height         : 100vh;
+  flex           : 1 1 60%;
+  min-height     : 0;
   font-size      : 14px;
+}
+
+#histogram {
+  display        : flex;
+  flex-direction : column;
+  flex           : 1 1 40%;
+  min-height     : 0;
+  font-size      : 14px;
+  border-top     : 2px solid #ddd;
 }
 
 main {
@@ -56,6 +72,15 @@ main {
 
 @-webkit-keyframes spin {
   to {transform: rotate(360deg); }
+}
+
+/* Histogram bar coloring */
+.b-histogram-bar.b-overallocated {
+  background: #F87171 !important;
+}
+
+.b-histogram-bar.b-underallocated {
+  background: #6EE7B7 !important;
 }
 
 .b-sch-horizontal .b-sch-event-wrap .b-sch-event-buffer-before:not(.b-buffer-thin){

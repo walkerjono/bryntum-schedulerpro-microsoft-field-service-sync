@@ -2,63 +2,21 @@ import { signOut } from './auth.js';
 
 const today = new Date();
 
+// Shared project color palette
+export const PROJECT_COLORS = [
+    '#4991E5', '#E5A449', '#7BC86C', '#CD5A91', '#A37EDE',
+    '#29CCB1', '#F87171', '#FBBF24', '#6EE7B7', '#93C5FD',
+    '#C084FC', '#FB923C', '#5EEAD4', '#FCA5A5', '#86EFAC'
+];
+
 /**
- * Renders a tree-aware name cell.
- * Parent nodes: bold text with optional avatar (resources) or folder icon (projects).
- * Leaf nodes: avatar + name (resources) or color-coded project badge (projects).
+ * Renders the name cell for leaf resource rows (actual resources).
+ * Generated TreeGroup parents use parentRenderer instead.
  */
 function nameRenderer({ record }) {
-    const name = record.name || '';
+    const name     = record.name || '';
     const imageUrl = record.imageUrl;
-    const isLeaf = record.isLeaf;
-    const isProject = record.data?.isProject;
-    const eventColor = record.data?.eventColor;
 
-    const isPractice = record.data?.isPractice;
-    const isRole = record.data?.isRole;
-
-    // Parent node
-    if (!isLeaf) {
-        // Practice parent (top-level group in resource-first mode)
-        if (isPractice) {
-            return `<div style="display: flex; align-items: center; gap: 8px;">
-                <i class="fa fa-users" style="font-size: 16px; color: #666; width: 20px; text-align: center;"></i>
-                <strong>${name}</strong>
-            </div>`;
-        }
-        // Role parent (second-level group in resource-first mode)
-        if (isRole) {
-            return `<div style="display: flex; align-items: center; gap: 8px;">
-                <i class="fa fa-briefcase" style="font-size: 14px; color: #888; width: 20px; text-align: center;"></i>
-                <strong>${name}</strong>
-            </div>`;
-        }
-        if (imageUrl) {
-            // Resource parent (resource-first mode)
-            return `<div style="display: flex; align-items: center; gap: 8px;">
-                <img src="${imageUrl}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
-                <strong>${name}</strong>
-            </div>`;
-        }
-        // Project parent (project-first mode)
-        const color = eventColor || '#888';
-        return `<div style="display: flex; align-items: center; gap: 8px;">
-            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color}"></span>
-            <strong>${name}</strong>
-        </div>`;
-    }
-
-    // Leaf node
-    if (isProject) {
-        // Project leaf (resource-first mode)
-        const color = eventColor || '#888';
-        return `<div style="display: flex; align-items: center; gap: 8px; padding-left: 4px;">
-            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color}"></span>
-            <span>${name}</span>
-        </div>`;
-    }
-
-    // Resource leaf (project-first mode)
     if (imageUrl) {
         return `<div style="display: flex; align-items: center; gap: 8px;">
             <img src="${imageUrl}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
@@ -66,9 +24,26 @@ function nameRenderer({ record }) {
         </div>`;
     }
 
-    return `<div style="display: flex; align-items: center; gap: 8px;">
-        <span>${name}</span>
-    </div>`;
+    return `<span>${name}</span>`;
+}
+
+/**
+ * Renders the name cell for generated TreeGroup parent rows (Practice / Role).
+ */
+function treeGroupParentRenderer({ field, value }) {
+    if (field === 'practiceName') {
+        return `<div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa fa-users" style="font-size: 16px; color: #666; width: 20px; text-align: center;"></i>
+            <strong>${value}</strong>
+        </div>`;
+    }
+    if (field === 'roleName') {
+        return `<div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa fa-briefcase" style="font-size: 14px; color: #888; width: 20px; text-align: center;"></i>
+            <strong>${value}</strong>
+        </div>`;
+    }
+    return `<strong>${value}</strong>`;
 }
 
 export const schedulerproConfig = {
@@ -92,25 +67,27 @@ export const schedulerproConfig = {
     features : {
         dependencies : false,
         taskEdit     : true,
-        tree         : true
-        // rollups is a Gantt-only feature, not available in SchedulerPro
+        tree         : true,
+        eventTooltip : {
+            template({ eventRecord }) {
+                const start  = eventRecord.startDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.startDate) : '';
+                const end    = eventRecord.endDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.endDate) : '';
+                const effort = eventRecord.effort != null ? `${eventRecord.effort} hrs` : '';
+                return `<div class="b-sch-event-tooltip">
+                    <div><strong>Start:</strong> ${start}</div>
+                    <div><strong>End:</strong> ${end}</div>
+                    <div><strong>Effort:</strong> ${effort}</div>
+                </div>`;
+            }
+        },
+        treeGroup    : {
+            levels         : ['practiceName', 'roleName'],
+            expandParents  : false,
+            parentRenderer : treeGroupParentRenderer
+        }
     },
     tbar : {
         items : {
-            groupToggle : {
-                type       : 'button',
-                text       : 'Group by: Resource',
-                icon       : 'fa fa-sitemap',
-                toggleable : true,
-                pressed    : false,
-                cls        : 'b-raised',
-                onToggle({ pressed }) {
-                    // Callback is set dynamically in main.js via window._onGroupToggle
-                    if (window._onGroupToggle) {
-                        window._onGroupToggle(pressed);
-                    }
-                }
-            },
             signoutButton : {
                 text  : 'Signout',
                 icon  : 'fa fa-sign-out',

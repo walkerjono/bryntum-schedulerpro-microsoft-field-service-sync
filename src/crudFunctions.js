@@ -7,9 +7,15 @@ export async function getResources() {
     console.log('[crud] Fetching resources…');
     const token = await getToken();
 
+    // TODO: temp limit to a single bookable resource (CV)
+    var bid = '7a4c4e50-f75e-ed11-9562-00224893363e';
+
+    // only Active bookable resources of type "User" (resourcetype eq 3) are relevant for scheduling
     const response = await fetch(
         `${orgUrl}/api/data/${apiVersion}/bookableresources?` +
-        `$select=bookableresourceid,name&` +
+        `$filter=statecode eq 0 and resourcetype eq 3&` +
+        //`$filter=statecode eq 0 and resourcetype eq 3 and bookableresourceid eq ${bid}&` +
+        `$select=bookableresourceid,name,ws_workinghours&` +
         `$expand=ContactId($select=contactid,entityimage)`,
         {
             headers : {

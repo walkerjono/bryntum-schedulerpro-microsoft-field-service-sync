@@ -201,3 +201,9 @@ The Name column (400px, read-only) renders context-aware HTML:
 1. **Hardcoded CRM region** — API URLs use `.crm6.dynamics.com` (Australia region)
 1. **No tests** — No unit or integration tests
 1. **localhost redirect only** — MSAL redirect URI hardcoded to `http://localhost:5173`
+
+## TODO: changes
+
+- [ ] Add effort to rollover
+- [ ] Add project name to assignment bar
+- [ ] Remove
