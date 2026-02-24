@@ -33,11 +33,12 @@ It is based on the following [Bryntum Example](https://bryntum.com/blog/how-to-c
 
 ### Environment Variables (required in `.env`)
 
-| Variable                         | Purpose                                                    |
-| -------------------------------- | ---------------------------------------------------------- |
-| `VITE_MICROSOFT_ENTRA_APP_ID`    | Entra app registration client ID                           |
-| `VITE_MICROSOFT_ENTRA_TENANT_ID` | Entra tenant ID                                            |
-| `VITE_MICROSOFT_DYNAMICS_ORG_ID` | Dynamics 365 org identifier (used in API URL construction) |
+| Variable                         | Purpose                                                                       |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| `VITE_MICROSOFT_ENTRA_APP_ID`    | Entra app registration client ID                                              |
+| `VITE_MICROSOFT_ENTRA_TENANT_ID` | Entra tenant ID                                                               |
+| `VITE_MICROSOFT_DYNAMICS_ORG_ID` | Dynamics 365 org identifier (used in API URL construction)                    |
+| `VITE_USE_EFFORT_REMAINING`      | When `true`, reads effort from `msdyn_projecttask.msdyn_effortremaining` instead of assignment-level `msdyn_effort` |
 
 ---
 
@@ -64,7 +65,8 @@ Fetched via `getAssignments()`. Represents task assignments (events on the timel
 | `msdyn_resourceassignmentid`         | `id`            | Primary key                                      |
 | `msdyn_start`                        | `startDate`     | Assignment start                                 |
 | `msdyn_finish`                       | `endDate`       | Assignment end                                   |
-| `msdyn_effort`                       | `effort`        | Effort in hours                                  |
+| `msdyn_effort`                       | `effort`        | Effort in hours (default source)                 |
+| `msdyn_taskid.msdyn_effortremaining` | `effort`        | Remaining effort from project task (when `VITE_USE_EFFORT_REMAINING=true`, via `$expand=msdyn_taskid`) |
 | `_msdyn_bookableresourceid_value`    | `resourceId`    | FK to bookable resource                          |
 | `_msdyn_taskid_value` (formatted)    | `name`          | Task display name (via OData annotation)         |
 | `_msdyn_projectid_value` (formatted) | `projectName`   | Project display name (via OData annotation)      |
@@ -205,5 +207,8 @@ The Name column (400px, read-only) renders context-aware HTML:
 ## TODO: changes
 
 - [x] Add effort to rollover
-- [ ] Add project name to assignment bar
-- [ ] Remove
+- [x] Add project name to assignment bar
+- [ ] Add Practice Filter
+- [ ] Add Exclude MSC filter - TBC on field to use
+- [ ] Add grid refresh button
+- [ ] add effort remaining from task. display in tooltip, grey out scheduler bars when effort remaining = 0, add page toggle to update historgram between effort/remaining

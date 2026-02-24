@@ -48,9 +48,9 @@ function treeGroupParentRenderer({ field, value }) {
 
 export const schedulerproConfig = {
     appendTo   : 'app',
-    startDate  : new Date(today.getFullYear(), today.getMonth(), today.getDate()),
-    endDate    : new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14),
-    viewPreset : 'weekAndDay',
+    startDate  : new Date(today.getFullYear(), today.getMonth(), 1),
+    endDate    : new Date(today.getFullYear(), today.getMonth() + 4, 0),
+    viewPreset : 'weekAndMonth',
     barMargin  : 5,
     columns    : [
         {
@@ -72,8 +72,14 @@ export const schedulerproConfig = {
             template({ eventRecord }) {
                 const start  = eventRecord.startDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.startDate) : '';
                 const end    = eventRecord.endDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.endDate) : '';
-                const effort = eventRecord.effort != null ? `${eventRecord.effort} hrs` : '';
+                const effort      = eventRecord.effort != null ? `${eventRecord.effort} hrs` : '';
+                const clientName   = eventRecord.clientName || '';
+                const projectName  = eventRecord.projectName || '';
+                const projectNum   = eventRecord.projectNumber || '';
+                const projectLabel = projectNum ? `${projectNum} - ${projectName}` : projectName;
                 return `<div class="b-sch-event-tooltip">
+                    <div><strong>Client:</strong> ${clientName}</div>
+                    <div><strong>Project:</strong> ${projectLabel}</div>
                     <div><strong>Start:</strong> ${start}</div>
                     <div><strong>End:</strong> ${end}</div>
                     <div><strong>Effort:</strong> ${effort}</div>

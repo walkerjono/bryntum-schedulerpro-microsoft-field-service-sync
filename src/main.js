@@ -76,12 +76,14 @@ async function displayUI() {
         const units = e.effort > 0 ? (e.effort / workingHours) * 100 : 0;
 
         resolvedEvents.push({
-            id          : e.id,
-            startDate   : e.startDate,
-            endDate     : e.endDate,
-            name        : e.name,
-            projectName : e.projectName,
-            effort      : e.effort
+            id            : e.id,
+            startDate     : e.startDate,
+            endDate       : e.endDate,
+            name          : e.name,
+            projectName   : e.projectName,
+            projectNumber : e.projectNumber,
+            clientName    : e.clientName,
+            effort        : e.effort
         });
 
         // Units lives on the AssignmentModel, not the EventModel.
