@@ -205,7 +205,7 @@ The Name column (400px, read-only) renders context-aware HTML:
 
 1. [ ] **Read-only** — No create, update, or delete operations back to D365
 1. [ ] **No pagination** — All resources/assignments fetched in a single request (may not scale)
-1. [ ] **No filtering** — No date range filter, resource search, or project filter
+1. [x] **No filtering** — No date range filter, resource search, or project filter
 1. [x] Add effort to rollover
 1. [x] Add project name to assignment bar
 1. [x] today visual indicator

@@ -76,6 +76,7 @@ export const schedulerproConfig = {
                 const start  = eventRecord.startDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.startDate) : '';
                 const end    = eventRecord.endDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.endDate) : '';
                 const effort      = eventRecord.effort != null ? `${eventRecord.effort} hrs` : '';
+                const effortRemaining = eventRecord.effortRemaining;
                 const clientName   = eventRecord.clientName || '';
                 const projectName  = eventRecord.projectName || '';
                 const projectNum   = eventRecord.projectNumber || '';
@@ -86,6 +87,7 @@ export const schedulerproConfig = {
                     <div><strong>Start:</strong> ${start}</div>
                     <div><strong>End:</strong> ${end}</div>
                     <div><strong>Effort:</strong> ${effort}</div>
+                    ${effortRemaining != null ? `<div><strong>Effort Remaining:</strong> ${effortRemaining} hrs</div>` : ''}
                 </div>`;
             }
         },
