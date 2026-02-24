@@ -19,6 +19,14 @@ const loaderContainer = document.querySelector('.loader-container');
 // Default from env var; may be overridden by URL param or runtime toggle
 let useRemainingEffort = import.meta.env.VITE_USE_EFFORT_REMAINING === 'true';
 
+// Apply URL override immediately so initial data processing uses the correct flag
+{
+    const effortParam = new URLSearchParams(window.location.search).get('useRemainingEffort');
+    if (effortParam != null) {
+        useRemainingEffort = effortParam === 'true';
+    }
+}
+
 async function displayUI() {
     console.log('[main] displayUI() called');
     const account = sessionStorage.getItem('msalAccount');

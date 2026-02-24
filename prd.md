@@ -33,11 +33,11 @@ It is based on the following [Bryntum Example](https://bryntum.com/blog/how-to-c
 
 ### Environment Variables (required in `.env`)
 
-| Variable                         | Purpose                                                                       |
-| -------------------------------- | ----------------------------------------------------------------------------- |
-| `VITE_MICROSOFT_ENTRA_APP_ID`    | Entra app registration client ID                                              |
-| `VITE_MICROSOFT_ENTRA_TENANT_ID` | Entra tenant ID                                                               |
-| `VITE_MICROSOFT_DYNAMICS_ORG_ID` | Dynamics 365 org identifier (used in API URL construction)                    |
+| Variable                         | Purpose                                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `VITE_MICROSOFT_ENTRA_APP_ID`    | Entra app registration client ID                                                                                    |
+| `VITE_MICROSOFT_ENTRA_TENANT_ID` | Entra tenant ID                                                                                                     |
+| `VITE_MICROSOFT_DYNAMICS_ORG_ID` | Dynamics 365 org identifier (used in API URL construction)                                                          |
 | `VITE_USE_EFFORT_REMAINING`      | When `true`, reads effort from `msdyn_projecttask.msdyn_effortremaining` instead of assignment-level `msdyn_effort` |
 
 ---
@@ -60,17 +60,17 @@ A default "unknown resource" image is fetched from the D365 web resources (`msdy
 
 Fetched via `getAssignments()`. Represents task assignments (events on the timeline).
 
-| D365 Field                           | Scheduler Field | Notes                                            |
-| ------------------------------------ | --------------- | ------------------------------------------------ |
-| `msdyn_resourceassignmentid`         | `id`            | Primary key                                      |
-| `msdyn_start`                        | `startDate`     | Assignment start                                 |
-| `msdyn_finish`                       | `endDate`       | Assignment end                                   |
-| `msdyn_effort`                       | `effort`        | Effort in hours (default source)                 |
+| D365 Field                           | Scheduler Field | Notes                                                                                                  |
+| ------------------------------------ | --------------- | ------------------------------------------------------------------------------------------------------ |
+| `msdyn_resourceassignmentid`         | `id`            | Primary key                                                                                            |
+| `msdyn_start`                        | `startDate`     | Assignment start                                                                                       |
+| `msdyn_finish`                       | `endDate`       | Assignment end                                                                                         |
+| `msdyn_effort`                       | `effort`        | Effort in hours (default source)                                                                       |
 | `msdyn_taskid.msdyn_effortremaining` | `effort`        | Remaining effort from project task (when `VITE_USE_EFFORT_REMAINING=true`, via `$expand=msdyn_taskid`) |
-| `_msdyn_bookableresourceid_value`    | `resourceId`    | FK to bookable resource                          |
-| `_msdyn_taskid_value` (formatted)    | `name`          | Task display name (via OData annotation)         |
-| `_msdyn_projectid_value` (formatted) | `projectName`   | Project display name (via OData annotation)      |
-| `@odata.etag`                        | `etag`          | Concurrency token (stored for future write-back) |
+| `_msdyn_bookableresourceid_value`    | `resourceId`    | FK to bookable resource                                                                                |
+| `_msdyn_taskid_value` (formatted)    | `name`          | Task display name (via OData annotation)                                                               |
+| `_msdyn_projectid_value` (formatted) | `projectName`   | Project display name (via OData annotation)                                                            |
+| `@odata.etag`                        | `etag`          | Concurrency token (stored for future write-back)                                                       |
 
 ### 4.3 Resource Category Assignments (`bookableresourcecategoryassns`)
 
@@ -214,4 +214,9 @@ The Name column (400px, read-only) renders context-aware HTML:
 1. [x] Add grid refresh button
 1. [x] add effort remaining from task. display in tooltip, grey out scheduler bars when effort remaining = 0, add page toggle to update historgram between effort/remaining
 1. [ ] fix histogram fill
+> when using effort remaining, is it possible to force the scheduler / histogram to change the start of the assignment from the value set on the assignment to the current date?
+
+basically we can safely assume that any effort remaining on the assignment can't be completed in the past
 1. [ ] fix histogram conditional formatting (traffic light)
+1. [ ] histogram scale / calendar? showing 7 days
+1. 

@@ -11,25 +11,20 @@
 /**
  * Returns a CSS class for each histogram bar based on utilisation.
  * Green when at-or-under capacity, red when over.
+ *
+ * Signature: getBarClass(series, domConfig, datum, index, renderData)
+ * Allocation data lives on the 3rd parameter `datum` (ResourceAllocationInterval).
  */
-function getBarClass({ value, maxValue }) {
-    if (value > maxValue) {
-        return 'b-overallocated';
-    }
-    return 'b-underallocated';
+function getBarClass(series, domConfig, datum) {
+    return datum?.isOverallocated ? 'b-overallocated' : 'b-underallocated';
 }
 
 export const histogramConfig = {
-    appendTo    : 'histogram',
-    hideHeaders : true,        // time header already visible in the partner
-    showBarTip  : true,
+    appendTo      : 'histogram',
+    hideHeaders   : true,        // time header already visible in the partner
+    showBarTip    : true,
     showMaxEffort : true,
-
-    // Scale column ensures bars are sized proportionally to the resource's
-    // available capacity (from its calendar), not just the peak data value.
-    scaleColumn : {
-        hidden : true          // scale labels not needed but keeps proportional sizing
-    },
+    showBarText   : false,
 
     columns : [
         {

@@ -47,11 +47,12 @@ function treeGroupParentRenderer({ field, value }) {
 }
 
 export const schedulerproConfig = {
-    appendTo   : 'app',
-    startDate  : new Date(today.getFullYear(), today.getMonth(), 1),
-    endDate    : new Date(today.getFullYear(), today.getMonth() + 4, 0),
-    viewPreset : 'weekAndMonth',
-    barMargin  : 5,
+    appendTo    : 'app',
+    startDate   : new Date(today.getFullYear(), today.getMonth(), 1),
+    endDate     : new Date(today.getFullYear(), today.getMonth(), 1 + (12 * 7)),
+    viewPreset  : 'weekAndDayLetter',
+    visibleDate : { date : new Date(), block : 'start' },
+    barMargin   : 5,
 
     eventRenderer({ eventRecord, renderData }) {
         if (eventRecord.effortRemaining == null || eventRecord.effortRemaining === 0) {
@@ -134,16 +135,17 @@ export const schedulerproConfig = {
                 }
             },
             roleFilter : {
-                type        : 'combo',
-                ref         : 'roleFilter',
-                label       : 'Role',
-                multiSelect : true,
-                editable    : false,
-                clearable   : true,
-                width       : 350,
-                placeholder : 'All Roles',
-                items       : [],
-                chipView    : { closable : true },
+                type           : 'combo',
+                ref            : 'roleFilter',
+                label          : 'Role',
+                multiSelect    : true,
+                editable       : true,
+                clearable      : true,
+                width          : 350,
+                placeholder    : 'All Roles',
+                items          : [],
+                chipView       : { closable : true },
+                filterOperator : '*',
                 listItemTpl(record) {
                     return record.text;
                 }
