@@ -90,13 +90,25 @@ main {
   to {transform: rotate(360deg); }
 }
 
-/* Histogram bar coloring */
+/* Histogram bar coloring — bars are SVG <rect>, so use 'fill' not 'background' */
+/* Overallocated: >110% (red) */
 .b-histogram-bar.b-overallocated {
-  background: #F87171 !important;
+  fill: #F87171 !important;
 }
 
+/* Underallocated: <80% (orange) */
 .b-histogram-bar.b-underallocated {
-  background: #6EE7B7 !important;
+  fill: #FBBF24 !important;
+}
+
+/* Evenly-allocated: 80-110% on leaf resources (green) */
+.b-histogram-bar.b-evenly-allocated {
+  fill: #6EE7B7 !important;
+}
+
+/* Mixed-state: 80-110% on parent nodes, indicates mixed child allocation states (purple) */
+.b-histogram-bar.b-mixed-state {
+  fill: #D8B4FE !important;
 }
 
 .b-sch-horizontal .b-sch-event-wrap .b-sch-event-buffer-before:not(.b-buffer-thin){

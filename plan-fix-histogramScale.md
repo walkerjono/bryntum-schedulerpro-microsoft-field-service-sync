@@ -5,9 +5,11 @@
 **Steps**
 
 1. **Fix `getBarClass` in [histogramConfig.js](src/histogramConfig.js#L16-L21)**: The current function uses `({ value, maxValue })`, destructuring the **first** parameter (`series: HistogramSeries`), which has no `value` or `maxValue` properties. Both are always `undefined`, so the function always returns `'b-underallocated'`. The correct signature per the [type definitions](node_modules/@bryntum/schedulerpro/schedulerpro.d.ts#L326301) is:
+
    ```
    getBarClass(series, domConfig, datum, index, renderData)
    ```
+
    The allocation data lives on the 3rd parameter `datum` (`ResourceAllocationInterval`), which has `isOverallocated`, `isUnderallocated`, `effort`, and `maxEffort` properties. Change the function to check `datum.isOverallocated`.
 
 2. **Remove explicit `scaleColumn` config from [histogramConfig.js](src/histogramConfig.js#L31-L33)**: The `ResourceHistogram` automatically adds a scale column and auto-generates scale points based on the time axis tick size and the resource's calendar. With `weekAndMonth` preset, each tick = 1 week, and with the `business` calendar (Mon-Fri 8h/day), the scale should auto-derive a top value of 40h/week. The explicit `scaleColumn: { hidden: false }` override may be interfering with the auto-generated configuration. Remove it to let the defaults work.
@@ -17,11 +19,13 @@
 4. **Optionally set `showBarText: true`** to display effort text on bars, which makes it easier to verify values are correct during testing.
 
 **Verification**
+
 - After changes, check a resource with ~23.5h allocated in a week: the bar should appear ~59% full (23.5/40), not ~100%.
 - Check an overallocated resource: bars should render with the red `b-overallocated` CSS class.
 - Open browser dev tools → inspect an SVG `rect.b-series-effort` element → check the `dataset.topValue` attribute on the parent SVG to confirm it matches the expected weekly capacity (~144,000,000ms = 40h).
 - Test with the "Effort Remaining" toggle to confirm the switch works correctly.
 
 **Decisions**
+
 - Fix `getBarClass` signature: use `datum.isOverallocated` boolean from the engine (reliable) rather than manual `effort > maxEffort` comparison.
 - Start with default `scaleColumn` behavior (step 2) before adding `generateScalePoints` customization (step 3), to minimize unnecessary overrides.

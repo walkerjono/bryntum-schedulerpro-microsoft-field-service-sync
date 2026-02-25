@@ -91,11 +91,15 @@ export async function getAssignments() {
     console.log('[crud] Fetching assignments…');
     const token = await getToken();
 
+    //const bid = 'd4296cbe-f95e-ed11-9562-00224893363e'; // Sarah Grant
+    //const bid = 'a8fc4c36-b1d2-ee11-904c-002248977e91'; // Abe
+
     const response = await fetch(
         `${orgUrl}/api/data/${apiVersion}/msdyn_resourceassignments?` +
         `$select=msdyn_resourceassignmentid,msdyn_name,msdyn_start,msdyn_finish,msdyn_effort,_msdyn_bookableresourceid_value,_msdyn_taskid_value,_msdyn_projectid_value&` +
         `$expand=msdyn_projectid($select=ws_projectid,msdyn_subject,_msdyn_customer_value),msdyn_taskid($select=msdyn_effortremaining,ws_projecttasknumber)&` +
         `$filter=msdyn_projectid/statecode eq 0`,
+        // `$filter=msdyn_projectid/statecode eq 0 and _msdyn_bookableresourceid_value eq ${bid}`,
         {
             headers : {
                 'Authorization'    : `Bearer ${token}`,

@@ -288,4 +288,5 @@ All filter selections and the effort toggle state are **persisted as URL query p
 1. [-] fix histogram fill
 1. [-] fix histogram conditional formatting (traffic light)
 1. [ ] histogram scale / calendar? showing 7 days
-1. [ ] auto-expand when selecting role or resource
+1. [x] auto-expand when selecting role or resource
+1. [ ] sarah grant not showing overallocated correctly
