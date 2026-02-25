@@ -11,8 +11,8 @@
 /**
  * Allocation thresholds (percent)
  */
-const UNDERALLOCATED_THRESHOLD = 80;  // < 80% = underallocated (orange)
-const OVERALLOCATED_THRESHOLD  = 110; // > 110% = overallocated (red)
+const UNDERALLOCATED_THRESHOLD = Number(import.meta.env.VITE_UNDERALLOCATED_THRESHOLD) || 80;  // < threshold = underallocated (orange)
+const OVERALLOCATED_THRESHOLD  = Number(import.meta.env.VITE_OVERALLOCATED_THRESHOLD) || 110; // > threshold = overallocated (red)
 
 /**
  * Color map for each allocation state.

@@ -1,6 +1,6 @@
 import { SchedulerPro, ResourceHistogram } from '@bryntum/schedulerpro';
 import './style.css';
-import { schedulerproConfig, PROJECT_COLORS } from './schedulerproConfig';
+import { schedulerproConfig, PROJECT_COLORS, VIEWPORT_BUFFER_DAYS } from './schedulerproConfig';
 import { histogramConfig, clearLeafStateCache } from './histogramConfig.js';
 import { signIn } from './auth.js';
 import {
@@ -30,7 +30,43 @@ let useRemainingEffort = import.meta.env.VITE_USE_EFFORT_REMAINING === 'true';
 // When using effort remaining mode, offset the start date by this many days in the past.
 // Set to 0 for current behavior (reset to today), positive values go N days into the past,
 // negative values go N days into the future.
-const EFFORT_REMAINING_OFFSET_DAYS = 7;
+const EFFORT_REMAINING_OFFSET_DAYS = Number(import.meta.env.VITE_EFFORT_REMAINING_OFFSET_DAYS) || 7;
+
+// ── Viewport-based date filtering state ─────────────────────────────
+// Tracks which date range has already been fetched from the API so we
+// only request slices we haven't seen yet.
+let fetchedRange = { start : null, end : null };
+
+// Mutable project-colour map — survives incremental loads so existing
+// colours stay stable as new projects appear during scroll fetches.
+let projectColorMap = new Map();
+let projectColorNextIndex = 0;
+
+/**
+ * Compute the buffered date window for OData queries.
+ * Extends the given start/end by VIEWPORT_BUFFER_DAYS on each side.
+ */
+function computeBufferedRange(start, end) {
+    const bufStart = new Date(start);
+    bufStart.setDate(bufStart.getDate() - VIEWPORT_BUFFER_DAYS);
+    const bufEnd = new Date(end);
+    bufEnd.setDate(bufEnd.getDate() + VIEWPORT_BUFFER_DAYS);
+    return { start : bufStart, end : bufEnd };
+}
+
+/**
+ * Assign a colour to a project name (stable across incremental loads).
+ * Known projects keep their existing colour; new ones get the next
+ * colour from the palette.
+ */
+function getProjectColor(projectName) {
+    if (!projectName) return '#888';
+    if (projectColorMap.has(projectName)) return projectColorMap.get(projectName);
+    const color = PROJECT_COLORS[projectColorNextIndex % PROJECT_COLORS.length];
+    projectColorMap.set(projectName, color);
+    projectColorNextIndex++;
+    return color;
+}
 
 async function displayUI() {
     console.log('[main] displayUI() called');
@@ -45,10 +81,16 @@ async function displayUI() {
     content.style = 'display: flex';
 
     // ── Fetch data in parallel ──────────────────────────────────────────
+    // Use the scheduler's configured start/end + buffer for the initial assignment fetch
+    const initialRange = computeBufferedRange(
+        schedulerproConfig.startDate,
+        schedulerproConfig.endDate
+    );
+
     const [resourcesData, assignmentsData, practiceRoleResult] =
     await Promise.all([
         getResources(),
-        getAssignments(),
+        getAssignments({ rangeStart : initialRange.start, rangeEnd : initialRange.end }),
         getResourcePractices().catch((err) => {
             console.warn(
                 '[main] Failed to load practices, continuing without practice grouping:',
@@ -58,6 +100,9 @@ async function displayUI() {
         }),
         loadDefaultImage().catch(() => {})
     ]);
+
+    // Record what we've fetched so the scroll listener knows the boundary
+    fetchedRange = { start : initialRange.start, end : initialRange.end };
 
     const { practiceMap, roleMap } = practiceRoleResult;
     console.log(
@@ -77,7 +122,7 @@ async function displayUI() {
         return count || 1; // at least 1 to avoid division by zero
     }
 
-    const HOURS_PER_DAY = 8;
+    const HOURS_PER_DAY = Number(import.meta.env.VITE_HOURS_PER_DAY) || 8;
 
     /**
      * Return the later of `date` and the offset date (midnight-normalised).
@@ -161,17 +206,13 @@ async function displayUI() {
     });
 
     // ── Build a project → colour lookup ─────────────────────────────────
-    const projectNames = [
-        ...new Set(resolvedEvents.map((e) => e.projectName).filter(Boolean))
-    ].sort();
-    const projectColorMap = new Map();
-    projectNames.forEach((p, i) =>
-        projectColorMap.set(p, PROJECT_COLORS[i % PROJECT_COLORS.length])
-    );
+    // Reset colour state for initial load — incremental fetches will append
+    projectColorMap = new Map();
+    projectColorNextIndex = 0;
 
-    // Assign an eventColor per event based on its project
+    // Assign an eventColor per event based on its project (stable colour fn)
     resolvedEvents.forEach((e) => {
-        e.eventColor = projectColorMap.get(e.projectName) || '#888';
+        e.eventColor = getProjectColor(e.projectName);
     });
 
     // ── Build flat resource array with pre-baked fields ─────────────────
@@ -275,6 +316,145 @@ async function displayUI() {
     // Wait for the scheduling engine to resolve all data
     await scheduler.project.commitAsync();
     console.log('[main] SchedulerPro initialized');
+
+    // ── Viewport-based incremental fetch ────────────────────────────────
+    /**
+     * Transform raw D365 assignment records into resolved event + assignment
+     * objects ready for the Bryntum stores.  Returns { events, assignments }.
+     */
+    function resolveRawAssignments(rawRecords) {
+        const events = [];
+        const assgn  = [];
+
+        rawRecords.forEach((raw) => {
+            const e = new CustomEventModel(raw);
+
+            // Skip records with invalid date ranges (bad D365 data)
+            if (e.startDate && e.endDate && new Date(e.startDate) > new Date(e.endDate)) {
+                console.warn(`[crud] Skipping assignment ${e.id} — startDate (${e.startDate}) > endDate (${e.endDate})`);
+                return;
+            }
+
+            let effectiveStart = e.startDate;
+            if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
+                effectiveStart = clampStartToToday(e.startDate);
+            }
+            if (new Date(effectiveStart) > new Date(e.endDate)) {
+                effectiveStart = e.endDate;
+            }
+
+            const units         = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate);
+            const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
+
+            events.push({
+                id                : e.id,
+                startDate         : effectiveStart,
+                originalStartDate : e.startDate,
+                endDate           : e.endDate,
+                duration          : durationHours,
+                durationUnit      : 'hour',
+                name              : e.name,
+                projectName       : e.projectName,
+                projectNumber     : e.projectNumber,
+                clientName        : e.clientName,
+                effort            : e.effort,
+                effortRemaining   : e.effortRemaining,
+                taskNumber        : e.taskNumber,
+                manuallyScheduled : true,
+                eventColor        : getProjectColor(e.projectName)
+            });
+
+            assgn.push({
+                id       : `assign-${e.id}`,
+                event    : e.id,
+                resource : e.resourceId,
+                units
+            });
+        });
+
+        return { events, assignments : assgn };
+    }
+
+    /**
+     * Fetch assignments for an unfetched date slice and merge them into
+     * the live stores without replacing existing data.
+     */
+    let _viewportFetchInFlight = false;
+
+    async function fetchAndMergeRange(newStart, newEnd) {
+        if (_viewportFetchInFlight) return;
+        _viewportFetchInFlight = true;
+
+        try {
+            console.log(`[main] Incremental fetch: ${newStart.toISOString()} → ${newEnd.toISOString()}`);
+            const data = await getAssignments({ rangeStart : newStart, rangeEnd : newEnd });
+            const { events: newEvents, assignments: newAssignments } = resolveRawAssignments(data.value);
+
+            // Deduplicate — only add events we don't already have
+            const eventStore      = scheduler.project.eventStore;
+            const assignmentStore = scheduler.project.assignmentStore;
+            const addedEvents = [];
+            const addedAssigns = [];
+
+            for (const evt of newEvents) {
+                if (!eventStore.getById(evt.id)) {
+                    addedEvents.push(evt);
+                }
+            }
+            for (const asgn of newAssignments) {
+                if (!assignmentStore.getById(asgn.id)) {
+                    addedAssigns.push(asgn);
+                }
+            }
+
+            if (addedEvents.length > 0) {
+                eventStore.add(addedEvents);
+                assignmentStore.add(addedAssigns);
+                await scheduler.project.commitAsync();
+                console.log(`[main] Merged ${addedEvents.length} new events`);
+            }
+
+            // Extend the fetched-range watermark to the union of old + new
+            fetchedRange = {
+                start : new Date(Math.min(fetchedRange.start.getTime(), newStart.getTime())),
+                end   : new Date(Math.max(fetchedRange.end.getTime(), newEnd.getTime()))
+            };
+        }
+        catch (err) {
+            console.error('[main] Incremental fetch failed:', err);
+        }
+        finally {
+            _viewportFetchInFlight = false;
+        }
+    }
+
+    // ── Debounced dateRangeChange listener ──────────────────────────────
+    let _dateRangeTimer = null;
+
+    scheduler.on('dateRangeChange', ({ new: newRange }) => {
+        clearTimeout(_dateRangeTimer);
+        _dateRangeTimer = setTimeout(() => {
+            if (!fetchedRange.start) return;
+
+            const visStart = new Date(newRange.startDate);
+            const visEnd   = new Date(newRange.endDate);
+
+            // Does the visible range (minus a small inner margin) exceed
+            // what we've already fetched?  Use half the buffer as the
+            // threshold so we start fetching before the edge is reached.
+            const halfBuffer = VIEWPORT_BUFFER_DAYS / 2;
+            const thresholdStart = new Date(fetchedRange.start);
+            thresholdStart.setDate(thresholdStart.getDate() + halfBuffer);
+            const thresholdEnd = new Date(fetchedRange.end);
+            thresholdEnd.setDate(thresholdEnd.getDate() - halfBuffer);
+
+            if (visStart < thresholdStart || visEnd > thresholdEnd) {
+                // Compute a new buffered window around the visible range
+                const desired = computeBufferedRange(visStart, visEnd);
+                fetchAndMergeRange(desired.start, desired.end);
+            }
+        }, 400);
+    });
 
     // ── Helper: sync filter values to/from URL query parameters ────────
     function readFilterParams() {
@@ -546,10 +726,20 @@ async function displayUI() {
             try {
                 console.log('[main] Refreshing data…');
 
+                // Use current visible range + buffer for the refresh fetch
+                const visRange = scheduler.visibleDateRange || {};
+                const refreshRange = computeBufferedRange(
+                    visRange.startDate || schedulerproConfig.startDate,
+                    visRange.endDate || schedulerproConfig.endDate
+                );
+
                 const [newResources, newAssignments, newPracticeRoleResult] =
                     await Promise.all([
                         getResources(),
-                        getAssignments(),
+                        getAssignments({
+                            rangeStart : refreshRange.start,
+                            rangeEnd   : refreshRange.end
+                        }),
                         getResourcePractices().catch((err) => {
                             console.warn('[main] Failed to refresh practices:', err);
                             return { practiceMap : new Map(), roleMap : new Map() };
@@ -558,67 +748,9 @@ async function displayUI() {
 
                 const { practiceMap: newPracticeMap, roleMap: newRoleMap } = newPracticeRoleResult;
 
-                // Re-resolve events
-                const newResolvedEvents = [];
-                const newAssignmentRecords = [];
-
-                newAssignments.value.forEach((raw) => {
-                    const e = new CustomEventModel(raw);
-
-                    // Skip records with invalid date ranges (bad D365 data)
-                    if (e.startDate && e.endDate && new Date(e.startDate) > new Date(e.endDate)) {
-                        console.warn(`[crud] Skipping assignment ${e.id} — startDate (${e.startDate}) > endDate (${e.endDate})`);
-                        return;
-                    }
-
-                    // Only shift start for incomplete assignments with remaining effort
-                    let effectiveStart = e.startDate;
-                    if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
-                        effectiveStart = clampStartToToday(e.startDate);
-                    }
-                    // Ensure start never exceeds end
-                    if (new Date(effectiveStart) > new Date(e.endDate)) {
-                        effectiveStart = e.endDate;
-                    }
-                    const units = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate);
-                    // Calculate duration in hours (durationUnit is 'hour')
-                    const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
-                    newResolvedEvents.push({
-                        id                : e.id,
-                        startDate         : effectiveStart,
-                        originalStartDate : e.startDate,
-                        endDate           : e.endDate,
-                        duration          : durationHours,
-                        durationUnit      : 'hour',
-                        name              : e.name,
-                        projectName       : e.projectName,
-                        projectNumber     : e.projectNumber,
-                        clientName        : e.clientName,
-                        effort            : e.effort,
-                        effortRemaining   : e.effortRemaining,
-                        taskNumber        : e.taskNumber,
-                        manuallyScheduled : true
-                    });
-
-                    newAssignmentRecords.push({
-                        id       : `assign-${e.id}`,
-                        event    : e.id,
-                        resource : e.resourceId,
-                        units
-                    });
-                });
-
-                // Re-apply project colours
-                const newProjectNames = [
-                    ...new Set(newResolvedEvents.map((e) => e.projectName).filter(Boolean))
-                ].sort();
-                const newProjectColorMap = new Map();
-                newProjectNames.forEach((p, i) =>
-                    newProjectColorMap.set(p, PROJECT_COLORS[i % PROJECT_COLORS.length])
-                );
-                newResolvedEvents.forEach((e) => {
-                    e.eventColor = newProjectColorMap.get(e.projectName) || '#888';
-                });
+                // Re-resolve events using shared transform
+                const { events: newResolvedEvents, assignments: newAssignmentRecords } =
+                    resolveRawAssignments(newAssignments.value);
 
                 // Re-build flat resources
                 const newTempModels = newResources.value.map((raw) => new CustomResourceModel(raw));
@@ -650,6 +782,12 @@ async function displayUI() {
                 scheduler.project.eventStore.data = newResolvedEvents;
                 scheduler.project.assignmentStore.data = newAssignmentRecords;
                 await scheduler.project.commitAsync();
+
+                // Reset viewport fetch watermark to match the refresh range
+                fetchedRange = { start : refreshRange.start, end : refreshRange.end };
+
+                // Reset colour state — resolve colours assigned fresh by resolveRawAssignments
+                // (already populated projectColorMap via getProjectColor inside resolveRawAssignments)
 
                 // Refresh practice filter options
                 if (practiceCombo) {

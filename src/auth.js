@@ -16,9 +16,10 @@ const msalConfig = {
 // Initialize a PublicClientApplication object.
 const msalInstance =
   await PublicClientApplication.createPublicClientApplication(msalConfig);
+const crmRegion = import.meta.env.VITE_CRM_REGION || 'crm6';
 const msalRequest = { scopes : [`https://${
     import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID
-  }.api.crm6.dynamics.com/.default`] };
+  }.api.${crmRegion}.dynamics.com/.default`] };
 
 // Log the user in
 export async function signIn() {

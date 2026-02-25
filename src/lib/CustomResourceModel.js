@@ -3,7 +3,8 @@ import { getToken } from '../auth.js';
 
 // Fetch and cache the default unknown resource image
 let defaultResourceImageBase64 = null;
-const defaultImageUrl = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.crm6.dynamics.com/Webresources/msdyn_/fps/ScheduleBoard/css/images/unknownResource.jpg`;
+const crmRegion = import.meta.env.VITE_CRM_REGION || 'crm6';
+const defaultImageUrl = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.${crmRegion}.dynamics.com/Webresources/msdyn_/fps/ScheduleBoard/css/images/unknownResource.jpg`;
 
 // Function to load the default image (called after authentication)
 export async function loadDefaultImage() {

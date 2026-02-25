@@ -2,6 +2,10 @@ import { signOut } from './auth.js';
 
 const today = new Date();
 
+// How many days beyond the visible scheduler viewport to pre-fetch assignments.
+// Increase for smoother scrolling (fewer mid-scroll fetches); decrease to reduce payload.
+export const VIEWPORT_BUFFER_DAYS = Number(import.meta.env.VITE_VIEWPORT_BUFFER_DAYS) || 28;
+
 // Shared project color palette
 export const PROJECT_COLORS = [
     '#4991E5', '#E5A449', '#7BC86C', '#CD5A91', '#A37EDE',

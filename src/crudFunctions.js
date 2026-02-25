@@ -1,22 +1,24 @@
 import { getToken } from './auth.js';
 
-const orgUrl = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.api.crm6.dynamics.com`;
-const apiVersion = 'v9.2';
+const crmRegion  = import.meta.env.VITE_CRM_REGION || 'crm6';
+const orgUrl     = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.api.${crmRegion}.dynamics.com`;
+const apiVersion = import.meta.env.VITE_DATAVERSE_API_VERSION || 'v9.2';
+const maxPages   = Number(import.meta.env.VITE_ODATA_MAX_PAGES) || 20;
 
 /**
  * Generic paginated OData fetch.
  * Follows @odata.nextLink until all pages are consumed.
  * Returns { value: [...allRecords] } to match the single-page response shape.
  */
-async function fetchAllPages(url, headers, { label = 'records', maxPages = 20 } = {}) {
+async function fetchAllPages(url, headers, { label = 'records', maxPages: pageLimit = maxPages } = {}) {
     const allRecords = [];
     let nextUrl = url;
     let page = 0;
 
     while (nextUrl) {
         page++;
-        if (page > maxPages) {
-            console.warn(`[crud] ⚠ Reached max page limit (${maxPages}) fetching ${label}. Some records may be missing.`);
+        if (page > pageLimit) {
+            console.warn(`[crud] ⚠ Reached max page limit (${pageLimit}) fetching ${label}. Some records may be missing.`);
             break;
         }
 
@@ -108,15 +110,39 @@ export async function getResourcePractices() {
     return { practiceMap, roleMap };
 }
 
-export async function getAssignments() {
+/**
+ * Fetch resource assignments from D365.
+ * When `rangeStart` and `rangeEnd` are provided the OData query adds a date
+ * overlap filter so only assignments that intersect the given window are
+ * returned — significantly reducing payload for large organisations.
+ *
+ * @param {{ rangeStart?: Date, rangeEnd?: Date }} [options]
+ */
+export async function getAssignments({ rangeStart, rangeEnd } = {}) {
     console.log('[crud] Fetching assignments…');
     const token = await getToken();
+
+    const bid = 'd4296cbe-f95e-ed11-9562-00224893363e' // sarah grant
+
+    let filter = 'msdyn_projectid/statecode eq 0';
+
+    if (bid) {
+        filter += ` and _msdyn_bookableresourceid_value eq ${bid}`;
+    }
+
+    if (rangeStart && rangeEnd) {
+        // Overlap query: assignment finishes after range start AND starts before range end
+        const isoStart = rangeStart.toISOString();
+        const isoEnd   = rangeEnd.toISOString();
+        filter += ` and msdyn_finish ge ${isoStart} and msdyn_start le ${isoEnd}`;
+        console.log(`[crud] Date filter: ${isoStart} → ${isoEnd}`);
+    }
 
     const url =
         `${orgUrl}/api/data/${apiVersion}/msdyn_resourceassignments?` +
         `$select=msdyn_resourceassignmentid,msdyn_name,msdyn_start,msdyn_finish,msdyn_effort,_msdyn_bookableresourceid_value,_msdyn_taskid_value,_msdyn_projectid_value&` +
         `$expand=msdyn_projectid($select=ws_projectid,msdyn_subject,_msdyn_customer_value),msdyn_taskid($select=msdyn_effortremaining,ws_projecttasknumber)&` +
-        `$filter=msdyn_projectid/statecode eq 0`;
+        `$filter=${filter}`;
 
     const headers = {
         'Authorization'    : `Bearer ${token}`,

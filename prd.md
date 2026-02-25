@@ -34,12 +34,21 @@ It is based on the following [Bryntum Example](https://bryntum.com/blog/how-to-c
 
 ### Environment Variables (required in `.env`)
 
-| Variable                         | Purpose                                                                                                                                          |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `VITE_MICROSOFT_ENTRA_APP_ID`    | Entra app registration client ID                                                                                                                 |
-| `VITE_MICROSOFT_ENTRA_TENANT_ID` | Entra tenant ID                                                                                                                                  |
-| `VITE_MICROSOFT_DYNAMICS_ORG_ID` | Dynamics 365 org identifier (used in API URL construction)                                                                                       |
-| `VITE_USE_EFFORT_REMAINING`      | Default for effort mode (`true` = remaining effort). Can be overridden at runtime via URL param `?useRemainingEffort=true` or the toolbar toggle |
+| Variable                            | Purpose                                                                                                                                          | Default                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| `VITE_MICROSOFT_ENTRA_APP_ID`       | Entra app registration client ID                                                                                                                 | _(required)_             |
+| `VITE_MICROSOFT_ENTRA_TENANT_ID`    | Entra tenant ID                                                                                                                                  | _(required)_             |
+| `VITE_MICROSOFT_DYNAMICS_ORG_ID`    | Dynamics 365 org identifier (used in API URL construction)                                                                                       | _(required)_             |
+| `VITE_REDIRECT_URI`                 | MSAL redirect URI after login                                                                                                                    | `window.location.origin` |
+| `VITE_CRM_REGION`                   | D365 CRM region suffix for API URLs (e.g. `crm6` = Australia, `crm` = North America)                                                             | `crm6`                   |
+| `VITE_DATAVERSE_API_VERSION`        | Dataverse Web API version string                                                                                                                 | `v9.2`                   |
+| `VITE_USE_EFFORT_REMAINING`         | Default for effort mode (`true` = remaining effort). Can be overridden at runtime via URL param `?useRemainingEffort=true` or the toolbar toggle | `false`                  |
+| `VITE_VIEWPORT_BUFFER_DAYS`         | Days beyond the visible scheduler viewport to pre-fetch assignments. Increase for smoother scrolling, decrease to reduce payload                 | `28`                     |
+| `VITE_HOURS_PER_DAY`                | Standard working hours per day (used for allocation % and calendar generation)                                                                   | `8`                      |
+| `VITE_EFFORT_REMAINING_OFFSET_DAYS` | When using remaining-effort mode, offset the effective start date this many days into the past                                                   | `7`                      |
+| `VITE_UNDERALLOCATED_THRESHOLD`     | Histogram allocation % below which a bar is considered underallocated (orange)                                                                   | `80`                     |
+| `VITE_OVERALLOCATED_THRESHOLD`      | Histogram allocation % above which a bar is considered overallocated (red)                                                                       | `110`                    |
+| `VITE_ODATA_MAX_PAGES`              | Maximum number of OData pagination pages to follow before stopping                                                                               | `20`                     |
 
 ---
 
@@ -164,13 +173,13 @@ Histogram allocation is driven by `units` on AssignmentModel records, calculated
 
 Bars are colored based on allocation percentage, calculated as `(effort / maxEffort) × 100` for each time tick.
 
-| Allocation %   | Node type                         | CSS class            | Color              |
-| -------------- | --------------------------------- | -------------------- | ------------------ |
-| **< 80%**      | Any                               | `b-underallocated`   | Orange (`#FBBF24`) |
-| **80–110%**    | Leaf                              | `b-evenly-allocated` | Green (`#6EE7B7`)  |
-| **80–110%**    | Parent, all children even         | `b-evenly-allocated` | Green (`#6EE7B7`)  |
-| **80–110%**    | Parent, ≥1 child outside band     | `b-mixed-state`      | Purple (`#D8B4FE`) |
-| **> 110%**     | Any                               | `b-overallocated`    | Red (`#F87171`)    |
+| Allocation % | Node type                     | CSS class            | Color              |
+| ------------ | ----------------------------- | -------------------- | ------------------ |
+| **< 80%**    | Any                           | `b-underallocated`   | Orange (`#FBBF24`) |
+| **80–110%**  | Leaf                          | `b-evenly-allocated` | Green (`#6EE7B7`)  |
+| **80–110%**  | Parent, all children even     | `b-evenly-allocated` | Green (`#6EE7B7`)  |
+| **80–110%**  | Parent, ≥1 child outside band | `b-mixed-state`      | Purple (`#D8B4FE`) |
+| **> 110%**   | Any                           | `b-overallocated`    | Red (`#F87171`)    |
 
 - Thresholds are defined as constants: `UNDERALLOCATED_THRESHOLD = 80`, `OVERALLOCATED_THRESHOLD = 110`.
 - Parent vs leaf distinction uses `datum.isGroup` (true for TreeGroup aggregate rows).
@@ -285,28 +294,28 @@ All filter selections and the effort toggle state are **persisted as URL query p
 
 1. **No error UI** — API errors logged to console only, no user-facing error states
 2. **Trial license** — Currently uses `@bryntum/schedulerpro-trial`
-3. **Hardcoded CRM region** — API URLs use `.crm6.dynamics.com` (Australia region)
-4. **Hardcoded redirect URI** — MSAL redirect is set to `http://localhost:5173`
+3. **CRM region via env** — API URLs use `VITE_CRM_REGION` (defaults to `crm6` / Australia); set to `crm` for North America etc.
+4. **Redirect URI via env** — MSAL redirect URI is configurable via `VITE_REDIRECT_URI` (defaults to `window.location.origin`)
 5. **No write-back** — All data is read-only; `etag` values are captured for future write-back support
 6. **Debug code in API** — `getResources()` contains a commented-out single-resource filter (`TODO: temp limit`)
 7. **No tests** — No unit or integration tests
-8. **localhost redirect only** — MSAL redirect URI hardcoded to `http://localhost:5173`
 
 ## TODO: changes
 
 1. [ ] **Read-only** — No create, update, or delete operations back to D365
 1. [x] **No pagination** — All resources/assignments fetched in a single request (may not scale)
-1. [ ] **Viewport-based date filtering** — Filter assignments by the visible scheduler date range (± buffer) to reduce API payload size and improve load times for large datasets
+1. [x] **Viewport-based date filtering** — Filter assignments by the visible scheduler date range (± buffer as config) to reduce API payload size and improve load times for large datasets
 1. [x] **No filtering** — No date range filter, resource search, or project filter
 1. [x] Add effort to rollover
 1. [x] Add project name to assignment bar
 1. [x] today visual indicator
 1. [x] Add Practice Filter
-1. [ ] Add Exclude MSC filter - TBC on field to use
 1. [x] Add grid refresh button
 1. [x] add effort remaining from task. display in tooltip, grey out scheduler bars when effort remaining = 0, add page toggle to update historgram between effort/remaining
-1. [-] fix histogram fill
-1. [-] fix histogram conditional formatting (traffic light)
-1. [ ] histogram scale / calendar? showing 7 days
+1. [x] fix histogram fill
+1. [x] fix histogram conditional formatting (traffic light)
+1. [x] histogram scale / calendar? showing 7 days
 1. [x] auto-expand when selecting role or resource
 1. [ ] sarah grant not showing overallocated correctly
+1. [ ] add filter/logic for projectTask.DeliveryStatusCode
+1. [ ] order assignments logically
