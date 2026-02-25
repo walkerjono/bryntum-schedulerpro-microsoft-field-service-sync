@@ -9,7 +9,7 @@ const msalConfig = {
         authority : `https://login.microsoftonline.com/${
     import.meta.env.VITE_MICROSOFT_ENTRA_TENANT_ID
   }`,
-        redirectUri : 'http://localhost:5173'
+        redirectUri : import.meta.env.VITE_REDIRECT_URI || window.location.origin
     }
 };
 
