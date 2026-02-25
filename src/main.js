@@ -1,7 +1,7 @@
 import { SchedulerPro, ResourceHistogram } from '@bryntum/schedulerpro';
 import './style.css';
 import { schedulerproConfig, PROJECT_COLORS } from './schedulerproConfig';
-import { histogramConfig } from './histogramConfig.js';
+import { histogramConfig, clearLeafStateCache } from './histogramConfig.js';
 import { signIn } from './auth.js';
 import {
     getResources,
@@ -113,6 +113,12 @@ async function displayUI() {
 
     assignmentsData.value.forEach((raw) => {
         const e = new CustomEventModel(raw);
+
+        // Skip records with invalid date ranges (bad D365 data)
+        if (e.startDate && e.endDate && new Date(e.startDate) > new Date(e.endDate)) {
+            console.warn(`[crud] Skipping assignment ${e.id} — startDate (${e.startDate}) > endDate (${e.endDate})`);
+            return;
+        }
 
         // Only shift start date for incomplete assignments with remaining effort.
         // Completed assignments (effortRemaining === 0) keep their original D365 dates.
@@ -536,6 +542,7 @@ async function displayUI() {
         refreshBtn.on('click', async() => {
             refreshBtn.disabled = true;
             refreshBtn.icon = 'fa fa-sync fa-spin';
+            clearLeafStateCache();
             try {
                 console.log('[main] Refreshing data…');
 
@@ -557,6 +564,13 @@ async function displayUI() {
 
                 newAssignments.value.forEach((raw) => {
                     const e = new CustomEventModel(raw);
+
+                    // Skip records with invalid date ranges (bad D365 data)
+                    if (e.startDate && e.endDate && new Date(e.startDate) > new Date(e.endDate)) {
+                        console.warn(`[crud] Skipping assignment ${e.id} — startDate (${e.startDate}) > endDate (${e.endDate})`);
+                        return;
+                    }
+
                     // Only shift start for incomplete assignments with remaining effort
                     let effectiveStart = e.startDate;
                     if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
@@ -678,6 +692,14 @@ async function displayUI() {
         partner : scheduler
     });
     console.log('[main] ResourceHistogram initialized');
+
+    // ── One-time refresh so the leaf-state cache is populated for parent bar colors ─
+    // Parent rows render before children in tree order, so on the first paint
+    // the cache is empty and parents default to mixed-state. A single deferred
+    // refresh after the first render pass corrects them.
+    histogram.on('renderRows', () => {
+        setTimeout(() => histogram.refresh(), 0);
+    }, { once : true });
 
     // ── Auto-expand tree if filters were restored from URL params ────────
     // Deferred to let TreeGroup finish its initial build after page load

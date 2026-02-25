@@ -101,12 +101,12 @@ main {
   fill: #FBBF24 !important;
 }
 
-/* Evenly-allocated: 80-110% on leaf resources (green) */
+/* Evenly-allocated: 80-110% — leaf, or parent with all children also 80-110% (green) */
 .b-histogram-bar.b-evenly-allocated {
   fill: #6EE7B7 !important;
 }
 
-/* Mixed-state: 80-110% on parent nodes, indicates mixed child allocation states (purple) */
+/* Mixed-state: parent 80-110% but ≥1 child outside the 80-110% band (purple) */
 .b-histogram-bar.b-mixed-state {
   fill: #D8B4FE !important;
 }

@@ -160,6 +160,25 @@ A **ResourceHistogram** is rendered below the scheduler (40% height), partnered 
 Histogram allocation is driven by `units` on AssignmentModel records, calculated as:
 `units = (effort / workingHours) * 100` where working hours = weekdays × 8h/day between assignment start and end.
 
+### 5.5.1 Histogram Bar Styling Rules
+
+Bars are colored based on allocation percentage, calculated as `(effort / maxEffort) × 100` for each time tick.
+
+| Allocation %   | Node type                         | CSS class            | Color              |
+| -------------- | --------------------------------- | -------------------- | ------------------ |
+| **< 80%**      | Any                               | `b-underallocated`   | Orange (`#FBBF24`) |
+| **80–110%**    | Leaf                              | `b-evenly-allocated` | Green (`#6EE7B7`)  |
+| **80–110%**    | Parent, all children even         | `b-evenly-allocated` | Green (`#6EE7B7`)  |
+| **80–110%**    | Parent, ≥1 child outside band     | `b-mixed-state`      | Purple (`#D8B4FE`) |
+| **> 110%**     | Any                               | `b-overallocated`    | Red (`#F87171`)    |
+
+- Thresholds are defined as constants: `UNDERALLOCATED_THRESHOLD = 80`, `OVERALLOCATED_THRESHOLD = 110`.
+- Parent vs leaf distinction uses `datum.isGroup` (true for TreeGroup aggregate rows).
+- Parent rows in the 80–110% band inspect cached leaf-descendant states for the same tick: green if every leaf is also 80–110%, purple if any leaf is under- or over-allocated.
+- A **leaf-state cache** is built as leaf bars render. Because parent rows render before children in tree order, main.js schedules a single `histogram.refresh()` after first paint so the second pass sees fully-populated cache. The cache is cleared on data refresh.
+- Color is applied both as a CSS class on the bar element and as an inline `fill` style on the SVG `<rect>` to reliably override Bryntum defaults.
+- Bars with zero `maxEffort` (no capacity) receive no class or color.
+
 ### 5.6 Working-Time Calendars
 
 - **Default calendar (`business`):** Mon–Fri, 08:00–16:00 (8h/day, 40h/week). `unspecifiedTimeIsWorking: false`.
@@ -276,7 +295,8 @@ All filter selections and the effort toggle state are **persisted as URL query p
 ## TODO: changes
 
 1. [ ] **Read-only** — No create, update, or delete operations back to D365
-1. [ ] **No pagination** — All resources/assignments fetched in a single request (may not scale)
+1. [x] **No pagination** — All resources/assignments fetched in a single request (may not scale)
+1. [ ] **Viewport-based date filtering** — Filter assignments by the visible scheduler date range (± buffer) to reduce API payload size and improve load times for large datasets
 1. [x] **No filtering** — No date range filter, resource search, or project filter
 1. [x] Add effort to rollover
 1. [x] Add project name to assignment bar
