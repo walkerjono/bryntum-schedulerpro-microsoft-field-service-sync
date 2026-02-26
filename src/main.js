@@ -17,7 +17,9 @@ import {
     computeBufferedRange as _computeBufferedRange,
     clampStartToToday as _clampStartToToday,
     calcUnits as _calcUnits,
-    getProjectColor as _getProjectColor
+    getProjectColor as _getProjectColor,
+    resolveRawAssignments as _resolveRawAssignments,
+    generateCalendars as _generateCalendars
 } from './lib/schedulingUtils.js';
 
 const signInLink = typeof document !== 'undefined' ? document.getElementById('signin') : null;
@@ -143,68 +145,21 @@ async function displayUI() {
         });
     }
 
-    // ── Resolve events via temporary CustomEventModel (runs convert fns) ─
-    const resolvedEvents = [];
-    const assignments = [];
-
-    assignmentsData.value.forEach((raw) => {
-        const e = new CustomEventModel(raw);
-
-        // Skip records with invalid date ranges (bad D365 data)
-        if (e.startDate && e.endDate && new Date(e.startDate) > new Date(e.endDate)) {
-            console.warn(`[crud] Skipping assignment ${e.id} — startDate (${e.startDate}) > endDate (${e.endDate})`);
-            return;
-        }
-
-        // Only shift start date for incomplete assignments with remaining effort.
-        // Completed assignments (effortRemaining === 0) keep their original D365 dates.
-        let effectiveStart = e.startDate;
-        if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
-            effectiveStart = clampStartToToday(e.startDate);
-        }
-        // Ensure start never exceeds end to avoid scheduling errors
-        if (new Date(effectiveStart) > new Date(e.endDate)) {
-            effectiveStart = e.endDate;
-        }
-        // Calculate allocation % so the histogram shows correct effort per tick.
-        const units = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate, e.resourceId);
-        // Calculate duration in hours (durationUnit is 'hour')
-        const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
-        resolvedEvents.push({
-            id                : e.id,
-            startDate         : effectiveStart,
-            originalStartDate : e.startDate,
-            endDate           : e.endDate,
-            duration          : durationHours,
-            durationUnit      : 'hour',
-            name              : e.name,
-            projectName       : e.projectName,
-            projectNumber     : e.projectNumber,
-            clientName        : e.clientName,
-            effort            : e.effort,
-            effortRemaining   : e.effortRemaining,
-            taskNumber        : e.taskNumber,
-            manuallyScheduled : true
-        });
-
-        // Units lives on the AssignmentModel, not the EventModel.
-        assignments.push({
-            id       : `assign-${e.id}`,
-            event    : e.id,
-            resource : e.resourceId,
-            units
-        });
-    });
-
-    // ── Build a project → colour lookup ─────────────────────────────────
+    // ── Resolve events via extracted pure function ──────────────────────
     // Reset colour state for initial load — incremental fetches will append
     projectColorMap = new Map();
     projectColorNextIndex = 0;
 
-    // Assign an eventColor per event based on its project (stable colour fn)
-    resolvedEvents.forEach((e) => {
-        e.eventColor = getProjectColor(e.projectName);
-    });
+    const { events: resolvedEvents, assignments } = _resolveRawAssignments(
+        assignmentsData.value,
+        CustomEventModel,
+        {
+            useRemainingEffort,
+            clampFn            : clampStartToToday,
+            calcUnitsFn        : calcUnits,
+            getProjectColorFn  : getProjectColor
+        }
+    );
 
     // ── Build flat resource array with pre-baked fields ─────────────────
     const tempResourceModels = resourcesData.value.map(
@@ -236,48 +191,8 @@ async function displayUI() {
         };
     });
 
-    // ── Build working-time calendars ────────────────────────────────────
-    // Default business calendar: Mon–Fri, 8h/day (08:00–16:00).
-    // unspecifiedTimeIsWorking: false means only the explicit working
-    // intervals count — so the engine sees 8h per weekday, not 24h.
-    const businessCalendar = {
-        id                       : 'business',
-        name                     : 'Standard (40h)',
-        unspecifiedTimeIsWorking : false,
-        intervals                : [
-            {
-                recurrentStartDate : 'every weekday at 08:00',
-                recurrentEndDate   : 'every weekday at 16:00',
-                isWorking          : true
-            }
-        ]
-    };
-
-    const calendars = [businessCalendar];
-
-    // Generate per-resource calendars for non-standard working hours
-    flatResources.forEach((r) => {
-        if (r.workingHours !== 40) {
-            const calId = `calendar-${r.id}`;
-            const hrsPerDay = r.workingHours / 5;
-            const endHour   = Math.floor(8 + hrsPerDay);
-            const endMinute = Math.round((hrsPerDay % 1) * 60);
-            const endTimeStr = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
-            calendars.push({
-                id                       : calId,
-                name                     : `Custom (${r.workingHours}h)`,
-                unspecifiedTimeIsWorking : false,
-                intervals                : [
-                    {
-                        recurrentStartDate : 'every weekday at 08:00',
-                        recurrentEndDate   : `every weekday at ${endTimeStr}`,
-                        isWorking          : true
-                    }
-                ]
-            });
-            r.calendar = calId;
-        }
-    });
+    // ── Build working-time calendars (extracted pure function) ────────
+    const calendars = _generateCalendars(flatResources);
 
     // ── Create SchedulerPro (flat store + TreeGroup) ────────────────────
     const scheduler = new SchedulerPro({
@@ -311,61 +226,14 @@ async function displayUI() {
     console.log('[main] SchedulerPro initialized');
 
     // ── Viewport-based incremental fetch ────────────────────────────────
-    /**
-     * Transform raw D365 assignment records into resolved event + assignment
-     * objects ready for the Bryntum stores.  Returns { events, assignments }.
-     */
+    /** Wrapper that delegates to the extracted pure resolveRawAssignments. */
     function resolveRawAssignments(rawRecords) {
-        const events = [];
-        const assgn  = [];
-
-        rawRecords.forEach((raw) => {
-            const e = new CustomEventModel(raw);
-
-            // Skip records with invalid date ranges (bad D365 data)
-            if (e.startDate && e.endDate && new Date(e.startDate) > new Date(e.endDate)) {
-                console.warn(`[crud] Skipping assignment ${e.id} — startDate (${e.startDate}) > endDate (${e.endDate})`);
-                return;
-            }
-
-            let effectiveStart = e.startDate;
-            if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
-                effectiveStart = clampStartToToday(e.startDate);
-            }
-            if (new Date(effectiveStart) > new Date(e.endDate)) {
-                effectiveStart = e.endDate;
-            }
-
-            const units         = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate, e.resourceId);
-            const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
-
-            events.push({
-                id                : e.id,
-                startDate         : effectiveStart,
-                originalStartDate : e.startDate,
-                endDate           : e.endDate,
-                duration          : durationHours,
-                durationUnit      : 'hour',
-                name              : e.name,
-                projectName       : e.projectName,
-                projectNumber     : e.projectNumber,
-                clientName        : e.clientName,
-                effort            : e.effort,
-                effortRemaining   : e.effortRemaining,
-                taskNumber        : e.taskNumber,
-                manuallyScheduled : true,
-                eventColor        : getProjectColor(e.projectName)
-            });
-
-            assgn.push({
-                id       : `assign-${e.id}`,
-                event    : e.id,
-                resource : e.resourceId,
-                units
-            });
+        return _resolveRawAssignments(rawRecords, CustomEventModel, {
+            useRemainingEffort,
+            clampFn            : clampStartToToday,
+            calcUnitsFn        : calcUnits,
+            getProjectColorFn  : getProjectColor
         });
-
-        return { events, assignments : assgn };
     }
 
     /**

@@ -126,3 +126,151 @@ export function getProjectColor(projectName, colorMap, colorIndex, palette) {
     colorIndex.value++;
     return color;
 }
+
+/**
+ * Transform raw D365 assignment records (already parsed through CustomEventModel)
+ * into resolved event + assignment objects ready for Bryntum stores.
+ *
+ * This is a pure-ish function: it receives all dependencies via parameters so
+ * it can be unit-tested without DOM, Bryntum, or module-level state.
+ *
+ * @param {object[]}  rawRecords         — array of raw D365 OData assignment records
+ * @param {Function}  EventModelClass    — constructor that parses raw → model (e.g. CustomEventModel)
+ * @param {object}    opts
+ * @param {boolean}   opts.useRemainingEffort — whether to use remaining effort mode
+ * @param {Function}  opts.clampFn            — fn(date) → clamped Date (for remaining effort start)
+ * @param {Function}  opts.calcUnitsFn        — fn(effort, effortRemaining, startDate, endDate, resourceId) → number
+ * @param {Function}  [opts.getProjectColorFn] — fn(projectName) → hex colour string
+ * @returns {{ events: object[], assignments: object[] }}
+ */
+export function resolveRawAssignments(rawRecords, EventModelClass, {
+    useRemainingEffort = false,
+    clampFn            = (d) => d,
+    calcUnitsFn        = () => 0,
+    getProjectColorFn  = () => '#888'
+} = {}) {
+    const events = [];
+    const assignments = [];
+
+    rawRecords.forEach((raw) => {
+        const e = new EventModelClass(raw);
+
+        // Skip records with invalid date ranges (bad D365 data)
+        if (e.startDate && e.endDate && new Date(e.startDate) > new Date(e.endDate)) {
+            console.warn(`[crud] Skipping assignment ${e.id} — startDate (${e.startDate}) > endDate (${e.endDate})`);
+            return;
+        }
+
+        // Only shift start date for incomplete assignments with remaining effort.
+        // Completed assignments (effortRemaining === 0) keep their original D365 dates.
+        let effectiveStart = e.startDate;
+        if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
+            effectiveStart = clampFn(e.startDate);
+        }
+        // Ensure start never exceeds end to avoid scheduling errors
+        if (new Date(effectiveStart) > new Date(e.endDate)) {
+            effectiveStart = e.endDate;
+        }
+
+        const units = calcUnitsFn(e.effort, e.effortRemaining, e.startDate, e.endDate, e.resourceId);
+        const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
+
+        events.push({
+            id                : e.id,
+            startDate         : effectiveStart,
+            originalStartDate : e.startDate,
+            endDate           : e.endDate,
+            duration          : durationHours,
+            durationUnit      : 'hour',
+            name              : e.name,
+            projectName       : e.projectName,
+            projectNumber     : e.projectNumber,
+            clientName        : e.clientName,
+            effort            : e.effort,
+            effortRemaining   : e.effortRemaining,
+            taskNumber        : e.taskNumber,
+            manuallyScheduled : true,
+            eventColor        : getProjectColorFn(e.projectName)
+        });
+
+        assignments.push({
+            id       : `assign-${e.id}`,
+            event    : e.id,
+            resource : e.resourceId,
+            units
+        });
+    });
+
+    return { events, assignments };
+}
+
+/**
+ * Generate working-time calendars for a set of flat resources.
+ *
+ * Returns an array of calendar config objects. Resources whose
+ * `workingHours` differ from `standardWeeklyHours` have their
+ * `.calendar` property mutated in-place to reference the generated
+ * calendar id.
+ *
+ * @param {object[]} flatResources          — array of { id, workingHours, calendar, … }
+ * @param {object}   [opts]
+ * @param {number}   [opts.standardWeeklyHours=40]  — weekly hours considered "standard"
+ * @param {number}   [opts.workDaysPerWeek=5]       — working days per week
+ * @param {string}   [opts.startTime='08:00']       — daily start time for all calendars
+ * @returns {object[]} array of Bryntum calendar config objects (business + per-resource)
+ */
+export function generateCalendars(flatResources, {
+    standardWeeklyHours = 40,
+    workDaysPerWeek     = 5,
+    startTime           = '08:00'
+} = {}) {
+    const standardHoursPerDay = standardWeeklyHours / workDaysPerWeek;
+    const startHour = parseInt(startTime.split(':')[0], 10);
+
+    // Default business calendar
+    const endHourStd    = startHour + standardHoursPerDay;
+    const endHrStd      = Math.floor(endHourStd);
+    const endMinStd     = Math.round((endHourStd - endHrStd) * 60);
+    const endTimeStdStr = `${String(endHrStd).padStart(2, '0')}:${String(endMinStd).padStart(2, '0')}`;
+
+    const businessCalendar = {
+        id                       : 'business',
+        name                     : `Standard (${standardWeeklyHours}h)`,
+        unspecifiedTimeIsWorking : false,
+        intervals                : [
+            {
+                recurrentStartDate : `every weekday at ${startTime}`,
+                recurrentEndDate   : `every weekday at ${endTimeStdStr}`,
+                isWorking          : true
+            }
+        ]
+    };
+
+    const calendars = [businessCalendar];
+
+    // Generate per-resource calendars for non-standard working hours
+    flatResources.forEach((r) => {
+        if (r.workingHours !== standardWeeklyHours) {
+            const calId     = `calendar-${r.id}`;
+            const hrsPerDay = r.workingHours / workDaysPerWeek;
+            const endHour   = Math.floor(startHour + hrsPerDay);
+            const endMinute = Math.round((hrsPerDay % 1) * 60);
+            const endTimeStr = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+            calendars.push({
+                id                       : calId,
+                name                     : `Custom (${r.workingHours}h)`,
+                unspecifiedTimeIsWorking : false,
+                intervals                : [
+                    {
+                        recurrentStartDate : `every weekday at ${startTime}`,
+                        recurrentEndDate   : `every weekday at ${endTimeStr}`,
+                        isWorking          : true
+                    }
+                ]
+            });
+            r.calendar = calId;
+        }
+    });
+
+    return calendars;
+}

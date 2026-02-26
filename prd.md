@@ -275,7 +275,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 │   │   ├── CustomResourceModel.js      # Extends ResourceModel with imageUrl, practiceName, roleName,
 │   │   │                               #   workingHours, calendar; also exports loadDefaultImage()
 │   │   ├── schedulingUtils.js          # Pure functions: countWeekdays, computeBufferedRange, clampStartToToday,
-│   │   │                               #   calcUnits, getProjectColor (extracted for testability)
+│   │   │                               #   calcUnits, getProjectColor, resolveRawAssignments, generateCalendars
 │   │   └── filterUtils.js             # URL filter utilities: readFilterParams, writeFilterParams
 │   └── test/
 │       ├── setup.js                    # Global Vitest mocks for Bryntum Scheduler Pro + MSAL
@@ -284,7 +284,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 │       ├── schedulerproConfig.test.js  # Renderer tests (nameRenderer, treeGroupParent, eventRenderer, tooltip)
 │       ├── histogramConfig.test.js     # Histogram tests (getBarClass thresholds, getLeafDescendants, cache)
 │       └── lib/
-│           ├── schedulingUtils.test.js # 36 tests for pure scheduling functions
+│           ├── schedulingUtils.test.js # 56 tests for pure scheduling functions
 │           ├── filterUtils.test.js     # 19 tests for URL filter round-trip
 │           ├── CustomEventModel.test.js    # 25 tests for field mappings + convert fallback chains
 │           └── CustomResourceModel.test.js # 9 tests for field defaults + loadDefaultImage
@@ -317,7 +317,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 4. **Redirect URI via env** — MSAL redirect URI is configurable via `VITE_REDIRECT_URI` (defaults to `window.location.origin`)
 5. **No write-back** — All data is read-only; `etag` values are captured for future write-back support
 6. **Debug code in API** — `getResources()` contains a commented-out single-resource filter (`TODO: temp limit`)
-7. **No E2E / security tests** — 155 unit tests exist (see [Tests Required](#tests-required)); end-to-end and security tests are not yet implemented
+7. **No E2E / security tests** — 214 unit tests exist (see [Tests Required](#tests-required)); end-to-end and security tests are not yet implemented
 
 ## TODO: changes
 
@@ -382,14 +382,14 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] Extends start and end by `VIEWPORT_BUFFER_DAYS` in each direction
 - [x] Different buffer day values produce correct ranges
 
-#### `resolveRawAssignments()` — [main.js](src/main.js)
+#### `resolveRawAssignments()` — [schedulingUtils.js](src/lib/schedulingUtils.js)
 
-- [ ] Well-formed record produces correct event + assignment objects _(tightly coupled to app state — deferred)_
-- [ ] Record with `startDate > endDate` is skipped with console warning _(deferred)_
-- [ ] Record where `effectiveStart > endDate` after clamping sets `effectiveStart = endDate` _(deferred)_
-- [ ] Record with `effortRemaining = 0` uses original D365 dates (not clamped) _(deferred)_
-- [ ] Missing expanded fields (`msdyn_projectid`, `msdyn_taskid`) use null-safe fallbacks _(deferred)_
-- [ ] Duplicate `bookableresourceid` across records produces one assignment per event _(deferred)_
+- [x] Well-formed record produces correct event + assignment objects
+- [x] Record with `startDate > endDate` is skipped with console warning
+- [x] Record where `effectiveStart > endDate` after clamping sets `effectiveStart = endDate`
+- [x] Record with `effortRemaining = 0` uses original D365 dates (not clamped)
+- [x] Missing expanded fields (`msdyn_projectid`, `msdyn_taskid`) use null-safe fallbacks
+- [x] Duplicate `bookableresourceid` across records produces one assignment per event
 
 #### `CustomEventModel` field converters — [CustomEventModel.js](src/lib/CustomEventModel.js)
 
@@ -408,13 +408,13 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] `loadDefaultImage()` caches result and is idempotent (second call returns immediately)
 - [x] `loadDefaultImage()` silently handles fetch failure (bare `catch {}`)
 
-#### Calendar generation — [main.js](src/main.js)
+#### Calendar generation — [schedulingUtils.js](src/lib/schedulingUtils.js)
 
-- [ ] Resources without `ws_workinghours` use the default `business` calendar (Mon–Fri 08:00–16:00) _(tightly coupled to app state — deferred)_
-- [ ] Resources with non-standard `ws_workinghours` (e.g. 32h) get a custom calendar with correct `endTime` _(deferred)_
-- [ ] `ws_workinghours = 40` → 8h/day → `endTime: '17:00'` (09:00 start + 8h) _(deferred)_
-- [ ] `ws_workinghours = 32` → 6.4h/day → fractional end time calculated correctly _(deferred)_
-- [ ] `ws_workinghours = 0` falls back to 40 via `|| 40` (verify this is intentional) _(deferred)_
+- [x] Resources without `ws_workinghours` use the default `business` calendar (Mon–Fri 08:00–16:00)
+- [x] Resources with non-standard `ws_workinghours` (e.g. 32h) get a custom calendar with correct `endTime`
+- [x] `ws_workinghours = 40` → 8h/day → `endTime: '16:00'` (08:00 start + 8h)
+- [x] `ws_workinghours = 32` → 6.4h/day → fractional end time calculated correctly
+- [x] `ws_workinghours = 0` falls back to 40 via `|| 40` (verify this is intentional)
 
 #### Histogram bar coloring — `getBarClass()` — [histogramConfig.js](src/histogramConfig.js)
 
