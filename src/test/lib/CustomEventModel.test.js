@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import CustomEventModel from '../../lib/CustomEventModel.js';
+import CustomEventModel from '../../lib/CustomEventModel';
 
 // ── Helper: simulate a raw D365 OData record ────────────────────────
 function makeD365Record(overrides = {}) {

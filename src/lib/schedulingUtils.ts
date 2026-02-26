@@ -4,16 +4,114 @@
  * All functions are pure (or accept injectable state) so they can be
  * unit-tested without Bryntum, DOM, or module-level side-effects.
  */
+import type { D365ResourceAssignment } from '../types/d365';
+
+// ── Interfaces ──────────────────────────────────────────────────────
+
+export interface BufferedRange {
+    start: Date;
+    end: Date;
+}
+
+export interface ClampOpts {
+    useCurrentWeek?: boolean;
+    offsetDays?: number;
+    today?: Date;
+}
+
+export interface CalcUnitsOpts {
+    useRemainingEffort?: boolean;
+    hoursPerDay?: number;
+    resourceHoursMap?: Map<string, number>;
+    resourceId?: string | null;
+    clampFn?: (d: Date | string) => Date;
+}
+
+export interface ResolveOpts {
+    useRemainingEffort?: boolean;
+    clampFn?: (d: Date | string) => Date;
+    calcUnitsFn?: (effort: number, effortRemaining: number | null, startDate: Date | string, endDate: Date | string, resourceId: string) => number;
+    getProjectColorFn?: (projectName: string | null) => string;
+}
+
+export interface ResolvedEvent {
+    id: string;
+    startDate: Date | string;
+    originalStartDate: Date | string;
+    endDate: Date | string;
+    duration: number;
+    durationUnit: string;
+    name: string;
+    projectName: string;
+    projectNumber: string;
+    clientName: string;
+    effort: number;
+    effortRemaining: number | null;
+    taskNumber: string;
+    manuallyScheduled: boolean;
+    eventColor: string;
+}
+
+export interface ResolvedAssignment {
+    id: string;
+    event: string;
+    resource: string;
+    units: number;
+}
+
+export interface FlatResource {
+    id: string;
+    workingHours: number;
+    calendar?: string;
+    [key: string]: unknown;
+}
+
+export interface CalendarInterval {
+    recurrentStartDate: string;
+    recurrentEndDate: string;
+    isWorking: boolean;
+}
+
+export interface CalendarConfig {
+    id: string;
+    name: string;
+    unspecifiedTimeIsWorking: boolean;
+    intervals: CalendarInterval[];
+}
+
+export interface CalendarOpts {
+    standardWeeklyHours?: number;
+    workDaysPerWeek?: number;
+    startTime?: string;
+}
+
+/** Minimal shape expected from the EventModelClass constructor result */
+interface ParsedEvent {
+    id: string;
+    startDate: Date | string;
+    endDate: Date | string;
+    effort: number;
+    effortRemaining: number | null;
+    resourceId: string;
+    name: string;
+    projectName: string;
+    projectNumber: string;
+    clientName: string;
+    taskNumber: string;
+}
+
+/** Constructor type for the EventModel-like class */
+interface EventModelConstructor {
+    new(data: D365ResourceAssignment): ParsedEvent;
+}
+
+// ── Functions ───────────────────────────────────────────────────────
 
 /**
  * Count weekdays (Mon–Fri) between two dates.
  * Returns at least 1 to avoid division-by-zero in allocation calculations.
- *
- * @param {Date|string} start
- * @param {Date|string} end
- * @returns {number}
  */
-export function countWeekdays(start, end) {
+export function countWeekdays(start: Date | string, end: Date | string): number {
     let count = 0;
     const d = new Date(start);
     const endTime = new Date(end).getTime();
@@ -28,13 +126,8 @@ export function countWeekdays(start, end) {
 /**
  * Compute the buffered date window for OData queries.
  * Extends the given start/end by `bufferDays` on each side.
- *
- * @param {Date} start
- * @param {Date} end
- * @param {number} bufferDays
- * @returns {{ start: Date, end: Date }}
  */
-export function computeBufferedRange(start, end, bufferDays) {
+export function computeBufferedRange(start: Date, end: Date, bufferDays: number): BufferedRange {
     const bufStart = new Date(start);
     bufStart.setDate(bufStart.getDate() - bufferDays);
     const bufEnd = new Date(end);
@@ -46,16 +139,9 @@ export function computeBufferedRange(start, end, bufferDays) {
  * Return the later of `date` and the computed offset date (midnight-normalised).
  * When using remaining effort, the effective start of an assignment is at
  * earliest the offset date.
- *
- * @param {Date|string} date            — the original start date
- * @param {object}      opts
- * @param {boolean}     opts.useCurrentWeek — if true, snap to Monday of the current week
- * @param {number}      opts.offsetDays     — days to subtract from today (ignored when useCurrentWeek)
- * @param {Date}        [opts.today]        — injectable "now" for testing (default: new Date())
- * @returns {Date}
  */
-export function clampStartToToday(date, { useCurrentWeek = false, offsetDays = 7, today = new Date() } = {}) {
-    let offsetDate;
+export function clampStartToToday(date: Date | string, { useCurrentWeek = false, offsetDays = 7, today = new Date() }: ClampOpts = {}): Date {
+    let offsetDate: Date;
     if (useCurrentWeek) {
         offsetDate = new Date(today);
         offsetDate.setHours(0, 0, 0, 0);
@@ -76,32 +162,20 @@ export function clampStartToToday(date, { useCurrentWeek = false, offsetDays = 7
 
 /**
  * Calculate allocation % (units) for a single assignment.
- *
- * @param {number}       effort           — total effort in hours
- * @param {number|null}  effortRemaining  — remaining effort from project task (nullable)
- * @param {Date|string}  startDate        — assignment start
- * @param {Date|string}  endDate          — assignment end
- * @param {object}       opts
- * @param {boolean}      opts.useRemainingEffort — which effort source to use
- * @param {number}       opts.hoursPerDay        — default hours per working day
- * @param {Map}          opts.resourceHoursMap   — resourceId → hoursPerDay lookup
- * @param {string}       opts.resourceId         — the resource to look up
- * @param {function}     opts.clampFn            — fn(date) → clamped date (for remaining effort mode)
- * @returns {number}
  */
-export function calcUnits(effort, effortRemaining, startDate, endDate, {
+export function calcUnits(effort: number, effortRemaining: number | null, startDate: Date | string, endDate: Date | string, {
     useRemainingEffort = false,
     hoursPerDay = 8,
-    resourceHoursMap = new Map(),
+    resourceHoursMap = new Map<string, number>(),
     resourceId = null,
-    clampFn = (d) => d
-} = {}) {
+    clampFn = (d: Date | string) => d as Date
+}: CalcUnitsOpts = {}): number {
     const effortSource = useRemainingEffort ? (effortRemaining ?? 0) : effort;
     const effectiveStart = useRemainingEffort ? clampFn(startDate) : startDate;
     const workingDays  = countWeekdays(effectiveStart, endDate);
     // Use the resource's actual hours-per-day from their calendar,
     // falling back to the global default for unknown resources.
-    const hrsPerDay    = resourceHoursMap.get(resourceId) || hoursPerDay;
+    const hrsPerDay    = resourceHoursMap.get(resourceId!) || hoursPerDay;
     const workingHours = workingDays * hrsPerDay;
     const rawUnits = effortSource > 0 && workingHours > 0 ? (effortSource / workingHours) * 100 : 0;
     return Number.isFinite(rawUnits) ? rawUnits : 0;
@@ -111,16 +185,10 @@ export function calcUnits(effort, effortRemaining, startDate, endDate, {
  * Assign a colour to a project name (stable across incremental loads).
  * Known projects keep their existing colour; new ones get the next
  * colour from the palette.
- *
- * @param {string|null} projectName
- * @param {Map}         colorMap       — mutable Map<string,string> for stable mapping
- * @param {{ value: number }} colorIndex — mutable counter object { value: N }
- * @param {string[]}    palette        — array of hex colour strings
- * @returns {string}
  */
-export function getProjectColor(projectName, colorMap, colorIndex, palette) {
+export function getProjectColor(projectName: string | null, colorMap: Map<string, string>, colorIndex: { value: number }, palette: string[]): string {
     if (!projectName) return '#888';
-    if (colorMap.has(projectName)) return colorMap.get(projectName);
+    if (colorMap.has(projectName)) return colorMap.get(projectName)!;
     const color = palette[colorIndex.value % palette.length];
     colorMap.set(projectName, color);
     colorIndex.value++;
@@ -133,24 +201,15 @@ export function getProjectColor(projectName, colorMap, colorIndex, palette) {
  *
  * This is a pure-ish function: it receives all dependencies via parameters so
  * it can be unit-tested without DOM, Bryntum, or module-level state.
- *
- * @param {object[]}  rawRecords         — array of raw D365 OData assignment records
- * @param {Function}  EventModelClass    — constructor that parses raw → model (e.g. CustomEventModel)
- * @param {object}    opts
- * @param {boolean}   opts.useRemainingEffort — whether to use remaining effort mode
- * @param {Function}  opts.clampFn            — fn(date) → clamped Date (for remaining effort start)
- * @param {Function}  opts.calcUnitsFn        — fn(effort, effortRemaining, startDate, endDate, resourceId) → number
- * @param {Function}  [opts.getProjectColorFn] — fn(projectName) → hex colour string
- * @returns {{ events: object[], assignments: object[] }}
  */
-export function resolveRawAssignments(rawRecords, EventModelClass, {
+export function resolveRawAssignments(rawRecords: D365ResourceAssignment[], EventModelClass: EventModelConstructor, {
     useRemainingEffort = false,
-    clampFn            = (d) => d,
+    clampFn            = (d: Date | string) => d as Date,
     calcUnitsFn        = () => 0,
     getProjectColorFn  = () => '#888'
-} = {}) {
-    const events = [];
-    const assignments = [];
+}: ResolveOpts = {}): { events: ResolvedEvent[]; assignments: ResolvedAssignment[] } {
+    const events: ResolvedEvent[] = [];
+    const assignments: ResolvedAssignment[] = [];
 
     rawRecords.forEach((raw) => {
         const e = new EventModelClass(raw);
@@ -163,7 +222,7 @@ export function resolveRawAssignments(rawRecords, EventModelClass, {
 
         // Only shift start date for incomplete assignments with remaining effort.
         // Completed assignments (effortRemaining === 0) keep their original D365 dates.
-        let effectiveStart = e.startDate;
+        let effectiveStart: Date | string = e.startDate;
         if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
             effectiveStart = clampFn(e.startDate);
         }
@@ -173,7 +232,7 @@ export function resolveRawAssignments(rawRecords, EventModelClass, {
         }
 
         const units = calcUnitsFn(e.effort, e.effortRemaining, e.startDate, e.endDate, e.resourceId);
-        const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
+        const durationHours = (new Date(e.endDate).getTime() - new Date(effectiveStart).getTime()) / (1000 * 60 * 60);
 
         events.push({
             id                : e.id,
@@ -211,19 +270,12 @@ export function resolveRawAssignments(rawRecords, EventModelClass, {
  * `workingHours` differ from `standardWeeklyHours` have their
  * `.calendar` property mutated in-place to reference the generated
  * calendar id.
- *
- * @param {object[]} flatResources          — array of { id, workingHours, calendar, … }
- * @param {object}   [opts]
- * @param {number}   [opts.standardWeeklyHours=40]  — weekly hours considered "standard"
- * @param {number}   [opts.workDaysPerWeek=5]       — working days per week
- * @param {string}   [opts.startTime='08:00']       — daily start time for all calendars
- * @returns {object[]} array of Bryntum calendar config objects (business + per-resource)
  */
-export function generateCalendars(flatResources, {
+export function generateCalendars(flatResources: FlatResource[], {
     standardWeeklyHours = 40,
     workDaysPerWeek     = 5,
     startTime           = '08:00'
-} = {}) {
+}: CalendarOpts = {}): CalendarConfig[] {
     const standardHoursPerDay = standardWeeklyHours / workDaysPerWeek;
     const startHour = parseInt(startTime.split(':')[0], 10);
 
@@ -233,7 +285,7 @@ export function generateCalendars(flatResources, {
     const endMinStd     = Math.round((endHourStd - endHrStd) * 60);
     const endTimeStdStr = `${String(endHrStd).padStart(2, '0')}:${String(endMinStd).padStart(2, '0')}`;
 
-    const businessCalendar = {
+    const businessCalendar: CalendarConfig = {
         id                       : 'business',
         name                     : `Standard (${standardWeeklyHours}h)`,
         unspecifiedTimeIsWorking : false,
@@ -246,7 +298,7 @@ export function generateCalendars(flatResources, {
         ]
     };
 
-    const calendars = [businessCalendar];
+    const calendars: CalendarConfig[] = [businessCalendar];
 
     // Generate per-resource calendars for non-standard working hours
     flatResources.forEach((r) => {

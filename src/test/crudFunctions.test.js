@@ -5,7 +5,7 @@ vi.mock('../auth.js', () => ({
     getToken : vi.fn().mockResolvedValue('mock-token-123')
 }));
 
-import { getResources, getResourcePractices, getAssignments } from '../crudFunctions.js';
+import { getResources, getResourcePractices, getAssignments } from '../crudFunctions';
 
 // ── Test helpers ────────────────────────────────────────────────────
 /** Build a mock Response object */

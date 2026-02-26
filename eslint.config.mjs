@@ -1,5 +1,8 @@
 import globals from 'globals';
 import pluginJs from '@eslint/js';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+
 export default [
     {
         languageOptions : { globals : globals.browser },
@@ -94,5 +97,25 @@ export default [
             'n/no-callback-literal' : 'off'
         }
     },
-    pluginJs.configs.recommended
+    pluginJs.configs.recommended,
+    {
+        files           : ['**/*.ts'],
+        languageOptions : {
+            parser        : tsParser,
+            parserOptions : {
+                ecmaVersion : 'latest',
+                sourceType  : 'module'
+            }
+        },
+        plugins : {
+            '@typescript-eslint' : tseslint
+        },
+        rules : {
+            ...tseslint.configs.recommended.rules,
+            // Allow unused vars prefixed with _
+            '@typescript-eslint/no-unused-vars' : ['warn', { argsIgnorePattern : '^_' }],
+            // Relax for Bryntum config objects
+            '@typescript-eslint/no-explicit-any' : 'warn'
+        }
+    }
 ];

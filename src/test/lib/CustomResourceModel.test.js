@@ -5,7 +5,7 @@ vi.mock('../../auth.js', () => ({
     getToken : vi.fn().mockResolvedValue('mock-token')
 }));
 
-import CustomResourceModel, { loadDefaultImage } from '../../lib/CustomResourceModel.js';
+import CustomResourceModel, { loadDefaultImage } from '../../lib/CustomResourceModel';
 
 describe('CustomResourceModel', () => {
     // ── Field defaults ───────────────────────────────────────────

@@ -11,18 +11,20 @@
 /**
  * Allocation thresholds (percent)
  */
-const UNDERALLOCATED_THRESHOLD = Number(import.meta.env.VITE_UNDERALLOCATED_THRESHOLD) || 80;  // < threshold = underallocated (orange)
-const OVERALLOCATED_THRESHOLD  = Number(import.meta.env.VITE_OVERALLOCATED_THRESHOLD) || 110; // > threshold = overallocated (red)
+const UNDERALLOCATED_THRESHOLD: number = Number(import.meta.env.VITE_UNDERALLOCATED_THRESHOLD) || 80;  // < threshold = underallocated (orange)
+const OVERALLOCATED_THRESHOLD: number  = Number(import.meta.env.VITE_OVERALLOCATED_THRESHOLD) || 110; // > threshold = overallocated (red)
 
 /**
  * Color map for each allocation state.
  */
-const BAR_COLORS = {
+const BAR_COLORS: Record<string, string> = {
     underallocated  : '#FBBF24', // orange  (<80%)
     evenlyAllocated : '#6EE7B7', // green   (80-110%, all children also 80-110%)
     overallocated   : '#F87171', // red     (>110%)
     mixedState      : '#D8B4FE'  // purple  (parent 80-110%, but ≥1 child outside band)
 };
+
+type LeafState = 'under' | 'even' | 'over';
 
 /**
  * Leaf-state cache — populated as leaf bars are rendered.
@@ -33,23 +35,30 @@ const BAR_COLORS = {
  * main.js schedules a single histogram.refresh() after first paint so that
  * the second pass sees fully-populated cache and colours parents correctly.
  */
-const leafStateCache = new Map();
+const leafStateCache = new Map<string, LeafState>();
 
 /**
  * Build a cache key from resource ID + tick start time.
  */
-function cacheKey(resourceId, tickStart) {
+function cacheKey(resourceId: string, tickStart: { getTime?: () => number } | null): string {
     return `${resourceId}:${tickStart?.getTime?.() ?? 0}`;
+}
+
+/** Minimal shape for a tree-group resource used by the histogram. */
+export interface TreeGroupResource {
+    id: string;
+    isLeaf?: boolean;
+    children?: TreeGroupResource[];
 }
 
 /**
  * Collect all leaf (non-group) descendants of a TreeGroup resource.
  */
-export function getLeafDescendants(resource) {
+export function getLeafDescendants(resource: TreeGroupResource): TreeGroupResource[] {
     if (!resource.children || resource.children.length === 0) {
         return resource.isLeaf !== false ? [resource] : [];
     }
-    const leaves = [];
+    const leaves: TreeGroupResource[] = [];
     for (const child of resource.children) {
         leaves.push(...getLeafDescendants(child));
     }
@@ -60,8 +69,28 @@ export function getLeafDescendants(resource) {
  * Clear the leaf-state cache.
  * Call on data refresh so stale entries don't persist.
  */
-export function clearLeafStateCache() {
+export function clearLeafStateCache(): void {
     leafStateCache.clear();
+}
+
+/** Shape of an allocation datum passed by Bryntum's ResourceHistogram. */
+interface AllocationDatum {
+    effort: number;
+    maxEffort: number;
+    isGroup?: boolean;
+    startDate?: { getTime?: () => number } | null;
+    resource?: TreeGroupResource;
+    owner?: TreeGroupResource;
+}
+
+/** Shape of the domConfig object for bar styling. */
+interface DomConfig {
+    style?: Record<string, string>;
+}
+
+/** Shape of the renderData object for bar rendering. */
+interface BarRenderData {
+    resource?: TreeGroupResource;
 }
 
 /**
@@ -79,12 +108,14 @@ export function clearLeafStateCache() {
  *   80-110%  → 'b-evenly-allocated' (green)  when ALL children are also 80-110%
  *   80-110%  → 'b-mixed-state'      (purple) when ≥1 child is outside 80-110%
  *   > 110%   → 'b-overallocated'    (red)
- *
- * Signature: getBarClass(series, domConfig, datum, index, renderData)
- * Allocation data lives on the 3rd parameter `datum` (ResourceAllocationInterval).
- * The 5th parameter `renderData` carries the resource model for this row.
  */
-export function getBarClass(series, domConfig, datum, index, renderData) {
+export function getBarClass(
+    _series: unknown,
+    domConfig: DomConfig,
+    datum: AllocationDatum | null,
+    _index: number,
+    renderData: BarRenderData
+): string {
     // Calculate allocation % from effort/maxEffort (both in ms).
     // datum.units is unreliable for aggregate (group) rows.
     const maxEffort = datum?.maxEffort ?? 0;
@@ -93,29 +124,29 @@ export function getBarClass(series, domConfig, datum, index, renderData) {
         return '';
     }
 
-    const allocationPercent = (datum.effort / maxEffort) * 100;
+    const allocationPercent = ((datum as AllocationDatum).effort / maxEffort) * 100;
 
     // datum.isGroup is true for TreeGroup parent nodes (Practice/Role)
-    const isParent = !!datum.isGroup;
+    const isParent = !!(datum as AllocationDatum).isGroup;
 
     // Try to resolve the resource model for cache operations
-    const resource = renderData?.resource ?? datum?.resource ?? datum?.owner;
+    const resource = renderData?.resource ?? (datum as AllocationDatum)?.resource ?? (datum as AllocationDatum)?.owner;
 
-    let resultClass;
-    let color;
+    let resultClass: string;
+    let color: string;
 
     if (allocationPercent > OVERALLOCATED_THRESHOLD) {
         resultClass = 'b-overallocated';
         color       = BAR_COLORS.overallocated;
         if (!isParent && resource) {
-            leafStateCache.set(cacheKey(resource.id, datum.startDate), 'over');
+            leafStateCache.set(cacheKey(resource.id, (datum as AllocationDatum).startDate ?? null), 'over');
         }
     }
     else if (allocationPercent < UNDERALLOCATED_THRESHOLD) {
         resultClass = 'b-underallocated';
         color       = BAR_COLORS.underallocated;
         if (!isParent && resource) {
-            leafStateCache.set(cacheKey(resource.id, datum.startDate), 'under');
+            leafStateCache.set(cacheKey(resource.id, (datum as AllocationDatum).startDate ?? null), 'under');
         }
     }
     else if (isParent) {
@@ -126,7 +157,7 @@ export function getBarClass(series, domConfig, datum, index, renderData) {
         if (resource) {
             const leaves = getLeafDescendants(resource);
             for (const leaf of leaves) {
-                const state = leafStateCache.get(cacheKey(leaf.id, datum.startDate));
+                const state = leafStateCache.get(cacheKey(leaf.id, (datum as AllocationDatum).startDate ?? null));
                 if (state) {
                     hasData = true;
                     if (state !== 'even') {
@@ -152,7 +183,7 @@ export function getBarClass(series, domConfig, datum, index, renderData) {
         resultClass = 'b-evenly-allocated';
         color       = BAR_COLORS.evenlyAllocated;
         if (resource) {
-            leafStateCache.set(cacheKey(resource.id, datum.startDate), 'even');
+            leafStateCache.set(cacheKey(resource.id, (datum as AllocationDatum).startDate ?? null), 'even');
         }
     }
 
@@ -162,7 +193,8 @@ export function getBarClass(series, domConfig, datum, index, renderData) {
     return resultClass;
 }
 
-export const histogramConfig = {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export const histogramConfig: Record<string, any> = {
     appendTo      : 'histogram',
     hideHeaders   : true,        // time header already visible in the partner
     showBarTip    : true,
@@ -193,3 +225,4 @@ export const histogramConfig = {
 
     getBarClass
 };
+/* eslint-enable @typescript-eslint/no-explicit-any */

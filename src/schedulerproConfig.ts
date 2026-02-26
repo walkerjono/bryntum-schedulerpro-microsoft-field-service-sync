@@ -1,36 +1,42 @@
-import { signOut } from './auth.js';
+import { signOut } from './auth';
 
 const today = new Date();
+
+type ViewMode = 'day' | 'week' | 'month';
 
 /**
  * Map friendly view-mode names (day / week / month) to Bryntum view-preset ids.
  */
-export const VIEW_MODE_PRESETS = {
+export const VIEW_MODE_PRESETS: Record<ViewMode, string> = {
     day   : 'weekAndDayLetter',
     week  : 'weekAndMonth',
     month : 'monthAndYear'
 };
 
 /** Resolve the configured default view-mode to a Bryntum preset id. */
-export const DEFAULT_VIEW_PRESET =
-    VIEW_MODE_PRESETS[(import.meta.env.VITE_DEFAULT_VIEW_MODE || 'day').toLowerCase()] || 'weekAndDayLetter';
+export const DEFAULT_VIEW_PRESET: string =
+    VIEW_MODE_PRESETS[(import.meta.env.VITE_DEFAULT_VIEW_MODE || 'day').toLowerCase() as ViewMode] || 'weekAndDayLetter';
 
 // How many days beyond the visible scheduler viewport to pre-fetch assignments.
 // Increase for smoother scrolling (fewer mid-scroll fetches); decrease to reduce payload.
-export const VIEWPORT_BUFFER_DAYS = Number(import.meta.env.VITE_VIEWPORT_BUFFER_DAYS) || 28;
+export const VIEWPORT_BUFFER_DAYS: number = Number(import.meta.env.VITE_VIEWPORT_BUFFER_DAYS) || 28;
 
 // Shared project color palette
-export const PROJECT_COLORS = [
+export const PROJECT_COLORS: string[] = [
     '#4991E5', '#E5A449', '#7BC86C', '#CD5A91', '#A37EDE',
     '#29CCB1', '#F87171', '#FBBF24', '#6EE7B7', '#93C5FD',
     '#C084FC', '#FB923C', '#5EEAD4', '#FCA5A5', '#86EFAC'
 ];
 
+interface NameRendererArg {
+    record: { name?: string; imageUrl?: string };
+}
+
 /**
  * Renders the name cell for leaf resource rows (actual resources).
  * Generated TreeGroup parents use parentRenderer instead.
  */
-export function nameRenderer({ record }) {
+export function nameRenderer({ record }: NameRendererArg): string {
     const name     = record.name || '';
     const imageUrl = record.imageUrl;
 
@@ -44,10 +50,15 @@ export function nameRenderer({ record }) {
     return `<span>${name}</span>`;
 }
 
+interface TreeGroupParentRendererArg {
+    field: string;
+    value: string;
+}
+
 /**
  * Renders the name cell for generated TreeGroup parent rows (Practice / Role).
  */
-export function treeGroupParentRenderer({ field, value }) {
+export function treeGroupParentRenderer({ field, value }: TreeGroupParentRendererArg): string {
     if (field === 'practiceName') {
         return `<div style="display: flex; align-items: center; gap: 8px;">
             <i class="fa fa-users" style="font-size: 16px; color: #666; width: 20px; text-align: center;"></i>
@@ -63,7 +74,8 @@ export function treeGroupParentRenderer({ field, value }) {
     return `<strong>${value}</strong>`;
 }
 
-export const schedulerproConfig = {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export const schedulerproConfig: Record<string, any> = {
     appendTo    : 'app',
     startDate   : new Date(today.getTime() - (today.getDay() || 7 - 1) * 24 * 60 * 60 * 1000), // Snap to Monday of the current week
     endDate     : new Date(today.getFullYear(), today.getMonth(), 1 + (12 * 12)),
@@ -71,7 +83,7 @@ export const schedulerproConfig = {
     visibleDate : { date : new Date(), block : 'nearest' },
     barMargin   : 5,
 
-    eventRenderer({ eventRecord, renderData }) {
+    eventRenderer({ eventRecord, renderData }: { eventRecord: any; renderData: any }) {
         if (eventRecord.effortRemaining == null || eventRecord.effortRemaining === 0) {
             renderData.eventColor = 'gray';
             renderData.cls.add('b-inactive');
@@ -99,7 +111,7 @@ export const schedulerproConfig = {
             showCurrentTimeLine : true
         },
         eventTooltip : {
-            template({ eventRecord }) {
+            template({ eventRecord }: { eventRecord: any }) {
                 const start  = eventRecord.startDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.startDate) : '';
                 const end    = eventRecord.endDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.endDate) : '';
                 const effort      = eventRecord.effort != null ? `${eventRecord.effort} hrs` : '';
@@ -201,9 +213,9 @@ export const schedulerproConfig = {
                         clearable   : true,
                         width       : 350,
                         placeholder : 'All Practices',
-                        items       : [],
+                        items       : [] as string[],
                         chipView    : { closable : true },
-                        listItemTpl(record) {
+                        listItemTpl(record: { text: string }) {
                             return record.text;
                         }
                     },
@@ -216,10 +228,10 @@ export const schedulerproConfig = {
                         clearable      : true,
                         width          : 350,
                         placeholder    : 'All Roles',
-                        items          : [],
+                        items          : [] as string[],
                         chipView       : { closable : true },
                         filterOperator : '*',
-                        listItemTpl(record) {
+                        listItemTpl(record: { text: string }) {
                             return record.text;
                         }
                     },
@@ -232,10 +244,10 @@ export const schedulerproConfig = {
                         clearable      : true,
                         width          : 350,
                         placeholder    : 'All Resources',
-                        items          : [],
+                        items          : [] as string[],
                         chipView       : { closable : true },
                         filterOperator : '*',
-                        listItemTpl(record) {
+                        listItemTpl(record: { text: string }) {
                             return record.text;
                         }
                     }
@@ -244,4 +256,4 @@ export const schedulerproConfig = {
         ]
     }
 };
-
+/* eslint-enable @typescript-eslint/no-explicit-any */

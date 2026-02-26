@@ -24,37 +24,37 @@ describe('Default values for optional env vars', () => {
     describe('VITE_DEFAULT_VIEW_MODE', () => {
         it('defaults to "weekAndDayLetter" when env var is empty', async() => {
             vi.stubEnv('VITE_DEFAULT_VIEW_MODE', '');
-            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig.js');
+            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig');
             expect(DEFAULT_VIEW_PRESET).toBe('weekAndDayLetter');
         });
 
         it('maps "day" to "weekAndDayLetter"', async() => {
             vi.stubEnv('VITE_DEFAULT_VIEW_MODE', 'day');
-            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig.js');
+            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig');
             expect(DEFAULT_VIEW_PRESET).toBe('weekAndDayLetter');
         });
 
         it('maps "week" to "weekAndMonth"', async() => {
             vi.stubEnv('VITE_DEFAULT_VIEW_MODE', 'week');
-            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig.js');
+            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig');
             expect(DEFAULT_VIEW_PRESET).toBe('weekAndMonth');
         });
 
         it('maps "month" to "monthAndYear"', async() => {
             vi.stubEnv('VITE_DEFAULT_VIEW_MODE', 'month');
-            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig.js');
+            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig');
             expect(DEFAULT_VIEW_PRESET).toBe('monthAndYear');
         });
 
         it('is case-insensitive', async() => {
             vi.stubEnv('VITE_DEFAULT_VIEW_MODE', 'WEEK');
-            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig.js');
+            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig');
             expect(DEFAULT_VIEW_PRESET).toBe('weekAndMonth');
         });
 
         it('falls back to "weekAndDayLetter" for unrecognised values', async() => {
             vi.stubEnv('VITE_DEFAULT_VIEW_MODE', 'quarter');
-            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig.js');
+            const { DEFAULT_VIEW_PRESET } = await import('../schedulerproConfig');
             expect(DEFAULT_VIEW_PRESET).toBe('weekAndDayLetter');
         });
     });
@@ -63,13 +63,13 @@ describe('Default values for optional env vars', () => {
     describe('VITE_VIEWPORT_BUFFER_DAYS', () => {
         it('defaults to 28 when env var is empty', async() => {
             vi.stubEnv('VITE_VIEWPORT_BUFFER_DAYS', '');
-            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig.js');
+            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig');
             expect(VIEWPORT_BUFFER_DAYS).toBe(28);
         });
 
         it('defaults to 28 when env var is undefined', async() => {
             vi.stubEnv('VITE_VIEWPORT_BUFFER_DAYS', undefined);
-            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig.js');
+            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig');
             expect(VIEWPORT_BUFFER_DAYS).toBe(28);
         });
     });
@@ -78,7 +78,7 @@ describe('Default values for optional env vars', () => {
     describe('VITE_CRM_REGION', () => {
         it('defaults to "crm6" when env var is empty (auth.js)', async() => {
             vi.stubEnv('VITE_CRM_REGION', '');
-            const auth = await import('../auth.js');
+            const auth = await import('../auth');
             // The msalRequest scope URL should contain crm6 as default
             // Auth module exposes getToken/signIn/signOut — check indirectly
             // via the module loading successfully with default region
@@ -88,7 +88,7 @@ describe('Default values for optional env vars', () => {
 
         it('defaults to "crm6" when env var is empty (crudFunctions.js)', async() => {
             vi.stubEnv('VITE_CRM_REGION', '');
-            const crud = await import('../crudFunctions.js');
+            const crud = await import('../crudFunctions');
             expect(crud).toBeDefined();
             expect(typeof crud.getResources).toBe('function');
         });
@@ -98,7 +98,7 @@ describe('Default values for optional env vars', () => {
     describe('VITE_DATAVERSE_API_VERSION', () => {
         it('defaults to "v9.2" when env var is empty', async() => {
             vi.stubEnv('VITE_DATAVERSE_API_VERSION', '');
-            const crud = await import('../crudFunctions.js');
+            const crud = await import('../crudFunctions');
             // Module loads successfully with default — verified by export presence
             expect(typeof crud.getResources).toBe('function');
         });
@@ -110,7 +110,7 @@ describe('Default values for optional env vars', () => {
             vi.stubEnv('VITE_REDIRECT_URI', '');
             // Auth module uses: import.meta.env.VITE_REDIRECT_URI || window.location.origin
             // In jsdom, window.location.origin is 'http://localhost'
-            const auth = await import('../auth.js');
+            const auth = await import('../auth');
             expect(auth).toBeDefined();
         });
     });
@@ -119,7 +119,7 @@ describe('Default values for optional env vars', () => {
     describe('VITE_ODATA_MAX_PAGES', () => {
         it('defaults to 20 when env var is empty', async() => {
             vi.stubEnv('VITE_ODATA_MAX_PAGES', '');
-            const crud = await import('../crudFunctions.js');
+            const crud = await import('../crudFunctions');
             expect(typeof crud.getResources).toBe('function');
         });
     });
@@ -130,7 +130,7 @@ describe('Default values for optional env vars', () => {
             // Logic: import.meta.env.VITE_USE_EFFORT_REMAINING === 'true'
             // Empty string / undefined → strict equality with 'true' → false
             vi.stubEnv('VITE_USE_EFFORT_REMAINING', '');
-            const crud = await import('../crudFunctions.js');
+            const crud = await import('../crudFunctions');
             expect(crud).toBeDefined();
         });
 
@@ -148,7 +148,7 @@ describe('Default values for optional env vars', () => {
             vi.stubEnv('VITE_UNDERALLOCATED_THRESHOLD', '');
             vi.stubEnv('VITE_OVERALLOCATED_THRESHOLD', '');
             const { getBarClass, clearLeafStateCache } =
-        await import('../histogramConfig.js');
+        await import('../histogramConfig');
             clearLeafStateCache();
 
             const date = new Date('2026-03-01');
@@ -208,20 +208,20 @@ describe('Numeric env vars parsed as numbers', () => {
     describe('VITE_VIEWPORT_BUFFER_DAYS', () => {
         it('parses string "14" as number 14', async() => {
             vi.stubEnv('VITE_VIEWPORT_BUFFER_DAYS', '14');
-            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig.js');
+            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig');
             expect(VIEWPORT_BUFFER_DAYS).toBe(14);
             expect(typeof VIEWPORT_BUFFER_DAYS).toBe('number');
         });
 
         it('non-numeric string falls back to 28', async() => {
             vi.stubEnv('VITE_VIEWPORT_BUFFER_DAYS', 'abc');
-            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig.js');
+            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig');
             expect(VIEWPORT_BUFFER_DAYS).toBe(28);
         });
 
         it('"0" falls back to 28 (via || operator)', async() => {
             vi.stubEnv('VITE_VIEWPORT_BUFFER_DAYS', '0');
-            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig.js');
+            const { VIEWPORT_BUFFER_DAYS } = await import('../schedulerproConfig');
             // Number('0') is 0, and 0 || 28 = 28
             expect(VIEWPORT_BUFFER_DAYS).toBe(28);
         });
@@ -256,7 +256,7 @@ describe('Numeric env vars parsed as numbers', () => {
             vi.stubEnv('VITE_UNDERALLOCATED_THRESHOLD', '70');
             vi.stubEnv('VITE_OVERALLOCATED_THRESHOLD', '120');
             const { getBarClass, clearLeafStateCache } =
-        await import('../histogramConfig.js');
+        await import('../histogramConfig');
             clearLeafStateCache();
 
             const date = new Date('2026-03-01');
@@ -292,7 +292,7 @@ describe('Numeric env vars parsed as numbers', () => {
             vi.stubEnv('VITE_UNDERALLOCATED_THRESHOLD', '80');
             vi.stubEnv('VITE_OVERALLOCATED_THRESHOLD', '120');
             const { getBarClass, clearLeafStateCache } =
-        await import('../histogramConfig.js');
+        await import('../histogramConfig');
             clearLeafStateCache();
 
             const date = new Date('2026-03-01');
@@ -403,20 +403,20 @@ describe('Required env vars missing', () => {
     it('VITE_MICROSOFT_DYNAMICS_ORG_ID undefined produces "undefined" in API URL (no crash)', async() => {
         vi.stubEnv('VITE_MICROSOFT_DYNAMICS_ORG_ID', undefined);
         // Module still loads — the constructed URL will contain "undefined" but won't throw
-        const crud = await import('../crudFunctions.js');
+        const crud = await import('../crudFunctions');
         expect(crud).toBeDefined();
     });
 
     it('VITE_MICROSOFT_ENTRA_APP_ID undefined passes through to MSAL config (no crash)', async() => {
         vi.stubEnv('VITE_MICROSOFT_ENTRA_APP_ID', undefined);
         // Auth module still loads — MSAL is mocked so no real auth happens
-        const auth = await import('../auth.js');
+        const auth = await import('../auth');
         expect(auth).toBeDefined();
     });
 
     it('VITE_MICROSOFT_ENTRA_TENANT_ID undefined passes through to authority URL (no crash)', async() => {
         vi.stubEnv('VITE_MICROSOFT_ENTRA_TENANT_ID', undefined);
-        const auth = await import('../auth.js');
+        const auth = await import('../auth');
         expect(auth).toBeDefined();
     });
 });

@@ -340,6 +340,8 @@ All filter selections and the effort toggle state are **persisted as URL query p
 1. [ ] order assignments logically
 1. [x] do we need to consider timezone? or are start/finish date only fields? `msdyn_start` and `msdyn_finish` are date only fields
 1. [ ] SWA deployment (x2 environments)
+1. [ ] change to AU date format in tooltips, check elsewhere e.g. edit
+1. [ ] consider project task dependencies
 
 ## Tests Required
 

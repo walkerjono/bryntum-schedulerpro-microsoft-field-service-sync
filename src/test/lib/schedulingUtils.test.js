@@ -7,8 +7,8 @@ import {
     getProjectColor,
     resolveRawAssignments,
     generateCalendars
-} from '../../lib/schedulingUtils.js';
-import CustomEventModel from '../../lib/CustomEventModel.js';
+} from '../../lib/schedulingUtils';
+import CustomEventModel from '../../lib/CustomEventModel';
 
 /** Format a Date as YYYY-MM-DD in *local* time (avoids UTC shift from toISOString). */
 const localDate = (d) =>

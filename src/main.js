@@ -1,26 +1,25 @@
 import { SchedulerPro, ResourceHistogram } from '@bryntum/schedulerpro';
 import './style.css';
 import { schedulerproConfig, PROJECT_COLORS, VIEWPORT_BUFFER_DAYS, DEFAULT_VIEW_PRESET } from './schedulerproConfig';
-import { histogramConfig, clearLeafStateCache } from './histogramConfig.js';
-import { signIn } from './auth.js';
+import { histogramConfig, clearLeafStateCache } from './histogramConfig';
+import { signIn } from './auth';
 import {
     getResources,
     getAssignments,
     getResourcePractices
-} from './crudFunctions.js';
-import CustomEventModel from './lib/CustomEventModel.js';
+} from './crudFunctions';
+import CustomEventModel from './lib/CustomEventModel';
 import CustomResourceModel, {
     loadDefaultImage
-} from './lib/CustomResourceModel.js';
+} from './lib/CustomResourceModel';
 import {
-    countWeekdays as _countWeekdays,
     computeBufferedRange as _computeBufferedRange,
     clampStartToToday as _clampStartToToday,
     calcUnits as _calcUnits,
     getProjectColor as _getProjectColor,
     resolveRawAssignments as _resolveRawAssignments,
     generateCalendars as _generateCalendars
-} from './lib/schedulingUtils.js';
+} from './lib/schedulingUtils';
 
 const signInLink = typeof document !== 'undefined' ? document.getElementById('signin') : null;
 const loaderContainer = typeof document !== 'undefined' ? document.querySelector('.loader-container') : null;
@@ -121,9 +120,6 @@ async function displayUI() {
     }
     console.log(`[main] Built resourceHoursMap for ${resourceHoursMap.size} resources`);
 
-    // countWeekdays — delegates to extracted pure function
-    const countWeekdays = _countWeekdays;
-
     const HOURS_PER_DAY = Number(import.meta.env.VITE_HOURS_PER_DAY) || 8;
 
     // clampStartToToday — delegates to extracted pure function with module-level config
@@ -155,9 +151,9 @@ async function displayUI() {
         CustomEventModel,
         {
             useRemainingEffort,
-            clampFn            : clampStartToToday,
-            calcUnitsFn        : calcUnits,
-            getProjectColorFn  : getProjectColor
+            clampFn           : clampStartToToday,
+            calcUnitsFn       : calcUnits,
+            getProjectColorFn : getProjectColor
         }
     );
 
@@ -230,9 +226,9 @@ async function displayUI() {
     function resolveRawAssignments(rawRecords) {
         return _resolveRawAssignments(rawRecords, CustomEventModel, {
             useRemainingEffort,
-            clampFn            : clampStartToToday,
-            calcUnitsFn        : calcUnits,
-            getProjectColorFn  : getProjectColor
+            clampFn           : clampStartToToday,
+            calcUnitsFn       : calcUnits,
+            getProjectColorFn : getProjectColor
         });
     }
 

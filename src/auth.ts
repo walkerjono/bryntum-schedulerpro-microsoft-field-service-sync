@@ -1,9 +1,11 @@
 import {
     PublicClientApplication,
-    InteractionRequiredAuthError
+    InteractionRequiredAuthError,
+    type Configuration,
+    type PopupRequest
 } from '@azure/msal-browser';
 
-const msalConfig = {
+const msalConfig: Configuration = {
     auth : {
         clientId  : import.meta.env.VITE_MICROSOFT_ENTRA_APP_ID,
         authority : `https://login.microsoftonline.com/${
@@ -17,19 +19,19 @@ const msalConfig = {
 const msalInstance =
   await PublicClientApplication.createPublicClientApplication(msalConfig);
 const crmRegion = import.meta.env.VITE_CRM_REGION || 'crm6';
-const msalRequest = { scopes : [`https://${
+const msalRequest: PopupRequest = { scopes : [`https://${
     import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID
   }.api.${crmRegion}.dynamics.com/.default`] };
 
 // Log the user in
-export async function signIn() {
+export async function signIn(): Promise<void> {
     console.log('[auth] Opening login popup…');
     const authResult = await msalInstance.loginPopup(msalRequest);
     sessionStorage.setItem('msalAccount', authResult.account.username);
     console.log('[auth] Signed in as', authResult.account.username);
 }
 
-export async function getToken() {
+export async function getToken(): Promise<string> {
     const account = sessionStorage.getItem('msalAccount');
     if (!account) {
         throw new Error(
@@ -38,9 +40,13 @@ export async function getToken() {
     }
     try {
         // First, attempt to get the token silently
+        const msalAccount = msalInstance.getAccountByUsername(account);
+        if (!msalAccount) {
+            throw new Error('Account not found.');
+        }
         const silentRequest = {
             scopes  : msalRequest.scopes,
-            account : msalInstance.getAccountByUsername(account)
+            account : msalAccount
         };
         const silentResult = await msalInstance.acquireTokenSilent(silentRequest);
         return silentResult.accessToken;
@@ -60,7 +66,7 @@ export async function getToken() {
     }
 }
 
-export async function signOut() {
+export async function signOut(): Promise<void> {
     const account = sessionStorage.getItem('msalAccount');
     if (account) {
         const logoutRequest = {

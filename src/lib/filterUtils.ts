@@ -5,13 +5,18 @@
  * zoom preset) to/from URL query parameters.
  */
 
+export interface FilterState {
+    practices: string[];
+    roles: string[];
+    resources: string[];
+    useRemainingEffort: boolean | null;
+    zoom: string | null;
+}
+
 /**
  * Read filter values from a URL search string.
- *
- * @param {string} searchString — e.g. window.location.search
- * @returns {{ practices: string[], roles: string[], resources: string[], useRemainingEffort: boolean|null, zoom: string|null }}
  */
-export function readFilterParams(searchString) {
+export function readFilterParams(searchString: string): FilterState {
     const params = new URLSearchParams(searchString);
     const effortParam = params.get('useRemainingEffort');
     return {
@@ -25,18 +30,13 @@ export function readFilterParams(searchString) {
 
 /**
  * Write filter values to URL query parameters.
- *
- * @param {object}   state
- * @param {string[]} state.practices
- * @param {string[]} state.roles
- * @param {string[]} state.resources
- * @param {boolean}  state.useRemainingEffort
- * @param {string|null} state.zoom
- * @param {string}   currentSearch — current location.search
- * @param {string}   pathname      — current location.pathname
- * @param {function} replaceStateFn — function(url) to update browser history
  */
-export function writeFilterParams(state, currentSearch, pathname, replaceStateFn) {
+export function writeFilterParams(
+    state: FilterState,
+    currentSearch: string,
+    pathname: string,
+    replaceStateFn: (url: string) => void
+): void {
     const params = new URLSearchParams(currentSearch);
 
     if (state.practices && state.practices.length > 0) {
@@ -69,8 +69,8 @@ export function writeFilterParams(state, currentSearch, pathname, replaceStateFn
 
     // Persist zoom only when it differs from the env-var default
     const defaultPreset = import.meta.env.VITE_DEFAULT_VIEW_MODE
-        ? ({ day: 'weekAndDayLetter', week: 'weekAndMonth', month: 'monthAndYear' }[
-            (import.meta.env.VITE_DEFAULT_VIEW_MODE || 'day').toLowerCase()
+        ? ({ day : 'weekAndDayLetter', week : 'weekAndMonth', month : 'monthAndYear' }[
+            (import.meta.env.VITE_DEFAULT_VIEW_MODE || 'day').toLowerCase() as 'day' | 'week' | 'month'
         ] || 'weekAndDayLetter')
         : 'weekAndDayLetter';
 

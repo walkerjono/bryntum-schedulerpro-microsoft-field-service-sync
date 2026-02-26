@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
-import { signIn, getToken, signOut } from '../auth.js';
+import { signIn, getToken, signOut } from '../auth';
 
 // The mock MSAL instance is created in setup.js and returned by
 // PublicClientApplication.createPublicClientApplication().

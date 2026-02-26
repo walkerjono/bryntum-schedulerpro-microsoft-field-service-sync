@@ -1,18 +1,24 @@
-import { getToken } from './auth.js';
+import { getToken } from './auth';
+import type { D365BookableResource, D365ResourceAssignment, D365ResourceCategoryAssignment, ODataResponse } from './types/d365';
 
 const crmRegion  = import.meta.env.VITE_CRM_REGION || 'crm6';
 const orgUrl     = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.api.${crmRegion}.dynamics.com`;
 const apiVersion = import.meta.env.VITE_DATAVERSE_API_VERSION || 'v9.2';
 const maxPages   = Number(import.meta.env.VITE_ODATA_MAX_PAGES) || 20;
 
+interface FetchAllPagesOpts {
+    label?: string;
+    maxPages?: number;
+}
+
 /**
  * Generic paginated OData fetch.
  * Follows @odata.nextLink until all pages are consumed.
  * Returns { value: [...allRecords] } to match the single-page response shape.
  */
-async function fetchAllPages(url, headers, { label = 'records', maxPages: pageLimit = maxPages } = {}) {
-    const allRecords = [];
-    let nextUrl = url;
+async function fetchAllPages<T>(url: string, headers: Record<string, string>, { label = 'records', maxPages: pageLimit = maxPages }: FetchAllPagesOpts = {}): Promise<{ value: T[] }> {
+    const allRecords: T[] = [];
+    let nextUrl: string | null = url;
     let page = 0;
 
     while (nextUrl) {
@@ -30,7 +36,7 @@ async function fetchAllPages(url, headers, { label = 'records', maxPages: pageLi
             throw new Error(`Failed to fetch ${label} (page ${page}): ${response.statusText}`);
         }
 
-        const data = await response.json();
+        const data: ODataResponse<T> = await response.json();
         allRecords.push(...data.value);
 
         nextUrl = data['@odata.nextLink'] || null;
@@ -40,7 +46,7 @@ async function fetchAllPages(url, headers, { label = 'records', maxPages: pageLi
     return { value : allRecords };
 }
 
-export async function getResources() {
+export async function getResources(): Promise<{ value: D365BookableResource[] }> {
     console.log('[crud] Fetching resources…');
     const token = await getToken();
 
@@ -58,14 +64,14 @@ export async function getResources() {
         'OData-Version'    : '4.0'
     };
 
-    return fetchAllPages(url, headers, { label : 'resources' });
+    return fetchAllPages<D365BookableResource>(url, headers, { label : 'resources' });
 }
 
 /**
  * Fetch default bookableresourcecategoryassn records with expanded category.
  * Returns { practiceMap: Map<resourceId, string>, roleMap: Map<resourceId, string> }.
  */
-export async function getResourcePractices() {
+export async function getResourcePractices(): Promise<{ practiceMap: Map<string, string>; roleMap: Map<string, string> }> {
     console.log('[crud] Fetching resource practices…');
     const token = await getToken();
 
@@ -83,11 +89,11 @@ export async function getResourcePractices() {
         'Prefer'           : 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
     };
 
-    const data = await fetchAllPages(url, headers, { label : 'resource practices' });
+    const data = await fetchAllPages<D365ResourceCategoryAssignment>(url, headers, { label : 'resource practices' });
 
     // Build Map<resourceId, practiceDisplayName> and Map<resourceId, roleName>
-    const practiceMap = new Map();
-    const roleMap = new Map();
+    const practiceMap = new Map<string, string>();
+    const roleMap = new Map<string, string>();
     for (const assn of data.value) {
         const resourceId = assn._resource_value;
         const category = assn.ResourceCategory;
@@ -115,21 +121,12 @@ export async function getResourcePractices() {
  * When `rangeStart` and `rangeEnd` are provided the OData query adds a date
  * overlap filter so only assignments that intersect the given window are
  * returned — significantly reducing payload for large organisations.
- *
- * @param {{ rangeStart?: Date, rangeEnd?: Date }} [options]
  */
-export async function getAssignments({ rangeStart, rangeEnd } = {}) {
+export async function getAssignments({ rangeStart, rangeEnd }: { rangeStart?: Date; rangeEnd?: Date } = {}): Promise<{ value: D365ResourceAssignment[] }> {
     console.log('[crud] Fetching assignments…');
     const token = await getToken();
 
-    // const bid = 'd4296cbe-f95e-ed11-9562-00224893363e'; // sarah grant
-
     let filter = 'msdyn_projectid/statecode eq 0';
-
-    // bid is optional; filter by resource if provided
-    if (typeof bid !== 'undefined') {
-        filter += ` and _msdyn_bookableresourceid_value eq ${bid}`;
-    }
 
     if (rangeStart && rangeEnd) {
         // Overlap query: assignment finishes after range start AND starts before range end
@@ -153,5 +150,5 @@ export async function getAssignments({ rangeStart, rangeEnd } = {}) {
         'Prefer'           : 'odata.include-annotations="OData.Community.Display.V1.FormattedValue,Microsoft.Dynamics.CRM.lookuplogicalname"'
     };
 
-    return fetchAllPages(url, headers, { label : 'assignments' });
+    return fetchAllPages<D365ResourceAssignment>(url, headers, { label : 'assignments' });
 }
