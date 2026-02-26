@@ -65,10 +65,10 @@ export function treeGroupParentRenderer({ field, value }) {
 
 export const schedulerproConfig = {
     appendTo    : 'app',
-    startDate   : new Date(today.getFullYear(), today.getMonth(), 1),
+    startDate   : new Date(today.getTime() - (today.getDay() || 7 - 1) * 24 * 60 * 60 * 1000), // Snap to Monday of the current week
     endDate     : new Date(today.getFullYear(), today.getMonth(), 1 + (12 * 12)),
     viewPreset  : DEFAULT_VIEW_PRESET,
-    visibleDate : { date : new Date(), block : 'start' },
+    visibleDate : { date : new Date(), block : 'nearest' },
     barMargin   : 5,
 
     eventRenderer({ eventRecord, renderData }) {
