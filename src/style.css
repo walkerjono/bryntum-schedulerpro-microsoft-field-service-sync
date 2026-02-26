@@ -14,43 +14,43 @@ html {
 }
 
 #content {
-  display        : flex;
-  flex-direction : column;
-  height         : 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 #app {
-  margin         : 0;
-  display        : flex;
-  flex-direction : column;
-  flex           : 1 1 60%;
-  min-height     : 0;
-  font-size      : 14px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 60%;
+  min-height: 0;
+  font-size: 14px;
 }
 
 /* Grey out scheduler bars with no effort remaining */
 .b-sch-event-wrap:has(.b-sch-event.b-inactive) {
-  opacity : 0.6;
+  opacity: 0.6;
 }
 
 .b-sch-event.b-inactive {
-  background-image : repeating-linear-gradient(
+  background-image: repeating-linear-gradient(
     -45deg,
     transparent,
     transparent 4px,
     rgba(204, 204, 204, 0.5) 4px,
     rgba(204, 204, 204, 0.5) 8px
   ) !important;
-  background-color : #efefef !important;
+  background-color: #efefef !important;
 }
 
 #histogram {
-  display        : flex;
-  flex-direction : column;
-  flex           : 1 1 40%;
-  min-height     : 0;
-  font-size      : 14px;
-  border-top     : 2px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 40%;
+  min-height: 0;
+  font-size: 14px;
+  border-top: 2px solid #ddd;
 }
 
 main {
@@ -83,63 +83,73 @@ main {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @-webkit-keyframes spin {
-  to {transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Histogram bar coloring — bars are SVG <rect>, so use 'fill' not 'background' */
 /* Overallocated: >110% (red) */
 .b-histogram-bar.b-overallocated {
-  fill: #F87171 !important;
+  fill: #f87171 !important;
 }
 
 /* Underallocated: <80% (orange) */
 .b-histogram-bar.b-underallocated {
-  fill: #FBBF24 !important;
+  fill: #fbbf24 !important;
 }
 
 /* Evenly-allocated: 80-110% — leaf, or parent with all children also 80-110% (green) */
 .b-histogram-bar.b-evenly-allocated {
-  fill: #6EE7B7 !important;
+  fill: #6ee7b7 !important;
 }
 
 /* Mixed-state: parent 80-110% but ≥1 child outside the 80-110% band (purple) */
 .b-histogram-bar.b-mixed-state {
-  fill: #D8B4FE !important;
+  fill: #d8b4fe !important;
 }
 
-.b-sch-horizontal .b-sch-event-wrap .b-sch-event-buffer-before:not(.b-buffer-thin){
-  border-inline-start:3px solid #ccc;
+.b-sch-horizontal
+  .b-sch-event-wrap
+  .b-sch-event-buffer-before:not(.b-buffer-thin) {
+  border-inline-start: 3px solid #ccc;
 }
-.b-sch-horizontal .b-sch-event-wrap .b-sch-event-buffer-after:not(.b-buffer-thin){
-  border-inline-end:3px solid #ccc;
+.b-sch-horizontal
+  .b-sch-event-wrap
+  .b-sch-event-buffer-after:not(.b-buffer-thin) {
+  border-inline-end: 3px solid #ccc;
 }
-.b-sch-horizontal .b-sch-event-wrap .event-duration{
-  margin-top:0.3em;
+.b-sch-horizontal .b-sch-event-wrap .event-duration {
+  margin-top: 0.3em;
 }
-.b-sch-horizontal .b-sch-event-wrap .b-sch-event:not(.b-milestone) .fa{
-  margin-inline-end:0.75em;
+.b-sch-horizontal .b-sch-event-wrap .b-sch-event:not(.b-milestone) .fa {
+  margin-inline-end: 0.75em;
 }
 
-.b-sch-vertical .b-sch-event-wrap .b-sch-event-buffer-before:not(.b-buffer-thin){
-  border-top:3px solid #ccc;
+.b-sch-vertical
+  .b-sch-event-wrap
+  .b-sch-event-buffer-before:not(.b-buffer-thin) {
+  border-top: 3px solid #ccc;
 }
 
 /* Current time line styling */
 .b-sch-timerange.b-sch-current-time {
-  background: #94CA14 !important;
+  background: #94ca14 !important;
   opacity: 0.5;
 }
 
 .b-sch-timerange.b-sch-current-time line {
-  stroke: #94CA14 !important;
+  stroke: #94ca14 !important;
 }
 
 .b-sch-timerange.b-sch-current-time label {
-  color: #94CA14 !important;
+  color: #94ca14 !important;
 }
 
 /* Hide current time label on scheduler only */
@@ -152,30 +162,32 @@ main {
 
 /* Multi-row toolbar layout */
 .b-multi-row-toolbar {
-  display        : flex;
-  flex-direction : column;
+  display: flex;
+  flex-direction: column;
 }
 
 .b-multi-row-toolbar > .b-toolbar {
-  border-bottom : none;
+  border-bottom: none;
 }
 
 .b-multi-row-toolbar > .b-toolbar-row-2 {
-  border-top    : 1px solid #e0e0e0;
-  padding-block : 4px;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f1f1f1;
+  padding-block: 4px;
 }
 
 /* Zoom preset button group */
 .b-zoom-presets {
-  margin-inline : 8px;
+  margin-inline: 8px;
 }
 
 .b-zoom-presets .b-button {
-  min-width : 60px;
+  min-width: 60px;
 }
 
 /* Zoom in/out buttons */
 .b-toolbar-row-1 .b-zoomoutbutton,
 .b-toolbar-row-1 .b-zoominbutton {
-  font-size : 14px;
+  font-size: 14px;
 }
