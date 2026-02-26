@@ -461,10 +461,10 @@ All filter selections and the effort toggle state are **persisted as URL query p
 
 #### Environment variables
 
-- [ ] All required `VITE_` variables are validated at startup (or fail gracefully)
-- [ ] Default values are applied correctly when optional vars are missing
-- [ ] `VITE_EFFORT_REMAINING_OFFSET_DAYS = 'current_week'` string value handled correctly
-- [ ] Numeric env vars (`VITE_HOURS_PER_DAY`, thresholds, etc.) parsed as numbers
+- [x] All required `VITE_` variables are validated at startup (or fail gracefully)
+- [x] Default values are applied correctly when optional vars are missing
+- [x] `VITE_EFFORT_REMAINING_OFFSET_DAYS = 'current_week'` string value handled correctly
+- [x] Numeric env vars (`VITE_HOURS_PER_DAY`, thresholds, etc.) parsed as numbers
 
 ---
 
