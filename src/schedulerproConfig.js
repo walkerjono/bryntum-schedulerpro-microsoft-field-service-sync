@@ -66,7 +66,7 @@ export function treeGroupParentRenderer({ field, value }) {
 export const schedulerproConfig = {
     appendTo    : 'app',
     startDate   : new Date(today.getFullYear(), today.getMonth(), 1),
-    endDate     : new Date(today.getFullYear(), today.getMonth(), 1 + (12 * 7)),
+    endDate     : new Date(today.getFullYear(), today.getMonth(), 1 + (12 * 12)),
     viewPreset  : DEFAULT_VIEW_PRESET,
     visibleDate : { date : new Date(), block : 'start' },
     barMargin   : 5,
@@ -153,6 +153,20 @@ export const schedulerproConfig = {
                             { text : 'Week',  ref : 'zoomWeek',  toggleable : true, pressed : DEFAULT_VIEW_PRESET === 'weekAndMonth',      dataset : { preset : 'weekAndMonth' } },
                             { text : 'Month', ref : 'zoomMonth', toggleable : true, pressed : DEFAULT_VIEW_PRESET === 'monthAndYear',     dataset : { preset : 'monthAndYear' } }
                         ]
+                    },
+                    zoomOutButton : {
+                        type    : 'button',
+                        ref     : 'zoomOutButton',
+                        icon    : 'fa fa-search-minus',
+                        tooltip : 'Zoom out',
+                        cls     : 'b-transparent'
+                    },
+                    zoomInButton : {
+                        type    : 'button',
+                        ref     : 'zoomInButton',
+                        icon    : 'fa fa-search-plus',
+                        tooltip : 'Zoom in',
+                        cls     : 'b-transparent'
                     },
                     effortToggle : {
                         type          : 'slidetoggle',

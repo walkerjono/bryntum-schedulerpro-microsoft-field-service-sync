@@ -46,7 +46,7 @@ It is based on the following [Bryntum Example](https://bryntum.com/blog/how-to-c
 | `VITE_VIEWPORT_BUFFER_DAYS`         | Days beyond the visible scheduler viewport to pre-fetch assignments. Increase for smoother scrolling, decrease to reduce payload                              | `28`                     |
 | `VITE_HOURS_PER_DAY`                | Standard working hours per day (used for allocation % and calendar generation)                                                                                | `8`                      |
 | `VITE_EFFORT_REMAINING_OFFSET_DAYS` | When using remaining-effort mode, offset the effective start date. Set a number for days in the past, or `current_week` to snap to Monday of the current week | `7`                      |
-| `VITE_DEFAULT_VIEW_MODE`             | Default scheduler zoom level: `day`, `week`, or `month`. Can be overridden at runtime via the toolbar or `?zoom` URL param                                    | `day`                    |
+| `VITE_DEFAULT_VIEW_MODE`            | Default scheduler zoom level: `day`, `week`, or `month`. Can be overridden at runtime via the toolbar or `?zoom` URL param                                    | `day`                    |
 | `VITE_UNDERALLOCATED_THRESHOLD`     | Histogram allocation % below which a bar is considered underallocated (orange)                                                                                | `80`                     |
 | `VITE_OVERALLOCATED_THRESHOLD`      | Histogram allocation % above which a bar is considered overallocated (red)                                                                                    | `110`                    |
 | `VITE_ODATA_MAX_PAGES`              | Maximum number of OData pagination pages to follow before stopping                                                                                            | `20`                     |
@@ -303,9 +303,9 @@ All filter selections and the effort toggle state are **persisted as URL query p
 | `eslint`                                   | ^9.38.0 | Linting                           |
 | `@rollup/wasm-node`                        | ^4.57.1 | Rollup WASM support               |
 | `@rollup/rollup-win32-x64-msvc` (optional) | ^4.57.1 | Platform-specific Rollup binary   |
-| `vitest`                                    | ^4.0.18 | Unit test runner (dev)            |
-| `@vitest/coverage-v8`                       | ^4.0.18 | V8 code coverage (dev)            |
-| `jsdom`                                     | ^26.1.0 | DOM environment for tests (dev)   |
+| `vitest`                                   | ^4.0.18 | Unit test runner (dev)            |
+| `@vitest/coverage-v8`                      | ^4.0.18 | V8 code coverage (dev)            |
+| `jsdom`                                    | ^26.1.0 | DOM environment for tests (dev)   |
 
 ---
 

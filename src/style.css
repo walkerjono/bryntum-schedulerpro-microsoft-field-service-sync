@@ -173,3 +173,9 @@ main {
 .b-zoom-presets .b-button {
   min-width : 60px;
 }
+
+/* Zoom in/out buttons */
+.b-toolbar-row-1 .b-zoomoutbutton,
+.b-toolbar-row-1 .b-zoominbutton {
+  font-size : 14px;
+}

@@ -662,6 +662,16 @@ async function displayUI() {
         resourceCombo.value = initialParams.resources;
     }
 
+    // ── Zoom in / out buttons ───────────────────────────────────────────
+    const zoomInBtn  = scheduler.widgetMap.zoomInButton;
+    const zoomOutBtn = scheduler.widgetMap.zoomOutButton;
+    if (zoomInBtn) {
+        zoomInBtn.on('click', () => scheduler.zoomIn());
+    }
+    if (zoomOutBtn) {
+        zoomOutBtn.on('click', () => scheduler.zoomOut());
+    }
+
     // ── Zoom preset button group ────────────────────────────────────────
     const viewPresetGroup = scheduler.widgetMap.viewPresetGroup;
     if (viewPresetGroup) {
