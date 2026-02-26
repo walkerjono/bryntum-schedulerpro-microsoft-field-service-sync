@@ -36,3 +36,37 @@ npm run dev
 You'll see a Bryntum Scheduler Pro with a two resources and two events that are dependent on each other:
 
 ![Initial Bryntum Scheduler Pro with example inline data](images/bryntum-schedulerpro.png)
+
+## Testing
+
+The project has **155 unit tests** powered by [Vitest](https://vitest.dev/) with a jsdom environment. Tests mock Bryntum Scheduler Pro and MSAL modules so they run without licences or network access.
+
+### Commands
+
+| Command | Description |
+| --- | --- |
+| `npm test` | Run tests in watch mode (re-runs on file changes) |
+| `npm run test:run` | Single run (CI-friendly) |
+| `npm run test:coverage` | Single run with V8 code coverage report |
+
+### Test structure
+
+```text
+src/test/
+├── setup.js                        # Global mocks (Bryntum + MSAL)
+├── auth.test.js                    # signIn, getToken (silent + popup), signOut
+├── crudFunctions.test.js           # API calls, pagination, error handling
+├── schedulerproConfig.test.js      # Renderers (name, treeGroupParent, event), tooltip, config shape
+├── histogramConfig.test.js         # getBarClass thresholds, getLeafDescendants, cache behaviour
+└── lib/
+    ├── schedulingUtils.test.js     # countWeekdays, computeBufferedRange, clampStartToToday, calcUnits, getProjectColor
+    ├── filterUtils.test.js         # readFilterParams, writeFilterParams, round-trip
+    ├── CustomEventModel.test.js    # Field mappings + convert fallback chains
+    └── CustomResourceModel.test.js # Field defaults + loadDefaultImage
+```
+
+### Key design decisions
+
+- **Pure function extraction** — Scheduling logic (`countWeekdays`, `calcUnits`, etc.) and URL filter utilities were extracted from `main.js` into `src/lib/schedulingUtils.js` and `src/lib/filterUtils.js` so they can be tested without DOM or app-state dependencies.
+- **Bryntum mock** — A lightweight stub `Model` class in `src/test/setup.js` processes Bryntum's `static fields` and `convert` functions, enabling model tests without the commercial library.
+- **Environment variables** — A `.env.test` file provides dummy `VITE_*` values so Vitest can import source modules that reference `import.meta.env`.

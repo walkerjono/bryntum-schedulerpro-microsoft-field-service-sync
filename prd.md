@@ -257,8 +257,9 @@ All filter selections and the effort toggle state are **persisted as URL query p
 ```text
 ├── index.html                          # Shell with #app + #histogram containers, sign-in link, loader
 ├── package.json                        # Dependencies: MSAL, Bryntum (trial), Vite
-├── vite.config.ts                      # Vite + console-forward plugin
+├── vite.config.ts                      # Vite + Vitest config (jsdom env, setup file)
 ├── eslint.config.mjs                   # Bryntum-style ESLint rules (aligned colons, 4-space indent)
+├── .env.test                           # Dummy VITE_* env vars for test runner
 ├── src/
 │   ├── main.js                         # App entry: auth gating, data fetch, scheduler + histogram init,
 │   │                                   #   calendar generation, filter combos, effort toggle, refresh, URL params
@@ -268,10 +269,24 @@ All filter selections and the effort toggle state are **persisted as URL query p
 │   ├── histogramConfig.js              # ResourceHistogram config: bar coloring, tree columns, time ranges
 │   ├── style.css                       # Bryntum theme imports, Poppins font, loader, inactive events,
 │   │                                   #   histogram bar colors, current-time styling
-│   └── lib/
-│       ├── CustomEventModel.js         # Extends EventModel with D365 field mappings (effort, project, task, client)
-│       └── CustomResourceModel.js      # Extends ResourceModel with imageUrl, practiceName, roleName,
-│                                       #   workingHours, calendar; also exports loadDefaultImage()
+│   ├── lib/
+│   │   ├── CustomEventModel.js         # Extends EventModel with D365 field mappings (effort, project, task, client)
+│   │   ├── CustomResourceModel.js      # Extends ResourceModel with imageUrl, practiceName, roleName,
+│   │   │                               #   workingHours, calendar; also exports loadDefaultImage()
+│   │   ├── schedulingUtils.js          # Pure functions: countWeekdays, computeBufferedRange, clampStartToToday,
+│   │   │                               #   calcUnits, getProjectColor (extracted for testability)
+│   │   └── filterUtils.js             # URL filter utilities: readFilterParams, writeFilterParams
+│   └── test/
+│       ├── setup.js                    # Global Vitest mocks for Bryntum Scheduler Pro + MSAL
+│       ├── auth.test.js                # Auth module tests (signIn, getToken, signOut)
+│       ├── crudFunctions.test.js       # CRUD/API tests (pagination, error handling)
+│       ├── schedulerproConfig.test.js  # Renderer tests (nameRenderer, treeGroupParent, eventRenderer, tooltip)
+│       ├── histogramConfig.test.js     # Histogram tests (getBarClass thresholds, getLeafDescendants, cache)
+│       └── lib/
+│           ├── schedulingUtils.test.js # 36 tests for pure scheduling functions
+│           ├── filterUtils.test.js     # 19 tests for URL filter round-trip
+│           ├── CustomEventModel.test.js    # 25 tests for field mappings + convert fallback chains
+│           └── CustomResourceModel.test.js # 9 tests for field defaults + loadDefaultImage
 ```
 
 ---
@@ -287,6 +302,9 @@ All filter selections and the effort toggle state are **persisted as URL query p
 | `eslint`                                   | ^9.38.0 | Linting                           |
 | `@rollup/wasm-node`                        | ^4.57.1 | Rollup WASM support               |
 | `@rollup/rollup-win32-x64-msvc` (optional) | ^4.57.1 | Platform-specific Rollup binary   |
+| `vitest`                                    | ^4.0.18 | Unit test runner (dev)            |
+| `@vitest/coverage-v8`                       | ^4.0.18 | V8 code coverage (dev)            |
+| `jsdom`                                     | ^26.1.0 | DOM environment for tests (dev)   |
 
 ---
 
@@ -298,7 +316,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 4. **Redirect URI via env** — MSAL redirect URI is configurable via `VITE_REDIRECT_URI` (defaults to `window.location.origin`)
 5. **No write-back** — All data is read-only; `etag` values are captured for future write-back support
 6. **Debug code in API** — `getResources()` contains a commented-out single-resource filter (`TODO: temp limit`)
-7. **No tests** — No unit or integration tests
+7. **No E2E / security tests** — 155 unit tests exist (see [Tests Required](#tests-required)); end-to-end and security tests are not yet implemented
 
 ## TODO: changes
 
@@ -326,119 +344,119 @@ All filter selections and the effort toggle state are **persisted as URL query p
 
 ### Unit Tests
 
-#### `countWeekdays(start, end)` — [main.js](src/main.js)
+#### `countWeekdays(start, end)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
 
-- [ ] Same-day input returns 1 (minimum clamp)
-- [ ] Span including weekends skips Sat/Sun correctly
-- [ ] Span entirely within a weekend returns 1
-- [ ] Multi-week span returns correct weekday count
-- [ ] Start date after end date — verify behavior
+- [x] Same-day input returns 1 (minimum clamp)
+- [x] Span including weekends skips Sat/Sun correctly
+- [x] Span entirely within a weekend returns 1
+- [x] Multi-week span returns correct weekday count
+- [x] Start date after end date — verify behavior
 
-#### `clampStartToToday(date)` — [main.js](src/main.js)
+#### `clampStartToToday(date)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
 
-- [ ] Date in the future returns the original date unchanged
-- [ ] Date in the past with numeric offset returns today + offset
-- [ ] `EFFORT_REMAINING_OFFSET_DAYS = 'current_week'` snaps to Monday of current week
-- [ ] Date already on a Monday vs mid-week — correct Monday snap
-- [ ] Offset of 0 returns today
+- [x] Date in the future returns the original date unchanged
+- [x] Date in the past with numeric offset returns today + offset
+- [x] `EFFORT_REMAINING_OFFSET_DAYS = 'current_week'` snaps to Monday of current week
+- [x] Date already on a Monday vs mid-week — correct Monday snap
+- [x] Offset of 0 returns today
 
-#### `calcUnits(effort, effortRemaining, startDate, endDate, resourceId)` — [main.js](src/main.js)
+#### `calcUnits(effort, effortRemaining, startDate, endDate, resourceId)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
 
-- [ ] Standard allocation (e.g. 40h over 5 weekdays at 8h/day) returns 100%
-- [ ] `useRemainingEffort = true` path uses `effortRemaining` instead of `effort`
-- [ ] `useRemainingEffort = false` path uses `effort`
-- [ ] `effortRemaining = null` treated as 0 via `?? 0`
-- [ ] `effortRemaining = 0` returns 0% allocation
-- [ ] Resource with custom `hoursPerDay` (non-8h) scales correctly
-- [ ] Resource not in `resourceHoursMap` falls back to default hours
+- [x] Standard allocation (e.g. 40h over 5 weekdays at 8h/day) returns 100%
+- [x] `useRemainingEffort = true` path uses `effortRemaining` instead of `effort`
+- [x] `useRemainingEffort = false` path uses `effort`
+- [x] `effortRemaining = null` treated as 0 via `?? 0`
+- [x] `effortRemaining = 0` returns 0% allocation
+- [x] Resource with custom `hoursPerDay` (non-8h) scales correctly
+- [x] Resource not in `resourceHoursMap` falls back to default hours
 
-#### `getProjectColor(projectName)` — [main.js](src/main.js)
+#### `getProjectColor(projectName)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
 
-- [ ] Same name called twice returns the same color (stable mapping)
-- [ ] `null` project name returns `'#888'`
-- [ ] 16+ unique project names wraps around the 15-color palette
+- [x] Same name called twice returns the same color (stable mapping)
+- [x] `null` project name returns `'#888'`
+- [x] 16+ unique project names wraps around the 15-color palette
 
-#### `computeBufferedRange(start, end)` — [main.js](src/main.js)
+#### `computeBufferedRange(start, end)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
 
-- [ ] Extends start and end by `VIEWPORT_BUFFER_DAYS` in each direction
-- [ ] Different buffer day values produce correct ranges
+- [x] Extends start and end by `VIEWPORT_BUFFER_DAYS` in each direction
+- [x] Different buffer day values produce correct ranges
 
 #### `resolveRawAssignments()` — [main.js](src/main.js)
 
-- [ ] Well-formed record produces correct event + assignment objects
-- [ ] Record with `startDate > endDate` is skipped with console warning
-- [ ] Record where `effectiveStart > endDate` after clamping sets `effectiveStart = endDate`
-- [ ] Record with `effortRemaining = 0` uses original D365 dates (not clamped)
-- [ ] Missing expanded fields (`msdyn_projectid`, `msdyn_taskid`) use null-safe fallbacks
-- [ ] Duplicate `bookableresourceid` across records produces one assignment per event
+- [ ] Well-formed record produces correct event + assignment objects _(tightly coupled to app state — deferred)_
+- [ ] Record with `startDate > endDate` is skipped with console warning _(deferred)_
+- [ ] Record where `effectiveStart > endDate` after clamping sets `effectiveStart = endDate` _(deferred)_
+- [ ] Record with `effortRemaining = 0` uses original D365 dates (not clamped) _(deferred)_
+- [ ] Missing expanded fields (`msdyn_projectid`, `msdyn_taskid`) use null-safe fallbacks _(deferred)_
+- [ ] Duplicate `bookableresourceid` across records produces one assignment per event _(deferred)_
 
 #### `CustomEventModel` field converters — [CustomEventModel.js](src/lib/CustomEventModel.js)
 
-- [ ] `name`: OData formatted value → `msdyn_name` → value → `'Unnamed Assignment'` fallback chain
-- [ ] `projectName`: expanded `msdyn_subject` → OData annotation → value → `''`
-- [ ] `effortRemaining`: `msdyn_taskid.msdyn_effortremaining` → value → `null`
-- [ ] `etag`: escaped double-quote stripping (`\"W/...\"` → `W/...`)
-- [ ] Each field with missing/null/undefined data at every fallback level
+- [x] `name`: OData formatted value → `msdyn_name` → value → `'Unnamed Assignment'` fallback chain
+- [x] `projectName`: expanded `msdyn_subject` → OData annotation → value → `''`
+- [x] `effortRemaining`: `msdyn_taskid.msdyn_effortremaining` → value → `null`
+- [x] `etag`: escaped double-quote stripping (`\"W/...\"` → `W/...`)
+- [x] Each field with missing/null/undefined data at every fallback level
 
 #### `CustomResourceModel` fields — [CustomResourceModel.js](src/lib/CustomResourceModel.js)
 
-- [ ] `workingHours` defaults to 40 when field is missing/null
-- [ ] `workingHours = 0` — verify behavior (`|| 40` treats 0 as falsy → falls back to 40; **potential bug** if 0 is a valid value)
-- [ ] `practiceName` defaults to `'Unassigned'`
-- [ ] `roleName` defaults to `'Unassigned'`
-- [ ] `loadDefaultImage()` caches result and is idempotent (second call returns immediately)
-- [ ] `loadDefaultImage()` silently handles fetch failure (bare `catch {}`)
+- [x] `workingHours` defaults to 40 when field is missing/null
+- [x] `workingHours = 0` — verify behavior (`|| 40` treats 0 as falsy → falls back to 40; **potential bug** if 0 is a valid value)
+- [x] `practiceName` defaults to `'Unassigned'`
+- [x] `roleName` defaults to `'Unassigned'`
+- [x] `loadDefaultImage()` caches result and is idempotent (second call returns immediately)
+- [x] `loadDefaultImage()` silently handles fetch failure (bare `catch {}`)
 
 #### Calendar generation — [main.js](src/main.js)
 
-- [ ] Resources without `ws_workinghours` use the default `business` calendar (Mon–Fri 08:00–16:00)
-- [ ] Resources with non-standard `ws_workinghours` (e.g. 32h) get a custom calendar with correct `endTime`
-- [ ] `ws_workinghours = 40` → 8h/day → `endTime: '17:00'` (09:00 start + 8h)
-- [ ] `ws_workinghours = 32` → 6.4h/day → fractional end time calculated correctly
-- [ ] `ws_workinghours = 0` falls back to 40 via `|| 40` (verify this is intentional)
+- [ ] Resources without `ws_workinghours` use the default `business` calendar (Mon–Fri 08:00–16:00) _(tightly coupled to app state — deferred)_
+- [ ] Resources with non-standard `ws_workinghours` (e.g. 32h) get a custom calendar with correct `endTime` _(deferred)_
+- [ ] `ws_workinghours = 40` → 8h/day → `endTime: '17:00'` (09:00 start + 8h) _(deferred)_
+- [ ] `ws_workinghours = 32` → 6.4h/day → fractional end time calculated correctly _(deferred)_
+- [ ] `ws_workinghours = 0` falls back to 40 via `|| 40` (verify this is intentional) _(deferred)_
 
 #### Histogram bar coloring — `getBarClass()` — [histogramConfig.js](src/histogramConfig.js)
 
-- [ ] `maxEffort === 0` returns empty string (no class/color)
-- [ ] Allocation > 110% → `b-overallocated` (red)
-- [ ] Allocation < 80% → `b-underallocated` (orange)
-- [ ] Allocation 80–110% on a leaf → `b-evenly-allocated` (green)
-- [ ] Allocation 80–110% on a parent, all leaves even → `b-evenly-allocated` (green)
-- [ ] Allocation 80–110% on a parent, mixed leaf states → `b-mixed-state` (purple)
-- [ ] Custom threshold values from env vars are respected
-- [ ] Cache is populated on leaf render and hit on subsequent calls
+- [x] `maxEffort === 0` returns empty string (no class/color)
+- [x] Allocation > 110% → `b-overallocated` (red)
+- [x] Allocation < 80% → `b-underallocated` (orange)
+- [x] Allocation 80–110% on a leaf → `b-evenly-allocated` (green)
+- [x] Allocation 80–110% on a parent, all leaves even → `b-evenly-allocated` (green)
+- [x] Allocation 80–110% on a parent, mixed leaf states → `b-mixed-state` (purple)
+- [x] Custom threshold values from env vars are respected
+- [x] Cache is populated on leaf render and hit on subsequent calls
 
 #### `getLeafDescendants(resource)` — [histogramConfig.js](src/histogramConfig.js)
 
-- [ ] Leaf node returns `[self]`
-- [ ] Parent with 2 levels of nesting returns all leaf descendants
-- [ ] Parent with no children returns empty array
+- [x] Leaf node returns `[self]`
+- [x] Parent with 2 levels of nesting returns all leaf descendants
+- [x] Parent with no children returns empty array
 
 #### Renderers — [schedulerproConfig.js](src/schedulerproConfig.js)
 
-- [ ] `nameRenderer`: leaf resource with valid `imageUrl` renders `<img>` tag
-- [ ] `nameRenderer`: leaf resource with no `imageUrl` renders name only (no `<img>`)
-- [ ] `nameRenderer`: parent node renders without avatar
-- [ ] `treeGroupParentRenderer`: Practice field renders `fa-users` icon
-- [ ] `treeGroupParentRenderer`: Role field renders `fa-briefcase` icon
-- [ ] `eventRenderer`: `effortRemaining == null` → `b-inactive` class applied
-- [ ] `eventRenderer`: `effortRemaining == 0` → `b-inactive` class applied
-- [ ] `eventRenderer`: `effortRemaining > 0` → normal rendering (no inactive class)
+- [x] `nameRenderer`: leaf resource with valid `imageUrl` renders `<img>` tag
+- [x] `nameRenderer`: leaf resource with no `imageUrl` renders name only (no `<img>`)
+- [x] `nameRenderer`: parent node renders without avatar
+- [x] `treeGroupParentRenderer`: Practice field renders `fa-users` icon
+- [x] `treeGroupParentRenderer`: Role field renders `fa-briefcase` icon
+- [x] `eventRenderer`: `effortRemaining == null` → `b-inactive` class applied
+- [x] `eventRenderer`: `effortRemaining == 0` → `b-inactive` class applied
+- [x] `eventRenderer`: `effortRemaining > 0` → normal rendering (no inactive class)
 
-#### URL parameter round-trip — [main.js](src/main.js)
+#### URL parameter round-trip — [filterUtils.js](src/lib/filterUtils.js)
 
-- [ ] `writeFilterParams()` → `readFilterParams()` produces identical values
-- [ ] Empty/missing params return correct defaults
-- [ ] Special characters in filter values survive encode/decode
-- [ ] `useRemainingEffort` string `'true'`/`'false'` coerces correctly
+- [x] `writeFilterParams()` → `readFilterParams()` produces identical values
+- [x] Empty/missing params return correct defaults
+- [x] Special characters in filter values survive encode/decode
+- [x] `useRemainingEffort` string `'true'`/`'false'` coerces correctly
 
 #### `fetchAllPages()` — [crudFunctions.js](src/crudFunctions.js)
 
-- [ ] Single-page response returns all records
-- [ ] Response with `@odata.nextLink` follows pagination correctly
-- [ ] Maximum page limit reached → logs warning, returns partial data
-- [ ] Non-OK HTTP response → throws with error text and page number
-- [ ] Empty result set returns empty array
+- [x] Single-page response returns all records
+- [x] Response with `@odata.nextLink` follows pagination correctly
+- [x] Maximum page limit reached → logs warning, returns partial data
+- [x] Non-OK HTTP response → throws with error text and page number
+- [x] Empty result set returns empty array
 
 #### Environment variables
 
