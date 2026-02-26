@@ -4,8 +4,6 @@
  * Extracted from main.js's `displayUI()`.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { SchedulerPro, ResourceHistogram } from '@bryntum/schedulerpro';
 import type { AppWidgetMap } from '../types/bryntum.d';
 import { getFlatResources } from './appState';
@@ -27,7 +25,9 @@ export function writeFiltersToUrl(
     const practiceCombo = widgets.practiceFilter;
     const roleCombo = widgets.roleFilter;
     const resourceCombo = widgets.resourceFilter;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeZoomBtn = widgets.viewPresetGroup?.items?.find((b: any) => b.pressed);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activePreset = (activeZoomBtn as any)?.dataset?.preset ?? null;
 
     writeFilterParams(
@@ -103,17 +103,21 @@ export function wireFilters(
         ].sort();
         practiceCombo.items = practiceNames.map((p) => ({ value : p, text : p }));
 
-        practiceCombo.on('change', ({ value }: any) => {
+        practiceCombo.on('change', ({ value }: { value: string[] | null }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const store = (scheduler as any).project.resourceStore;
             store.removeFilter('practiceFilter');
             if (value && value.length > 0) {
                 store.filter({
                     id       : 'practiceFilter',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     filterBy : (r: any) => value.includes(r.practiceName)
                 });
 
                 setTimeout(() => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (scheduler as any).features.tree.expandToLevel(0);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (histogram as any).features.tree.expandToLevel(0);
                 }, 100);
             }
@@ -146,15 +150,18 @@ export function wireFilters(
         ].sort();
         roleCombo.items = roleNames.map((r) => ({ value : r, text : r }));
 
-        roleCombo.on('change', ({ value }: any) => {
+        roleCombo.on('change', ({ value }: { value: string[] | null }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const store = (scheduler as any).project.resourceStore;
             store.removeFilter('roleFilter');
             if (value && value.length > 0) {
                 store.filter({
                     id       : 'roleFilter',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     filterBy : (r: any) => value.includes(r.roleName)
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 setTimeout(() => (scheduler as any).expandAll(), 100);
             }
 
@@ -170,15 +177,18 @@ export function wireFilters(
         ].sort();
         resourceCombo.items = resourceNames.map((n) => ({ value : n, text : n }));
 
-        resourceCombo.on('change', ({ value }: any) => {
+        resourceCombo.on('change', ({ value }: { value: string[] | null }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const store = (scheduler as any).project.resourceStore;
             store.removeFilter('resourceFilter');
             if (value && value.length > 0) {
                 store.filter({
                     id       : 'resourceFilter',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     filterBy : (r: any) => value.includes(r.name)
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 setTimeout(() => (scheduler as any).expandAll(), 100);
             }
 
@@ -217,11 +227,15 @@ export function autoExpandForFilters(
     if (hasActiveFilters) {
         setTimeout(() => {
             if ((widgets.practiceFilter?.value?.length ?? 0) > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (scheduler as any).features.tree.expandToLevel(0);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (histogram as any).features.tree.expandToLevel(0);
             }
             else {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (scheduler as any).expandAll();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (histogram as any).expandAll();
             }
         }, 200);

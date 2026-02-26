@@ -10,7 +10,7 @@ export interface FlatResource {
     practiceName: string;
     roleName: string;
     workingHours: number;
-    calendar: string;
+    calendar?: string;
     [key: string]: unknown;
 }
 
@@ -26,8 +26,5 @@ export interface EffortConfig {
     offsetDays: number;
 }
 
-/** Combo-box item shape used by Bryntum filter combos. */
-export interface ComboItem {
-    value: string;
-    text: string;
-}
+/** Friendly view-mode names mapped to Bryntum view-preset ids. */
+export type ViewMode = 'day' | 'week' | 'month';

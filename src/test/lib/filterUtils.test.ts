@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFilterParams, writeFilterParams } from '../../lib/filterUtils';
-import type { FilterState } from '../../lib/filterUtils';
+import { readFilterParams, writeFilterParams, type FilterState } from '../../lib/filterUtils';
 
 // ── readFilterParams ────────────────────────────────────────────────
 describe('readFilterParams', () => {

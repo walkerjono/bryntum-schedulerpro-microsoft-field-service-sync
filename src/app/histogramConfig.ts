@@ -17,12 +17,12 @@ const OVERALLOCATED_THRESHOLD: number  = Number(import.meta.env.VITE_OVERALLOCAT
 /**
  * Color map for each allocation state.
  */
-const BAR_COLORS: Record<string, string> = {
+const BAR_COLORS = {
     underallocated  : '#FBBF24', // orange  (<80%)
     evenlyAllocated : '#6EE7B7', // green   (80-110%, all children also 80-110%)
     overallocated   : '#F87171', // red     (>110%)
     mixedState      : '#D8B4FE'  // purple  (parent 80-110%, but ≥1 child outside band)
-};
+} as const;
 
 type LeafState = 'under' | 'even' | 'over';
 
@@ -40,7 +40,7 @@ const leafStateCache = new Map<string, LeafState>();
 /**
  * Build a cache key from resource ID + tick start time.
  */
-function cacheKey(resourceId: string, tickStart: { getTime?: () => number } | null): string {
+function cacheKey(resourceId: string, tickStart: Date | null): string {
     return `${resourceId}:${tickStart?.getTime?.() ?? 0}`;
 }
 
@@ -78,7 +78,7 @@ export interface AllocationDatum {
     effort: number;
     maxEffort: number;
     isGroup?: boolean;
-    startDate?: { getTime?: () => number } | null;
+    startDate?: Date | null;
     resource?: TreeGroupResource;
     owner?: TreeGroupResource;
 }
@@ -119,18 +119,18 @@ export function getBarClass(
     // Calculate allocation % from effort/maxEffort (both in ms).
     // datum.units is unreliable for aggregate (group) rows.
     const maxEffort = datum?.maxEffort ?? 0;
-    if (!maxEffort) {
+    if (!maxEffort || !datum) {
         // No capacity in this tick – nothing meaningful to colour
         return '';
     }
 
-    const allocationPercent = ((datum as AllocationDatum).effort / maxEffort) * 100;
+    const allocationPercent = (datum.effort / maxEffort) * 100;
 
     // datum.isGroup is true for TreeGroup parent nodes (Practice/Role)
-    const isParent = !!(datum as AllocationDatum).isGroup;
+    const isParent = !!datum.isGroup;
 
     // Try to resolve the resource model for cache operations
-    const resource = renderData?.resource ?? (datum as AllocationDatum)?.resource ?? (datum as AllocationDatum)?.owner;
+    const resource = renderData?.resource ?? datum.resource ?? datum.owner;
 
     let resultClass: string;
     let color: string;
@@ -139,14 +139,14 @@ export function getBarClass(
         resultClass = 'b-overallocated';
         color       = BAR_COLORS.overallocated;
         if (!isParent && resource) {
-            leafStateCache.set(cacheKey(resource.id, (datum as AllocationDatum).startDate ?? null), 'over');
+            leafStateCache.set(cacheKey(resource.id, datum.startDate ?? null), 'over');
         }
     }
     else if (allocationPercent < UNDERALLOCATED_THRESHOLD) {
         resultClass = 'b-underallocated';
         color       = BAR_COLORS.underallocated;
         if (!isParent && resource) {
-            leafStateCache.set(cacheKey(resource.id, (datum as AllocationDatum).startDate ?? null), 'under');
+            leafStateCache.set(cacheKey(resource.id, datum.startDate ?? null), 'under');
         }
     }
     else if (isParent) {
@@ -157,7 +157,7 @@ export function getBarClass(
         if (resource) {
             const leaves = getLeafDescendants(resource);
             for (const leaf of leaves) {
-                const state = leafStateCache.get(cacheKey(leaf.id, (datum as AllocationDatum).startDate ?? null));
+                const state = leafStateCache.get(cacheKey(leaf.id, datum.startDate ?? null));
                 if (state) {
                     hasData = true;
                     if (state !== 'even') {
@@ -183,7 +183,7 @@ export function getBarClass(
         resultClass = 'b-evenly-allocated';
         color       = BAR_COLORS.evenlyAllocated;
         if (resource) {
-            leafStateCache.set(cacheKey(resource.id, (datum as AllocationDatum).startDate ?? null), 'even');
+            leafStateCache.set(cacheKey(resource.id, datum.startDate ?? null), 'even');
         }
     }
 

@@ -362,7 +362,7 @@ describe('resolveRawAssignments', () => {
         expect(events).toHaveLength(1);
         expect(assignments).toHaveLength(1);
 
-        const evt = events[0];
+        const evt = events[0]!;
         expect(evt.id).toBe('assign-001');
         expect(evt.name).toBe('Task Display');
         expect(evt.projectName).toBe('Project Alpha');
@@ -375,7 +375,7 @@ describe('resolveRawAssignments', () => {
         expect(evt.durationUnit).toBe('hour');
         expect(evt.eventColor).toBe('#FF0000');
 
-        const asgn = assignments[0];
+        const asgn = assignments[0]!;
         expect(asgn.id).toBe('assign-assign-001');
         expect(asgn.event).toBe('assign-001');
         expect(asgn.resource).toBe('res-001');
@@ -416,7 +416,7 @@ describe('resolveRawAssignments', () => {
 
         expect(events).toHaveLength(1);
         // effectiveStart should equal endDate, so duration should be 0
-        expect(events[0].duration).toBe(0);
+        expect(events[0]!.duration).toBe(0);
     });
 
     it('uses original D365 dates when effortRemaining = 0 (completed assignment)', () => {
@@ -435,7 +435,7 @@ describe('resolveRawAssignments', () => {
         expect(events).toHaveLength(1);
         // clampFn should NOT have been called — completed assignment keeps D365 dates
         expect(clampSpy).not.toHaveBeenCalled();
-        expect(events[0].startDate).toBe('2026-03-02T08:00:00Z');
+        expect(events[0]!.startDate).toBe('2026-03-02T08:00:00Z');
     });
 
     it('handles missing expanded fields with null-safe fallbacks', () => {
@@ -454,10 +454,10 @@ describe('resolveRawAssignments', () => {
         expect(events).toHaveLength(1);
         expect(assignments).toHaveLength(1);
         // Fallback values from CustomEventModel converters
-        expect(events[0].projectName).toBe('');
-        expect(events[0].effortRemaining).toBeNull();
-        expect(events[0].taskNumber).toBe('');
-        expect(events[0].name).toBe('Unnamed Assignment');
+        expect(events[0]!.projectName).toBe('');
+        expect(events[0]!.effortRemaining).toBeNull();
+        expect(events[0]!.taskNumber).toBe('');
+        expect(events[0]!.name).toBe('Unnamed Assignment');
     });
 
     it('produces one assignment per event for duplicate bookableresourceid', () => {
@@ -474,9 +474,9 @@ describe('resolveRawAssignments', () => {
         // Both events created, each with its own assignment
         expect(events).toHaveLength(2);
         expect(assignments).toHaveLength(2);
-        expect(assignments[0].resource).toBe('res-001');
-        expect(assignments[1].resource).toBe('res-001');
-        expect(assignments[0].event).not.toBe(assignments[1].event);
+        expect(assignments[0]!.resource).toBe('res-001');
+        expect(assignments[1]!.resource).toBe('res-001');
+        expect(assignments[0]!.event).not.toBe(assignments[1]!.event);
     });
 
     it('passes correct arguments to calcUnitsFn', () => {
@@ -489,7 +489,7 @@ describe('resolveRawAssignments', () => {
         });
 
         expect(calcSpy).toHaveBeenCalledWith(40, 20, '2026-03-02T08:00:00Z', '2026-03-06T17:00:00Z', 'res-001');
-        expect(assignments[0].units).toBe(75);
+        expect(assignments[0]!.units).toBe(75);
     });
 
     it('returns empty arrays when given no records', () => {
@@ -513,7 +513,7 @@ describe('resolveRawAssignments', () => {
         });
 
         expect(clampSpy).toHaveBeenCalledOnce();
-        expect(events[0].startDate).toEqual(monday);
+        expect(events[0]!.startDate).toEqual(monday);
     });
 
     it('does not call clampFn when useRemainingEffort is false', () => {
@@ -541,11 +541,11 @@ describe('generateCalendars', () => {
         const calendars = generateCalendars(resources);
 
         expect(calendars).toHaveLength(1);
-        expect(calendars[0].id).toBe('business');
-        expect(calendars[0].name).toBe('Standard (40h)');
-        expect(calendars[0].unspecifiedTimeIsWorking).toBe(false);
-        expect(calendars[0].intervals[0].recurrentStartDate).toBe('every weekday at 08:00');
-        expect(calendars[0].intervals[0].recurrentEndDate).toBe('every weekday at 16:00');
+        expect(calendars[0]!.id).toBe('business');
+        expect(calendars[0]!.name).toBe('Standard (40h)');
+        expect(calendars[0]!.unspecifiedTimeIsWorking).toBe(false);
+        expect(calendars[0]!.intervals[0]!.recurrentStartDate).toBe('every weekday at 08:00');
+        expect(calendars[0]!.intervals[0]!.recurrentEndDate).toBe('every weekday at 16:00');
     });
 
     it('generates custom calendar for non-standard working hours (32h)', () => {
@@ -557,20 +557,20 @@ describe('generateCalendars', () => {
 
         expect(calendars).toHaveLength(2);
         // Business calendar still present
-        expect(calendars[0].id).toBe('business');
+        expect(calendars[0]!.id).toBe('business');
         // Custom calendar
-        const custom = calendars[1];
+        const custom = calendars[1]!;
         expect(custom.id).toBe('calendar-r1');
         expect(custom.name).toBe('Custom (32h)');
         // 32h / 5 days = 6.4h/day → 08:00 + 6.4h = 14:24
-        expect(custom.intervals[0].recurrentEndDate).toBe('every weekday at 14:24');
+        expect(custom.intervals[0]!.recurrentEndDate).toBe('every weekday at 14:24');
     });
 
     it('calculates correct endTime for 40h/week (standard)', () => {
         const resources: { id: string; workingHours: number; calendar: string }[] = [];
         const calendars = generateCalendars(resources); // no custom resources
         // Business calendar: 40/5 = 8h/day → 08:00 + 8 = 16:00
-        expect(calendars[0].intervals[0].recurrentEndDate).toBe('every weekday at 16:00');
+        expect(calendars[0]!.intervals[0]!.recurrentEndDate).toBe('every weekday at 16:00');
     });
 
     it('calculates correct fractional endTime for 32h/week', () => {
@@ -578,7 +578,7 @@ describe('generateCalendars', () => {
         const calendars = generateCalendars(resources);
         const custom = calendars.find((c) => c.id === 'calendar-r1');
         // 32/5 = 6.4h → 6h 24min → 08:00 + 6:24 = 14:24
-        expect(custom!.intervals[0].recurrentEndDate).toBe('every weekday at 14:24');
+        expect(custom!.intervals[0]!.recurrentEndDate).toBe('every weekday at 14:24');
     });
 
     it('mutates resource.calendar to point to custom calendar', () => {
@@ -589,8 +589,8 @@ describe('generateCalendars', () => {
 
         generateCalendars(resources);
 
-        expect(resources[0].calendar).toBe('calendar-r1');
-        expect(resources[1].calendar).toBe('business'); // unchanged
+        expect(resources[0]!.calendar).toBe('calendar-r1');
+        expect(resources[1]!.calendar).toBe('business'); // unchanged
     });
 
     it('resource with workingHours = 0 falls back to 40 via || and uses business calendar', () => {
@@ -604,7 +604,7 @@ describe('generateCalendars', () => {
         const custom = calendars.find((c) => c.id === 'calendar-r1');
         expect(custom).toBeDefined();
         // 0/5 = 0h/day → endTime = 08:00 (same as start)
-        expect(custom!.intervals[0].recurrentEndDate).toBe('every weekday at 08:00');
+        expect(custom!.intervals[0]!.recurrentEndDate).toBe('every weekday at 08:00');
     });
 
     it('accepts custom standardWeeklyHours', () => {
@@ -616,9 +616,9 @@ describe('generateCalendars', () => {
 
         // 35h is standard here, so only business calendar should exist
         expect(calendars).toHaveLength(1);
-        expect(resources[0].calendar).toBe('business');
+        expect(resources[0]!.calendar).toBe('business');
         // 35/5 = 7h/day → 08:00 + 7 = 15:00
-        expect(calendars[0].intervals[0].recurrentEndDate).toBe('every weekday at 15:00');
+        expect(calendars[0]!.intervals[0]!.recurrentEndDate).toBe('every weekday at 15:00');
     });
 
     it('generates multiple custom calendars for different resources', () => {
@@ -633,17 +633,17 @@ describe('generateCalendars', () => {
         expect(calendars).toHaveLength(3); // business + 2 custom
         expect(calendars.find((c) => c.id === 'calendar-r1')).toBeDefined();
         expect(calendars.find((c) => c.id === 'calendar-r2')).toBeDefined();
-        expect(resources[2].calendar).toBe('business');
+        expect(resources[2]!.calendar).toBe('business');
     });
 
     it('business calendar has unspecifiedTimeIsWorking: false', () => {
         const calendars = generateCalendars([]);
-        expect(calendars[0].unspecifiedTimeIsWorking).toBe(false);
+        expect(calendars[0]!.unspecifiedTimeIsWorking).toBe(false);
     });
 
     it('custom calendars have unspecifiedTimeIsWorking: false', () => {
         const resources = [{ id : 'r1', workingHours : 32, calendar : 'business' }];
         const calendars = generateCalendars(resources);
-        expect(calendars[1].unspecifiedTimeIsWorking).toBe(false);
+        expect(calendars[1]!.unspecifiedTimeIsWorking).toBe(false);
     });
 });

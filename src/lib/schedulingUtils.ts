@@ -59,12 +59,9 @@ export interface ResolvedAssignment {
     units: number;
 }
 
-export interface FlatResource {
-    id: string;
-    workingHours: number;
-    calendar?: string;
-    [key: string]: unknown;
-}
+// Re-export for consumers that import from this module
+export type { FlatResource } from '../types/app';
+import type { FlatResource } from '../types/app';
 
 export interface CalendarInterval {
     recurrentStartDate: string;
@@ -186,10 +183,10 @@ export function calcUnits(effort: number, effortRemaining: number | null, startD
  * Known projects keep their existing colour; new ones get the next
  * colour from the palette.
  */
-export function getProjectColor(projectName: string | null, colorMap: Map<string, string>, colorIndex: { value: number }, palette: string[]): string {
+export function getProjectColor(projectName: string | null, colorMap: Map<string, string>, colorIndex: { value: number }, palette: readonly string[]): string {
     if (!projectName) return '#888';
     if (colorMap.has(projectName)) return colorMap.get(projectName)!;
-    const color = palette[colorIndex.value % palette.length];
+    const color = palette[colorIndex.value % palette.length] ?? '#888';
     colorMap.set(projectName, color);
     colorIndex.value++;
     return color;
@@ -204,7 +201,7 @@ export function getProjectColor(projectName: string | null, colorMap: Map<string
  */
 export function resolveRawAssignments(rawRecords: D365ResourceAssignment[], EventModelClass: EventModelConstructor, {
     useRemainingEffort = false,
-    clampFn            = (d: Date | string) => d as Date,
+    clampFn            = (d: Date | string) => typeof d === 'string' ? new Date(d) : d,
     calcUnitsFn        = () => 0,
     getProjectColorFn  = () => '#888'
 }: ResolveOpts = {}): { events: ResolvedEvent[]; assignments: ResolvedAssignment[] } {
@@ -271,13 +268,13 @@ export function resolveRawAssignments(rawRecords: D365ResourceAssignment[], Even
  * `.calendar` property mutated in-place to reference the generated
  * calendar id.
  */
-export function generateCalendars(flatResources: FlatResource[], {
+export function generateCalendars(flatResources: Pick<FlatResource, 'id' | 'workingHours' | 'calendar'>[], {
     standardWeeklyHours = 40,
     workDaysPerWeek     = 5,
     startTime           = '08:00'
 }: CalendarOpts = {}): CalendarConfig[] {
     const standardHoursPerDay = standardWeeklyHours / workDaysPerWeek;
-    const startHour = parseInt(startTime.split(':')[0], 10);
+    const startHour = parseInt(startTime.split(':')[0] ?? '8', 10);
 
     // Default business calendar
     const endHourStd    = startHour + standardHoursPerDay;

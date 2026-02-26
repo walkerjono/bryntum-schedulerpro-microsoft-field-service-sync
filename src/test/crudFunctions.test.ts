@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import type { RequestInit } from 'undici';
 
 // Mock auth before importing crudFunctions
 vi.mock('../app/auth', () => ({

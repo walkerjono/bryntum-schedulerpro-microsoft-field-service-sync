@@ -4,6 +4,7 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 
 export default [
+    pluginJs.configs.recommended,
     {
         languageOptions : { globals : globals.browser },
         rules           : {
@@ -20,7 +21,7 @@ export default [
             'comma-dangle'              : ['error', 'never'],
             'computed-property-spacing' : ['warn', 'never'],
             'dot-notation'              : 'off',
-            eqeqeq                      : 'off',
+            eqeqeq                      : ['error', 'always', { null : 'ignore' }],
             indent                      : [
                 'error',
                 4,
@@ -67,7 +68,6 @@ export default [
             'no-unmodified-loop-condition' : 'off',
             'no-unused-expressions'        : 'off',
             'no-use-before-define'         : 'off',
-            'node/no-callback-literal'     : 'off',
             'object-curly-spacing'         : ['warn', 'always'],
             'one-var'                      : 'off',
             'padded-blocks'                : 'off',
@@ -82,22 +82,19 @@ export default [
                     avoidEscape           : true
                 }
             ],
-            semi                           : ['error', 'always'],
-            'space-before-function-paren'  : ['warn', 'never'],
-            'spaced-comment'               : 'off',
-            'standard/no-callback-literal' : 'off',
-            'template-curly-spacing'       : 'off',
-            yoda                           : [
+            semi                          : ['error', 'always'],
+            'space-before-function-paren' : ['warn', 'never'],
+            'spaced-comment'              : 'off',
+            'template-curly-spacing'      : 'off',
+            yoda                          : [
                 'error',
                 'never',
                 {
                     onlyEquality : true
                 }
-            ],
-            'n/no-callback-literal' : 'off'
+            ]
         }
     },
-    pluginJs.configs.recommended,
     {
         files           : ['**/*.ts'],
         languageOptions : {

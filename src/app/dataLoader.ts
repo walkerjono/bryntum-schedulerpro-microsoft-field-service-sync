@@ -5,14 +5,12 @@
  * main.js's `displayUI()`.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import type { SchedulerPro, ResourceHistogram } from '@bryntum/schedulerpro';
+import type { SchedulerPro } from '@bryntum/schedulerpro';
 import { getResources, getAssignments, getResourcePractices } from './crudFunctions';
-import { loadDefaultImage } from '../lib/CustomResourceModel';
+import CustomResourceModel, { loadDefaultImage } from '../lib/CustomResourceModel';
 import CustomEventModel from '../lib/CustomEventModel';
-import CustomResourceModel from '../lib/CustomResourceModel';
-import { resolveRawAssignments as _resolveRawAssignments, generateCalendars } from '../lib/schedulingUtils';
+import { resolveRawAssignments as _resolveRawAssignments, generateCalendars, type ResolvedEvent, type ResolvedAssignment, type CalendarConfig } from '../lib/schedulingUtils';
+import type { D365ResourceAssignment } from '../types/d365';
 import { schedulerproConfig, VIEWPORT_BUFFER_DAYS } from './schedulerproConfig';
 import { clearLeafStateCache } from './histogramConfig';
 import type { FlatResource } from '../types/app';
@@ -21,7 +19,6 @@ import {
     getUseRemainingEffort,
     getFetchedRange,
     setFetchedRange,
-    getResourceHoursMap,
     setResourceHoursMap,
     setFlatResources,
     getViewportFetchInFlight,
@@ -30,14 +27,14 @@ import {
     computeBufferedRange,
     clampStartToToday,
     calcUnits,
-    getProjectColor,
-    HOURS_PER_DAY
+    getProjectColor
 } from './appState';
 
 // ── Public helpers re-exported for main.ts ──────────────────────────
 
 /** Wrapper that delegates to the extracted pure resolveRawAssignments. */
-export function resolveRawAssignments(rawRecords: any[]): { events: any[]; assignments: any[] } {
+export function resolveRawAssignments(rawRecords: D365ResourceAssignment[]): { events: ResolvedEvent[]; assignments: ResolvedAssignment[] } {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return _resolveRawAssignments(rawRecords, CustomEventModel as any, {
         useRemainingEffort : getUseRemainingEffort(),
         clampFn            : clampStartToToday,
@@ -50,9 +47,9 @@ export function resolveRawAssignments(rawRecords: any[]): { events: any[]; assig
 
 export interface InitialLoadResult {
     flatResources: FlatResource[];
-    resolvedEvents: any[];
-    assignments: any[];
-    calendars: any[];
+    resolvedEvents: ResolvedEvent[];
+    assignments: ResolvedAssignment[];
+    calendars: CalendarConfig[];
     practiceMap: Map<string, string>;
     roleMap: Map<string, string>;
 }
@@ -89,7 +86,7 @@ export async function loadInitialData(): Promise<InitialLoadResult> {
     // Build resource → hours-per-day lookup
     const hoursMap = new Map<string, number>();
     for (const raw of resourcesData.value) {
-        const wh = raw.ws_workinghours || 40;
+        const wh = raw.ws_workinghours ?? 40;
         hoursMap.set(raw.bookableresourceid, wh / 5);
     }
     setResourceHoursMap(hoursMap);
@@ -100,6 +97,7 @@ export async function loadInitialData(): Promise<InitialLoadResult> {
 
     const { events: resolvedEvents, assignments } = _resolveRawAssignments(
         assignmentsData.value,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         CustomEventModel as any,
         {
             useRemainingEffort : getUseRemainingEffort(),
@@ -123,6 +121,7 @@ export async function loadInitialData(): Promise<InitialLoadResult> {
             imageUrl = `data:image/jpeg;base64,${entityImage}`;
         }
         else {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             imageUrl = (model as any).imageUrl || null;
         }
 
@@ -132,7 +131,7 @@ export async function loadInitialData(): Promise<InitialLoadResult> {
             imageUrl,
             practiceName : practiceMap.get(id) || 'Unassigned',
             roleName     : roleMap.get(id) || 'Unassigned',
-            workingHours : raw.ws_workinghours || 40,
+            workingHours : raw.ws_workinghours ?? 40,
             calendar     : 'business'
         };
     });
@@ -164,10 +163,12 @@ export async function fetchAndMergeRange(
         const { events: newEvents, assignments: newAssignments } = resolveRawAssignments(data.value);
 
         // Deduplicate — only add events we don't already have
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const eventStore = (scheduler as any).project.eventStore;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const assignmentStore = (scheduler as any).project.assignmentStore;
-        const addedEvents: any[] = [];
-        const addedAssigns: any[] = [];
+        const addedEvents: ResolvedEvent[] = [];
+        const addedAssigns: ResolvedAssignment[] = [];
 
         for (const evt of newEvents) {
             if (!eventStore.getById(evt.id)) {
@@ -183,6 +184,7 @@ export async function fetchAndMergeRange(
         if (addedEvents.length > 0) {
             eventStore.add(addedEvents);
             assignmentStore.add(addedAssigns);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (scheduler as any).project.commitAsync();
             console.log(`[dataLoader] Merged ${addedEvents.length} new events`);
         }
@@ -215,6 +217,7 @@ export async function refreshAllData(
     console.log('[dataLoader] Refreshing data…');
 
     // Use current visible range + buffer for the refresh fetch
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const visRange = (scheduler as any).visibleDateRange || {};
     const refreshRange = computeBufferedRange(
         visRange.startDate || schedulerproConfig.startDate,
@@ -257,6 +260,7 @@ export async function refreshAllData(
             imageUrl = `data:image/jpeg;base64,${entityImage}`;
         }
         else {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             imageUrl = (model as any).imageUrl || null;
         }
         return {
@@ -271,6 +275,7 @@ export async function refreshAllData(
     });
 
     // Update stores
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const project = (scheduler as any).project;
     project.assignmentStore.removeAll();
     project.eventStore.removeAll();
@@ -315,7 +320,8 @@ export async function refreshAllData(
 export function attachDateRangeListener(scheduler: SchedulerPro): void {
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    (scheduler as any).on('dateRangeChange', ({ new: newRange }: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (scheduler as any).on('dateRangeChange', ({ new: newRange }: { new: { startDate: Date; endDate: Date } }) => {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
             const fetched = getFetchedRange();

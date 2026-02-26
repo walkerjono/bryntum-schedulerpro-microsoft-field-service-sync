@@ -12,13 +12,15 @@ import type { Widget } from '@bryntum/schedulerpro';
 interface BryntumCombo extends Widget {
     value: string[] | null;
     items: Array<{ value: string; text: string }>;
-    on(event: string, handler: (...args: unknown[]) => void): void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    on(event: string, handler: (...args: any[]) => void): void;
 }
 
 /** A toggle/checkbox widget. */
 interface BryntumToggle extends Widget {
     checked: boolean;
-    on(event: string, handler: (...args: unknown[]) => void): void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    on(event: string, handler: (...args: any[]) => void): void;
 }
 
 /** A button widget. */
@@ -27,13 +29,15 @@ interface BryntumButton extends Widget {
     icon: string;
     pressed?: boolean;
     dataset?: Record<string, string>;
-    on(event: string, handler: (...args: unknown[]) => void): void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    on(event: string, handler: (...args: any[]) => void): void;
 }
 
 /** A button group widget. */
 interface BryntumButtonGroup extends Widget {
     items: BryntumButton[];
-    on(event: string, handler: (...args: unknown[]) => void): void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    on(event: string, handler: (...args: any[]) => void): void;
 }
 
 /** Known widget keys in our SchedulerPro toolbar. */

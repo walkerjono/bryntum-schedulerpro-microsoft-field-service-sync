@@ -1,17 +1,16 @@
 import { signOut } from './auth';
+import type { ViewMode } from '../types/app';
 
 const today = new Date();
-
-type ViewMode = 'day' | 'week' | 'month';
 
 /**
  * Map friendly view-mode names (day / week / month) to Bryntum view-preset ids.
  */
-export const VIEW_MODE_PRESETS: Record<ViewMode, string> = {
+export const VIEW_MODE_PRESETS = {
     day   : 'weekAndDayLetter',
     week  : 'weekAndMonth',
     month : 'monthAndYear'
-};
+} as const satisfies Record<ViewMode, string>;
 
 /** Resolve the configured default view-mode to a Bryntum preset id. */
 export const DEFAULT_VIEW_PRESET: string =
@@ -22,11 +21,11 @@ export const DEFAULT_VIEW_PRESET: string =
 export const VIEWPORT_BUFFER_DAYS: number = Number(import.meta.env.VITE_VIEWPORT_BUFFER_DAYS) || 28;
 
 // Shared project color palette
-export const PROJECT_COLORS: string[] = [
+export const PROJECT_COLORS = [
     '#4991E5', '#E5A449', '#7BC86C', '#CD5A91', '#A37EDE',
     '#29CCB1', '#F87171', '#FBBF24', '#6EE7B7', '#93C5FD',
     '#C084FC', '#FB923C', '#5EEAD4', '#FCA5A5', '#86EFAC'
-];
+] as const;
 
 interface NameRendererArg {
     record: { name?: string; imageUrl?: string };

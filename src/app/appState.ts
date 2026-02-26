@@ -6,7 +6,7 @@
  * rest of the app never touches the variables directly.
  */
 
-import type { FlatResource, FetchedRange, EffortConfig } from '../types/app';
+import type { FlatResource, FetchedRange } from '../types/app';
 import { PROJECT_COLORS, VIEWPORT_BUFFER_DAYS } from './schedulerproConfig';
 import {
     computeBufferedRange as _computeBufferedRange,
@@ -29,11 +29,6 @@ export const EFFORT_REMAINING_OFFSET_DAYS: number =
 
 export const HOURS_PER_DAY: number =
     Number(import.meta.env.VITE_HOURS_PER_DAY) || 8;
-
-export const effortConfig: EffortConfig = {
-    useCurrentWeek : EFFORT_REMAINING_USE_CURRENT_WEEK,
-    offsetDays     : EFFORT_REMAINING_OFFSET_DAYS
-};
 
 // ── Mutable state ───────────────────────────────────────────────────
 

@@ -1,11 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
     getBarClass,
     getLeafDescendants,
     clearLeafStateCache,
-    histogramConfig
+    histogramConfig,
+    type AllocationDatum,
+    type DomConfig,
+    type TreeGroupResource
 } from '../app/histogramConfig';
-import type { AllocationDatum, DomConfig, TreeGroupResource } from '../app/histogramConfig';
 
 // ── Helpers ─────────────────────────────────────────────────────────
 /** Create a minimal datum for getBarClass.  maxEffort/effort in ms, same as Bryntum. */
@@ -13,7 +15,9 @@ function makeDatum({ effort = 0, maxEffort = 100, isGroup = false, resource = un
     return { effort, maxEffort, isGroup, resource, startDate };
 }
 /** Writable domConfig stub */
-function makeDomConfig(): DomConfig { return { style : {} }; }
+function makeDomConfig(): DomConfig {
+    return { style : {} };
+}
 
 // ── getLeafDescendants ──────────────────────────────────────────────
 describe('getLeafDescendants', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // The module imports ./auth which triggers MSAL — handled by setup.ts mock.
 import {

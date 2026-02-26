@@ -11,6 +11,8 @@ import CustomResourceModel, { loadDefaultImage } from '../../lib/CustomResourceM
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRecord = any;
 
+type RequestInit = globalThis.RequestInit;
+
 describe('CustomResourceModel', () => {
     // ── Field defaults ───────────────────────────────────────────
     it('defaults practiceName to "Unassigned"', () => {
@@ -62,7 +64,7 @@ describe('loadDefaultImage', () => {
         vi.restoreAllMocks();
     });
 
-    it('fetches the default resource image with auth token', async () => {
+    it('fetches the default resource image with auth token', async() => {
         const blob = new Blob(['fake-image'], { type : 'image/jpeg' });
         fetchSpy.mockResolvedValueOnce({
             ok   : true,
@@ -76,7 +78,7 @@ describe('loadDefaultImage', () => {
         expect(callHeaders['Authorization']).toBe('Bearer mock-token');
     });
 
-    it('does not throw when fetch fails', async () => {
+    it('does not throw when fetch fails', async() => {
         fetchSpy.mockResolvedValueOnce({
             ok         : false,
             statusText : 'Not Found'

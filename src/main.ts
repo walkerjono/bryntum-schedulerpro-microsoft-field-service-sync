@@ -5,8 +5,6 @@
  * modules under app/.  It replaces the monolithic main.js.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { SchedulerPro } from '@bryntum/schedulerpro';
 import './style.css';
 import { schedulerproConfig } from './app/schedulerproConfig';
@@ -86,10 +84,13 @@ async function displayUI(): Promise<void> {
         }
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (scheduler as any).project.commitAsync();
     console.log('[main] SchedulerPro initialized');
 
     // ── Gather widgets ──────────────────────────────────────────────
+
+    /* eslint-disable @typescript-eslint/no-explicit-any -- Bryntum widgetMap not typed */
     const widgets: AppWidgetMap = {
         practiceFilter  : (scheduler as any).widgetMap.practiceFilter,
         roleFilter      : (scheduler as any).widgetMap.roleFilter,
@@ -100,6 +101,7 @@ async function displayUI(): Promise<void> {
         zoomOutButton   : (scheduler as any).widgetMap.zoomOutButton,
         viewPresetGroup : (scheduler as any).widgetMap.viewPresetGroup
     };
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     // ── Wire viewport-based incremental fetch ───────────────────────
     attachDateRangeListener(scheduler);
@@ -122,7 +124,9 @@ async function displayUI(): Promise<void> {
     autoExpandForFilters(scheduler, histogram, widgets);
 
     // Expose for debugging
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).schedulerPro = scheduler;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).histogram = histogram;
 }
 

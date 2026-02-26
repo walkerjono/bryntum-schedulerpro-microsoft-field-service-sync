@@ -5,6 +5,8 @@
  * zoom preset) to/from URL query parameters.
  */
 
+import type { ViewMode } from '../types/app';
+
 export interface FilterState {
     practices: string[];
     roles: string[];
@@ -69,9 +71,9 @@ export function writeFilterParams(
 
     // Persist zoom only when it differs from the env-var default
     const defaultPreset = import.meta.env.VITE_DEFAULT_VIEW_MODE
-        ? ({ day : 'weekAndDayLetter', week : 'weekAndMonth', month : 'monthAndYear' }[
-            (import.meta.env.VITE_DEFAULT_VIEW_MODE || 'day').toLowerCase() as 'day' | 'week' | 'month'
-        ] || 'weekAndDayLetter')
+        ? ({ day : 'weekAndDayLetter', week : 'weekAndMonth', month : 'monthAndYear' } satisfies Record<ViewMode, string>)[
+            (import.meta.env.VITE_DEFAULT_VIEW_MODE || 'day').toLowerCase() as ViewMode
+        ] || 'weekAndDayLetter'
         : 'weekAndDayLetter';
 
     if (state.zoom && state.zoom !== defaultPreset) {

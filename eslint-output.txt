@@ -1,0 +1,160 @@
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\app\dataLoader.ts
+   8:29  warning  'ResourceHistogram' is defined but never used      @typescript-eslint/no-unused-vars
+  12:1   error    '../lib/CustomResourceModel' import is duplicated  no-duplicate-imports
+  23:5   warning  'getResourceHoursMap' is defined but never used    @typescript-eslint/no-unused-vars
+  33:5   warning  'HOURS_PER_DAY' is defined but never used          @typescript-eslint/no-unused-vars
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\app\uiSetup.ts
+  17:10  warning  'clearLeafStateCache' is defined but never used  @typescript-eslint/no-unused-vars
+  92:31  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\main.ts
+   92:5   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+   94:41  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+   95:41  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+   96:41  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+   97:41  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+   98:41  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+   99:41  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+  100:41  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+  101:41  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\test\crudFunctions.test.ts
+    2:1   error  'vitest' import is duplicated  no-duplicate-imports
+   54:69  error  'RequestInit' is not defined   no-undef
+  173:65  error  'RequestInit' is not defined   no-undef
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\test\histogramConfig.test.ts
+   1:32  warning  'vi' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+   8:1   error    '../app/histogramConfig' import is duplicated                                                                  no-duplicate-imports
+  16:37  warning  Statement inside of curly braces should be on next line                                                        brace-style
+  16:62  warning  Closing curly brace should be on the same line as opening curly brace or on the line after the previous block  brace-style
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\test\lib\CustomResourceModel.test.ts
+  65:67  warning  Unexpected space before function parentheses  space-before-function-paren
+  75:65  error    'RequestInit' is not defined                  no-undef
+  79:48  warning  Unexpected space before function parentheses  space-before-function-paren
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\test\lib\filterUtils.test.ts
+  3:1  error  '../../lib/filterUtils' import is duplicated  no-duplicate-imports
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\test\schedulerproConfig.test.ts
+  1:32  warning  'vi' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\types\d365.ts
+   1:4   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   2:74  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   3:64  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   4:4   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   5:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   6:71  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   7:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   8:31  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   9:23  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  10:32  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  11:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  12:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  13:40  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  14:32  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  15:18  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  16:36  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  17:23  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  18:26  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  19:36  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  20:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  21:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  22:72  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  23:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  24:40  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  25:40  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  26:18  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  27:41  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  28:70  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  29:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  30:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  31:50  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  32:29  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  33:37  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  34:30  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  35:52  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  36:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  37:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  38:72  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  39:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  40:37  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  41:28  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  42:27  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  43:36  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  44:80  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  45:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  46:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  47:34  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  48:42  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  49:35  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  50:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  51:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  52:42  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  53:40  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  54:25  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  55:25  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  56:26  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  57:26  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  58:45  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  59:34  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  60:78  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  61:37  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  62:81  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  63:28  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  64:48  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  65:42  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  66:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  67:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  68:72  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  69:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  70:36  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  71:16  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  72:32  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  73:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+
+C:\walkerjono\source\bryntum-schedulerpro-microsoft-field-service-sync\src\types\env.d.ts
+   1:38  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   2:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   3:26  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   4:53  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   5:50  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   6:39  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   7:53  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   8:52  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+   9:53  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  10:64  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  11:41  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  12:62  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  13:39  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  14:67  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  15:50  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  16:68  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  17:44  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  18:77  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  19:49  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  20:70  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  21:57  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  22:84  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  23:49  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  24:75  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  25:42  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  26:72  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  27:46  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  28:64  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  29:53  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  30:64  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  31:52  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  32:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  33:1   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  34:23  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  35:33  error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+  36:2   error  Expected linebreaks to be 'LF' but found 'CRLF'  linebreak-style
+
+Γ£û 136 problems (116 errors, 20 warnings)
+  109 errors and 5 warnings potentially fixable with the `--fix` option.
+
