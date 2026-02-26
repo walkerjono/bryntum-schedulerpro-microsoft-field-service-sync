@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock auth.js before CustomResourceModel imports it
-vi.mock('../../auth.js', () => ({
+vi.mock('../../app/auth.js', () => ({
     getToken : vi.fn().mockResolvedValue('mock-token')
 }));
 

@@ -7,7 +7,7 @@ import {
     schedulerproConfig,
     VIEWPORT_BUFFER_DAYS,
     PROJECT_COLORS
-} from '../schedulerproConfig';
+} from '../app/schedulerproConfig';
 
 // ── Constants ───────────────────────────────────────────────────────
 describe('constants', () => {

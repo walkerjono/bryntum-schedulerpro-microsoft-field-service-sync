@@ -1,5 +1,5 @@
 import { ResourceModel, type ModelFieldConfig } from '@bryntum/schedulerpro';
-import { getToken } from '../auth.js';
+import { getToken } from '../app/auth';
 
 // Fetch and cache the default unknown resource image
 let defaultResourceImageBase64: string | null = null;

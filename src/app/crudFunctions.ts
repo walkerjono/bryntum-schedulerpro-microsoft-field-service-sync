@@ -1,5 +1,5 @@
 import { getToken } from './auth';
-import type { D365BookableResource, D365ResourceAssignment, D365ResourceCategoryAssignment, ODataResponse } from './types/d365';
+import type { D365BookableResource, D365ResourceAssignment, D365ResourceCategoryAssignment, ODataResponse } from '../types/d365';
 
 const crmRegion  = import.meta.env.VITE_CRM_REGION || 'crm6';
 const orgUrl     = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.api.${crmRegion}.dynamics.com`;

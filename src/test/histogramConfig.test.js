@@ -4,7 +4,7 @@ import {
     getLeafDescendants,
     clearLeafStateCache,
     histogramConfig
-} from '../histogramConfig';
+} from '../app/histogramConfig';
 
 // ── Helpers ─────────────────────────────────────────────────────────
 /** Create a minimal datum for getBarClass.  maxEffort/effort in ms, same as Bryntum. */

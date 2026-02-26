@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock auth.js before importing crudFunctions
-vi.mock('../auth.js', () => ({
+vi.mock('../app/auth.js', () => ({
     getToken : vi.fn().mockResolvedValue('mock-token-123')
 }));
 
-import { getResources, getResourcePractices, getAssignments } from '../crudFunctions';
+import { getResources, getResourcePractices, getAssignments } from '../app/crudFunctions';
 
 // ── Test helpers ────────────────────────────────────────────────────
 /** Build a mock Response object */
