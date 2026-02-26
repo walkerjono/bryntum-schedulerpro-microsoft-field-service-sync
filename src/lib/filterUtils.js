@@ -67,7 +67,14 @@ export function writeFilterParams(state, currentSearch, pathname, replaceStateFn
         params.delete('useRemainingEffort');
     }
 
-    if (state.zoom && state.zoom !== 'weekAndDayLetter') {
+    // Persist zoom only when it differs from the env-var default
+    const defaultPreset = import.meta.env.VITE_DEFAULT_VIEW_MODE
+        ? ({ day: 'weekAndDayLetter', week: 'weekAndMonth', month: 'monthAndYear' }[
+            (import.meta.env.VITE_DEFAULT_VIEW_MODE || 'day').toLowerCase()
+        ] || 'weekAndDayLetter')
+        : 'weekAndDayLetter';
+
+    if (state.zoom && state.zoom !== defaultPreset) {
         params.set('zoom', state.zoom);
     }
     else {

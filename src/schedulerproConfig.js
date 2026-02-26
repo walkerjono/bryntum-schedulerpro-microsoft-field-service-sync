@@ -2,6 +2,19 @@ import { signOut } from './auth.js';
 
 const today = new Date();
 
+/**
+ * Map friendly view-mode names (day / week / month) to Bryntum view-preset ids.
+ */
+export const VIEW_MODE_PRESETS = {
+    day   : 'weekAndDayLetter',
+    week  : 'weekAndMonth',
+    month : 'monthAndYear'
+};
+
+/** Resolve the configured default view-mode to a Bryntum preset id. */
+export const DEFAULT_VIEW_PRESET =
+    VIEW_MODE_PRESETS[(import.meta.env.VITE_DEFAULT_VIEW_MODE || 'day').toLowerCase()] || 'weekAndDayLetter';
+
 // How many days beyond the visible scheduler viewport to pre-fetch assignments.
 // Increase for smoother scrolling (fewer mid-scroll fetches); decrease to reduce payload.
 export const VIEWPORT_BUFFER_DAYS = Number(import.meta.env.VITE_VIEWPORT_BUFFER_DAYS) || 28;
@@ -54,7 +67,7 @@ export const schedulerproConfig = {
     appendTo    : 'app',
     startDate   : new Date(today.getFullYear(), today.getMonth(), 1),
     endDate     : new Date(today.getFullYear(), today.getMonth(), 1 + (12 * 7)),
-    viewPreset  : 'weekAndDayLetter',
+    viewPreset  : DEFAULT_VIEW_PRESET,
     visibleDate : { date : new Date(), block : 'start' },
     barMargin   : 5,
 
@@ -136,9 +149,9 @@ export const schedulerproConfig = {
                         toggleGroup : true,
                         cls         : 'b-zoom-presets',
                         items       : [
-                            { text : 'Day',   ref : 'zoomDay',   toggleable : true, pressed : true,  dataset : { preset : 'weekAndDayLetter' } },
-                            { text : 'Week',  ref : 'zoomWeek',  toggleable : true, pressed : false, dataset : { preset : 'weekAndMonth' } },
-                            { text : 'Month', ref : 'zoomMonth', toggleable : true, pressed : false, dataset : { preset : 'monthAndYear' } }
+                            { text : 'Day',   ref : 'zoomDay',   toggleable : true, pressed : DEFAULT_VIEW_PRESET === 'weekAndDayLetter',  dataset : { preset : 'weekAndDayLetter' } },
+                            { text : 'Week',  ref : 'zoomWeek',  toggleable : true, pressed : DEFAULT_VIEW_PRESET === 'weekAndMonth',      dataset : { preset : 'weekAndMonth' } },
+                            { text : 'Month', ref : 'zoomMonth', toggleable : true, pressed : DEFAULT_VIEW_PRESET === 'monthAndYear',     dataset : { preset : 'monthAndYear' } }
                         ]
                     },
                     effortToggle : {

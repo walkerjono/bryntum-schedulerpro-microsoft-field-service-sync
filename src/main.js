@@ -1,6 +1,6 @@
 import { SchedulerPro, ResourceHistogram } from '@bryntum/schedulerpro';
 import './style.css';
-import { schedulerproConfig, PROJECT_COLORS, VIEWPORT_BUFFER_DAYS } from './schedulerproConfig';
+import { schedulerproConfig, PROJECT_COLORS, VIEWPORT_BUFFER_DAYS, DEFAULT_VIEW_PRESET } from './schedulerproConfig';
 import { histogramConfig, clearLeafStateCache } from './histogramConfig.js';
 import { signIn } from './auth.js';
 import {
@@ -499,7 +499,7 @@ async function displayUI() {
         // Persist active zoom preset
         const activeZoomBtn = scheduler.widgetMap.viewPresetGroup?.items?.find((b) => b.pressed);
         const activePreset = activeZoomBtn?.dataset?.preset;
-        if (activePreset && activePreset !== 'weekAndDayLetter') {
+        if (activePreset && activePreset !== DEFAULT_VIEW_PRESET) {
             params.set('zoom', activePreset);
         }
         else {
