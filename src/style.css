@@ -149,3 +149,27 @@ main {
 .b-timeline-base:not(.b-sch-vertical) .b-time-ranges-header-canvas .b-sch-line {
   display: none;
 }
+
+/* Multi-row toolbar layout */
+.b-multi-row-toolbar {
+  display        : flex;
+  flex-direction : column;
+}
+
+.b-multi-row-toolbar > .b-toolbar {
+  border-bottom : none;
+}
+
+.b-multi-row-toolbar > .b-toolbar-row-2 {
+  border-top    : 1px solid #e0e0e0;
+  padding-block : 4px;
+}
+
+/* Zoom preset button group */
+.b-zoom-presets {
+  margin-inline : 8px;
+}
+
+.b-zoom-presets .b-button {
+  min-width : 60px;
+}

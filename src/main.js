@@ -27,10 +27,12 @@ let useRemainingEffort = import.meta.env.VITE_USE_EFFORT_REMAINING === 'true';
     }
 }
 
-// When using effort remaining mode, offset the start date by this many days in the past.
-// Set to 0 for current behavior (reset to today), positive values go N days into the past,
-// negative values go N days into the future.
-const EFFORT_REMAINING_OFFSET_DAYS = Number(import.meta.env.VITE_EFFORT_REMAINING_OFFSET_DAYS) || 7;
+// When using effort remaining mode, determine the offset for the effective start date.
+// Accepts a number of days (positive = past, negative = future, 0 = today)
+// or "current_week" to snap to the Monday of the current week.
+const EFFORT_REMAINING_OFFSET_RAW = (import.meta.env.VITE_EFFORT_REMAINING_OFFSET_DAYS || '7').trim();
+const EFFORT_REMAINING_USE_CURRENT_WEEK = EFFORT_REMAINING_OFFSET_RAW.toLowerCase() === 'current_week';
+const EFFORT_REMAINING_OFFSET_DAYS = EFFORT_REMAINING_USE_CURRENT_WEEK ? 0 : (Number(EFFORT_REMAINING_OFFSET_RAW) || 7);
 
 // ── Viewport-based date filtering state ─────────────────────────────
 // Tracks which date range has already been fetched from the API so we
@@ -109,6 +111,16 @@ async function displayUI() {
     `[main] Loaded ${resourcesData.value.length} resources, ${assignmentsData.value.length} assignments, ${practiceMap.size} practice mappings, ${roleMap.size} role mappings`
     );
 
+    // ── Build resource → hours-per-day lookup (needed before event resolution) ──
+    // Maps resourceId → hoursPerDay so calcUnits uses the resource's actual
+    // calendar capacity instead of the global default.
+    let resourceHoursMap = new Map();
+    for (const raw of resourcesData.value) {
+        const wh = raw.ws_workinghours || 40; // || so 0 and null both fall back to 40
+        resourceHoursMap.set(raw.bookableresourceid, wh / 5);
+    }
+    console.log(`[main] Built resourceHoursMap for ${resourceHoursMap.size} resources`);
+
     // ── Helper: count weekdays (Mon–Fri) between two dates ──────────────
     function countWeekdays(start, end) {
         let count = 0;
@@ -127,12 +139,27 @@ async function displayUI() {
     /**
      * Return the later of `date` and the offset date (midnight-normalised).
      * When using remaining effort we assume no past work remains, so the
-     * effective start of an assignment is at earliest EFFORT_REMAINING_OFFSET_DAYS days ago.
+     * effective start of an assignment is at earliest the offset date.
+     *
+     * The offset date is computed as:
+     *  - "current_week" → Monday 00:00 of the current week
+     *  - A number N     → today minus N days
      */
     function clampStartToToday(date) {
-        const offsetDate = new Date();
-        offsetDate.setHours(0, 0, 0, 0);
-        offsetDate.setDate(offsetDate.getDate() - EFFORT_REMAINING_OFFSET_DAYS);
+        let offsetDate;
+        if (EFFORT_REMAINING_USE_CURRENT_WEEK) {
+            offsetDate = new Date();
+            offsetDate.setHours(0, 0, 0, 0);
+            // getDay(): 0 = Sun, 1 = Mon … 6 = Sat → shift back to Monday
+            const dayOfWeek = offsetDate.getDay();
+            const daysFromMonday = (dayOfWeek + 6) % 7; // Mon=0 … Sun=6
+            offsetDate.setDate(offsetDate.getDate() - daysFromMonday);
+        }
+        else {
+            offsetDate = new Date();
+            offsetDate.setHours(0, 0, 0, 0);
+            offsetDate.setDate(offsetDate.getDate() - EFFORT_REMAINING_OFFSET_DAYS);
+        }
         const d = new Date(date);
         d.setHours(0, 0, 0, 0);
         return d.getTime() < offsetDate.getTime() ? offsetDate : d;
@@ -144,12 +171,16 @@ async function displayUI() {
      * When remaining-effort mode is active the start date is clamped to today so
      * effort is spread only over future working days.
      */
-    function calcUnits(effort, effortRemaining, startDate, endDate) {
+    function calcUnits(effort, effortRemaining, startDate, endDate, resourceId) {
         const effortSource = useRemainingEffort ? (effortRemaining ?? 0) : effort;
         const effectiveStart = useRemainingEffort ? clampStartToToday(startDate) : startDate;
         const workingDays  = countWeekdays(effectiveStart, endDate);
-        const workingHours = workingDays * HOURS_PER_DAY;
-        return effortSource > 0 ? (effortSource / workingHours) * 100 : 0;
+        // Use the resource's actual hours-per-day from their calendar,
+        // falling back to the global default for unknown resources.
+        const hrsPerDay    = resourceHoursMap.get(resourceId) || HOURS_PER_DAY;
+        const workingHours = workingDays * hrsPerDay;
+        const rawUnits = effortSource > 0 && workingHours > 0 ? (effortSource / workingHours) * 100 : 0;
+        return Number.isFinite(rawUnits) ? rawUnits : 0;
     }
 
     // ── Resolve events via temporary CustomEventModel (runs convert fns) ─
@@ -176,7 +207,7 @@ async function displayUI() {
             effectiveStart = e.endDate;
         }
         // Calculate allocation % so the histogram shows correct effort per tick.
-        const units = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate);
+        const units = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate, e.resourceId);
         // Calculate duration in hours (durationUnit is 'hour')
         const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
         resolvedEvents.push({
@@ -240,7 +271,8 @@ async function displayUI() {
             imageUrl,
             practiceName : practiceMap.get(id) || 'Unassigned',
             roleName     : roleMap.get(id) || 'Unassigned',
-            workingHours : raw.ws_workinghours ?? 40
+            workingHours : raw.ws_workinghours || 40,
+            calendar     : 'business'
         };
     });
 
@@ -270,6 +302,7 @@ async function displayUI() {
             const hrsPerDay = r.workingHours / 5;
             const endHour   = Math.floor(8 + hrsPerDay);
             const endMinute = Math.round((hrsPerDay % 1) * 60);
+            const endTimeStr = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
             calendars.push({
                 id                       : calId,
                 name                     : `Custom (${r.workingHours}h)`,
@@ -277,7 +310,7 @@ async function displayUI() {
                 intervals                : [
                     {
                         recurrentStartDate : 'every weekday at 08:00',
-                        recurrentEndDate   : `every weekday at ${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`,
+                        recurrentEndDate   : `every weekday at ${endTimeStr}`,
                         isWorking          : true
                     }
                 ]
@@ -343,7 +376,7 @@ async function displayUI() {
                 effectiveStart = e.endDate;
             }
 
-            const units         = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate);
+            const units         = calcUnits(e.effort, e.effortRemaining, e.startDate, e.endDate, e.resourceId);
             const durationHours = (new Date(e.endDate) - new Date(effectiveStart)) / (1000 * 60 * 60);
 
             events.push({
@@ -464,7 +497,8 @@ async function displayUI() {
             practices          : params.get('practice')?.split(',').filter(Boolean) || [],
             roles              : params.get('role')?.split(',').filter(Boolean) || [],
             resources          : params.get('resource')?.split(',').filter(Boolean) || [],
-            useRemainingEffort : effortParam != null ? effortParam === 'true' : null
+            useRemainingEffort : effortParam != null ? effortParam === 'true' : null,
+            zoom               : params.get('zoom') || null
         };
     }
 
@@ -500,6 +534,16 @@ async function displayUI() {
         }
         else {
             params.delete('useRemainingEffort');
+        }
+
+        // Persist active zoom preset
+        const activeZoomBtn = scheduler.widgetMap.viewPresetGroup?.items?.find((b) => b.pressed);
+        const activePreset = activeZoomBtn?.dataset?.preset;
+        if (activePreset && activePreset !== 'weekAndDayLetter') {
+            params.set('zoom', activePreset);
+        }
+        else {
+            params.delete('zoom');
         }
 
         const qs = params.toString();
@@ -658,6 +702,29 @@ async function displayUI() {
         resourceCombo.value = initialParams.resources;
     }
 
+    // ── Zoom preset button group ────────────────────────────────────────
+    const viewPresetGroup = scheduler.widgetMap.viewPresetGroup;
+    if (viewPresetGroup) {
+        // Restore zoom preset from URL param
+        if (initialParams.zoom) {
+            const targetBtn = viewPresetGroup.items.find(
+                (b) => b.dataset?.preset === initialParams.zoom
+            );
+            if (targetBtn) {
+                targetBtn.pressed = true;
+                scheduler.viewPreset = initialParams.zoom;
+            }
+        }
+
+        viewPresetGroup.on('toggle', ({ source, pressed }) => {
+            if (pressed && source.dataset?.preset) {
+                scheduler.viewPreset = source.dataset.preset;
+                writeFilterParams();
+                console.log(`[main] Zoom preset changed to ${source.dataset.preset}`);
+            }
+        });
+    }
+
     // ── Effort / Remaining Effort toggle ────────────────────────────────
     const effortToggle = scheduler.widgetMap.effortToggle;
     if (effortToggle) {
@@ -704,13 +771,13 @@ async function displayUI() {
                         event.effort,
                         event.effortRemaining,
                         event.originalStartDate || event.startDate,
-                        event.endDate
+                        event.endDate,
+                        assignment.resource?.id ?? assignment.resource
                     );
                 }
             });
 
             await scheduler.project.commitAsync();
-            // Debug: Log all event records after toggle
             writeFilterParams();
             console.log(`[main] Histogram switched to ${checked ? 'remaining effort' : 'total effort'}`);
         });
@@ -747,6 +814,14 @@ async function displayUI() {
                     ]);
 
                 const { practiceMap: newPracticeMap, roleMap: newRoleMap } = newPracticeRoleResult;
+
+                // Rebuild resource hours map from fresh data
+                resourceHoursMap = new Map();
+                for (const raw of newResources.value) {
+                    const wh = raw.ws_workinghours ?? 40;
+                    resourceHoursMap.set(raw.bookableresourceid, wh / 5);
+                }
+                console.log(`[main] Rebuilt resourceHoursMap for ${resourceHoursMap.size} resources`);
 
                 // Re-resolve events using shared transform
                 const { events: newResolvedEvents, assignments: newAssignmentRecords } =

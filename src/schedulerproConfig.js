@@ -116,79 +116,105 @@ export const schedulerproConfig = {
         }
     },
     tbar : {
-        items : {
-            refreshButton : {
-                type    : 'button',
-                icon    : 'fa fa-sync',
-                tooltip : 'Refresh data',
-                cls     : 'b-transparent'
-            },
-            practiceFilter : {
-                type        : 'combo',
-                ref         : 'practiceFilter',
-                label       : 'Practice',
-                multiSelect : true,
-                editable    : false,
-                clearable   : true,
-                width       : 350,
-                placeholder : 'All Practices',
-                items       : [],
-                chipView    : { closable : true },
-                listItemTpl(record) {
-                    return record.text;
+        type  : 'container',
+        cls   : 'b-multi-row-toolbar',
+        items : [
+            {
+                type  : 'toolbar',
+                cls   : 'b-toolbar-row-1',
+                items : {
+                    refreshButton : {
+                        type    : 'button',
+                        ref     : 'refreshButton',
+                        icon    : 'fa fa-sync',
+                        tooltip : 'Refresh data',
+                        cls     : 'b-transparent'
+                    },
+                    viewPresetGroup : {
+                        type        : 'buttongroup',
+                        ref         : 'viewPresetGroup',
+                        toggleGroup : true,
+                        cls         : 'b-zoom-presets',
+                        items       : [
+                            { text : 'Day',   ref : 'zoomDay',   toggleable : true, pressed : true,  dataset : { preset : 'weekAndDayLetter' } },
+                            { text : 'Week',  ref : 'zoomWeek',  toggleable : true, pressed : false, dataset : { preset : 'weekAndMonth' } },
+                            { text : 'Month', ref : 'zoomMonth', toggleable : true, pressed : false, dataset : { preset : 'monthAndYear' } }
+                        ]
+                    },
+                    effortToggle : {
+                        type          : 'slidetoggle',
+                        ref           : 'effortToggle',
+                        label         : 'Use Effort Remaining ',
+                        labelPosition : 'before',
+                        tooltip       : 'Toggle histogram between total effort and remaining effort',
+                        checked       : false
+                    },
+                    spacer1       : { type : 'widget', flex : 1 },
+                    signoutButton : {
+                        text : 'Signout',
+                        icon : 'fa fa-sign-out',
+                        onClick() {
+                            signOut().then(() => {
+                                location.reload();
+                            });
+                        }
+                    }
                 }
             },
-            roleFilter : {
-                type           : 'combo',
-                ref            : 'roleFilter',
-                label          : 'Role',
-                multiSelect    : true,
-                editable       : true,
-                clearable      : true,
-                width          : 350,
-                placeholder    : 'All Roles',
-                items          : [],
-                chipView       : { closable : true },
-                filterOperator : '*',
-                listItemTpl(record) {
-                    return record.text;
-                }
-            },
-            resourceFilter : {
-                type           : 'combo',
-                ref            : 'resourceFilter',
-                label          : 'Resource',
-                multiSelect    : true,
-                editable       : true,
-                clearable      : true,
-                width          : 350,
-                placeholder    : 'All Resources',
-                items          : [],
-                chipView       : { closable : true },
-                filterOperator : '*',
-                listItemTpl(record) {
-                    return record.text;
-                }
-            },
-            effortToggle : {
-                type          : 'slidetoggle',
-                ref           : 'effortToggle',
-                label         : 'Use Effort Remaining ',
-                labelPosition : 'before',
-                tooltip       : 'Toggle histogram between total effort and remaining effort',
-                checked       : false
-            },
-            spacer        : { type : 'widget', flex : 1 },
-            signoutButton : {
-                text : 'Signout',
-                icon : 'fa fa-sign-out',
-                onClick() {
-                    signOut().then(() => {
-                        location.reload();
-                    });
+            {
+                type  : 'toolbar',
+                cls   : 'b-toolbar-row-2',
+                items : {
+                    practiceFilter : {
+                        type        : 'combo',
+                        ref         : 'practiceFilter',
+                        label       : 'Practice',
+                        multiSelect : true,
+                        editable    : false,
+                        clearable   : true,
+                        width       : 350,
+                        placeholder : 'All Practices',
+                        items       : [],
+                        chipView    : { closable : true },
+                        listItemTpl(record) {
+                            return record.text;
+                        }
+                    },
+                    roleFilter : {
+                        type           : 'combo',
+                        ref            : 'roleFilter',
+                        label          : 'Role',
+                        multiSelect    : true,
+                        editable       : true,
+                        clearable      : true,
+                        width          : 350,
+                        placeholder    : 'All Roles',
+                        items          : [],
+                        chipView       : { closable : true },
+                        filterOperator : '*',
+                        listItemTpl(record) {
+                            return record.text;
+                        }
+                    },
+                    resourceFilter : {
+                        type           : 'combo',
+                        ref            : 'resourceFilter',
+                        label          : 'Resource',
+                        multiSelect    : true,
+                        editable       : true,
+                        clearable      : true,
+                        width          : 350,
+                        placeholder    : 'All Resources',
+                        items          : [],
+                        chipView       : { closable : true },
+                        filterOperator : '*',
+                        listItemTpl(record) {
+                            return record.text;
+                        }
+                    }
                 }
             }
-        }
+        ]
     }
 };
 

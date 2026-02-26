@@ -34,21 +34,21 @@ It is based on the following [Bryntum Example](https://bryntum.com/blog/how-to-c
 
 ### Environment Variables (required in `.env`)
 
-| Variable                            | Purpose                                                                                                                                          | Default                  |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| `VITE_MICROSOFT_ENTRA_APP_ID`       | Entra app registration client ID                                                                                                                 | _(required)_             |
-| `VITE_MICROSOFT_ENTRA_TENANT_ID`    | Entra tenant ID                                                                                                                                  | _(required)_             |
-| `VITE_MICROSOFT_DYNAMICS_ORG_ID`    | Dynamics 365 org identifier (used in API URL construction)                                                                                       | _(required)_             |
-| `VITE_REDIRECT_URI`                 | MSAL redirect URI after login                                                                                                                    | `window.location.origin` |
-| `VITE_CRM_REGION`                   | D365 CRM region suffix for API URLs (e.g. `crm6` = Australia, `crm` = North America)                                                             | `crm6`                   |
-| `VITE_DATAVERSE_API_VERSION`        | Dataverse Web API version string                                                                                                                 | `v9.2`                   |
-| `VITE_USE_EFFORT_REMAINING`         | Default for effort mode (`true` = remaining effort). Can be overridden at runtime via URL param `?useRemainingEffort=true` or the toolbar toggle | `false`                  |
-| `VITE_VIEWPORT_BUFFER_DAYS`         | Days beyond the visible scheduler viewport to pre-fetch assignments. Increase for smoother scrolling, decrease to reduce payload                 | `28`                     |
-| `VITE_HOURS_PER_DAY`                | Standard working hours per day (used for allocation % and calendar generation)                                                                   | `8`                      |
-| `VITE_EFFORT_REMAINING_OFFSET_DAYS` | When using remaining-effort mode, offset the effective start date this many days into the past                                                   | `7`                      |
-| `VITE_UNDERALLOCATED_THRESHOLD`     | Histogram allocation % below which a bar is considered underallocated (orange)                                                                   | `80`                     |
-| `VITE_OVERALLOCATED_THRESHOLD`      | Histogram allocation % above which a bar is considered overallocated (red)                                                                       | `110`                    |
-| `VITE_ODATA_MAX_PAGES`              | Maximum number of OData pagination pages to follow before stopping                                                                               | `20`                     |
+| Variable                            | Purpose                                                                                                                                                       | Default                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `VITE_MICROSOFT_ENTRA_APP_ID`       | Entra app registration client ID                                                                                                                              | _(required)_             |
+| `VITE_MICROSOFT_ENTRA_TENANT_ID`    | Entra tenant ID                                                                                                                                               | _(required)_             |
+| `VITE_MICROSOFT_DYNAMICS_ORG_ID`    | Dynamics 365 org identifier (used in API URL construction)                                                                                                    | _(required)_             |
+| `VITE_REDIRECT_URI`                 | MSAL redirect URI after login                                                                                                                                 | `window.location.origin` |
+| `VITE_CRM_REGION`                   | D365 CRM region suffix for API URLs (e.g. `crm6` = Australia, `crm` = North America)                                                                          | `crm6`                   |
+| `VITE_DATAVERSE_API_VERSION`        | Dataverse Web API version string                                                                                                                              | `v9.2`                   |
+| `VITE_USE_EFFORT_REMAINING`         | Default for effort mode (`true` = remaining effort). Can be overridden at runtime via URL param `?useRemainingEffort=true` or the toolbar toggle              | `false`                  |
+| `VITE_VIEWPORT_BUFFER_DAYS`         | Days beyond the visible scheduler viewport to pre-fetch assignments. Increase for smoother scrolling, decrease to reduce payload                              | `28`                     |
+| `VITE_HOURS_PER_DAY`                | Standard working hours per day (used for allocation % and calendar generation)                                                                                | `8`                      |
+| `VITE_EFFORT_REMAINING_OFFSET_DAYS` | When using remaining-effort mode, offset the effective start date. Set a number for days in the past, or `current_week` to snap to Monday of the current week | `7`                      |
+| `VITE_UNDERALLOCATED_THRESHOLD`     | Histogram allocation % below which a bar is considered underallocated (orange)                                                                                | `80`                     |
+| `VITE_OVERALLOCATED_THRESHOLD`      | Histogram allocation % above which a bar is considered overallocated (red)                                                                                    | `110`                    |
+| `VITE_ODATA_MAX_PAGES`              | Maximum number of OData pagination pages to follow before stopping                                                                                            | `20`                     |
 
 ---
 
@@ -316,6 +316,16 @@ All filter selections and the effort toggle state are **persisted as URL query p
 1. [x] fix histogram conditional formatting (traffic light)
 1. [x] histogram scale / calendar? showing 7 days
 1. [x] auto-expand when selecting role or resource
-1. [ ] sarah grant not showing overallocated correctly
+1. [x] sarah grant not showing overallocated correctly
 1. [ ] add filter/logic for projectTask.DeliveryStatusCode
 1. [ ] order assignments logically
+1. [x] do we need to consider timezone? or are start/finish date only fields? `msdyn_start` and `msdyn_finish` are date only fields
+1. [ ] SWA deployment (x2 environments)
+
+## Tests Required
+- [ ] Resources without `ws_workinghours`
+- [ ] Resources with non standard `ws_workinghours` i.e. <> 40
+- [ ] Clamped effort remaining
+- [ ] Environment variables
+- [ ] historgram allocation logic
+- [ ] histogram conditional styles

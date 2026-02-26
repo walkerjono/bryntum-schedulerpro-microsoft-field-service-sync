@@ -37,7 +37,7 @@ async function fetchAllPages(url, headers, { label = 'records', maxPages: pageLi
     }
 
     console.log(`[crud] Fetched ${page} page(s), ${allRecords.length} ${label} total`);
-    return { value: allRecords };
+    return { value : allRecords };
 }
 
 export async function getResources() {
@@ -122,11 +122,12 @@ export async function getAssignments({ rangeStart, rangeEnd } = {}) {
     console.log('[crud] Fetching assignments…');
     const token = await getToken();
 
-    const bid = 'd4296cbe-f95e-ed11-9562-00224893363e' // sarah grant
+    // const bid = 'd4296cbe-f95e-ed11-9562-00224893363e'; // sarah grant
 
     let filter = 'msdyn_projectid/statecode eq 0';
 
-    if (bid) {
+    // bid is optional; filter by resource if provided
+    if (typeof bid !== 'undefined') {
         filter += ` and _msdyn_bookableresourceid_value eq ${bid}`;
     }
 
