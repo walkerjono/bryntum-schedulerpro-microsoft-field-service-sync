@@ -74,7 +74,7 @@ export function clearLeafStateCache(): void {
 }
 
 /** Shape of an allocation datum passed by Bryntum's ResourceHistogram. */
-interface AllocationDatum {
+export interface AllocationDatum {
     effort: number;
     maxEffort: number;
     isGroup?: boolean;
@@ -84,12 +84,12 @@ interface AllocationDatum {
 }
 
 /** Shape of the domConfig object for bar styling. */
-interface DomConfig {
+export interface DomConfig {
     style?: Record<string, string>;
 }
 
 /** Shape of the renderData object for bar rendering. */
-interface BarRenderData {
+export interface BarRenderData {
     resource?: TreeGroupResource;
 }
 

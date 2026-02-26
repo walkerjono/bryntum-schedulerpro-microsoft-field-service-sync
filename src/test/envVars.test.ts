@@ -68,7 +68,7 @@ describe('Default values for optional env vars', () => {
         });
 
         it('defaults to 28 when env var is undefined', async() => {
-            vi.stubEnv('VITE_VIEWPORT_BUFFER_DAYS', undefined);
+            vi.stubEnv('VITE_VIEWPORT_BUFFER_DAYS', undefined as unknown as string);
             const { VIEWPORT_BUFFER_DAYS } = await import('../app/schedulerproConfig');
             expect(VIEWPORT_BUFFER_DAYS).toBe(28);
         });
@@ -76,7 +76,7 @@ describe('Default values for optional env vars', () => {
 
     // ── VITE_CRM_REGION defaults ─────────────────────────────────────
     describe('VITE_CRM_REGION', () => {
-        it('defaults to "crm6" when env var is empty (auth.js)', async() => {
+        it('defaults to "crm6" when env var is empty (auth.ts)', async() => {
             vi.stubEnv('VITE_CRM_REGION', '');
             const auth = await import('../app/auth');
             // The msalRequest scope URL should contain crm6 as default
@@ -86,7 +86,7 @@ describe('Default values for optional env vars', () => {
             expect(typeof auth.signIn).toBe('function');
         });
 
-        it('defaults to "crm6" when env var is empty (crudFunctions.js)', async() => {
+        it('defaults to "crm6" when env var is empty (crudFunctions.ts)', async() => {
             vi.stubEnv('VITE_CRM_REGION', '');
             const crud = await import('../app/crudFunctions');
             expect(crud).toBeDefined();
@@ -135,10 +135,10 @@ describe('Default values for optional env vars', () => {
         });
 
         it('is true only when set exactly to "true"', () => {
-            expect('true' === 'true').toBe(true);
-            expect('TRUE' === 'true').toBe(false); // case-sensitive
-            expect('1' === 'true').toBe(false);
-            expect('yes' === 'true').toBe(false);
+            expect(('true' as string) === 'true').toBe(true);
+            expect(('TRUE' as string) === 'true').toBe(false); // case-sensitive
+            expect(('1' as string) === 'true').toBe(false);
+            expect(('yes' as string) === 'true').toBe(false);
         });
     });
 
@@ -158,7 +158,7 @@ describe('Default values for optional env vars', () => {
                 effort    : 79,
                 maxEffort : 100,
                 isGroup   : false,
-                resource  : { id : 1, isLeaf : true },
+                resource  : { id : '1', isLeaf : true },
                 startDate : date
             };
             expect(
@@ -172,7 +172,7 @@ describe('Default values for optional env vars', () => {
                 effort    : 111,
                 maxEffort : 100,
                 isGroup   : false,
-                resource  : { id : 2, isLeaf : true },
+                resource  : { id : '2', isLeaf : true },
                 startDate : date
             };
             expect(
@@ -184,7 +184,7 @@ describe('Default values for optional env vars', () => {
                 effort    : 95,
                 maxEffort : 100,
                 isGroup   : false,
-                resource  : { id : 3, isLeaf : true },
+                resource  : { id : '3', isLeaf : true },
                 startDate : date
             };
             expect(
@@ -196,7 +196,7 @@ describe('Default values for optional env vars', () => {
     // ── VITE_HOURS_PER_DAY default ───────────────────────────────────
     describe('VITE_HOURS_PER_DAY', () => {
         it('defaults to 8 when env var is empty (via Number() || 8 pattern)', () => {
-            // Pattern in main.js: Number(import.meta.env.VITE_HOURS_PER_DAY) || 8
+            // Pattern in main.ts: Number(import.meta.env.VITE_HOURS_PER_DAY) || 8
             expect(Number('') || 8).toBe(8);
             expect(Number(undefined) || 8).toBe(8);
         });
@@ -266,7 +266,7 @@ describe('Numeric env vars parsed as numbers', () => {
                 effort    : 69,
                 maxEffort : 100,
                 isGroup   : false,
-                resource  : { id : 10, isLeaf : true },
+                resource  : { id : '10', isLeaf : true },
                 startDate : date
             };
             expect(
@@ -280,7 +280,7 @@ describe('Numeric env vars parsed as numbers', () => {
                 effort    : 71,
                 maxEffort : 100,
                 isGroup   : false,
-                resource  : { id : 11, isLeaf : true },
+                resource  : { id : '11', isLeaf : true },
                 startDate : date
             };
             expect(
@@ -302,7 +302,7 @@ describe('Numeric env vars parsed as numbers', () => {
                 effort    : 115,
                 maxEffort : 100,
                 isGroup   : false,
-                resource  : { id : 12, isLeaf : true },
+                resource  : { id : '12', isLeaf : true },
                 startDate : date
             };
             expect(
@@ -314,7 +314,7 @@ describe('Numeric env vars parsed as numbers', () => {
                 effort    : 121,
                 maxEffort : 100,
                 isGroup   : false,
-                resource  : { id : 13, isLeaf : true },
+                resource  : { id : '13', isLeaf : true },
                 startDate : date
             };
             expect(
@@ -325,16 +325,16 @@ describe('Numeric env vars parsed as numbers', () => {
 });
 
 // ── VITE_EFFORT_REMAINING_OFFSET_DAYS parsing ───────────────────────
-// This logic lives in main.js (lines 40-43) and is not exported, so we
+// This logic lives in main.ts (lines 40-43) and is not exported, so we
 // replicate the exact parsing pattern here to verify its behaviour.
 describe('VITE_EFFORT_REMAINING_OFFSET_DAYS parsing logic', () => {
     /**
-   * Replicates the parsing from main.js:
+   * Replicates the parsing from main.ts:
    *   const raw = (import.meta.env.VITE_EFFORT_REMAINING_OFFSET_DAYS || '7').trim();
    *   const useCurrentWeek = raw.toLowerCase() === 'current_week';
    *   const offsetDays = useCurrentWeek ? 0 : (Number(raw) || 7);
    */
-    function parseOffset(envValue) {
+    function parseOffset(envValue: string | undefined): { raw: string; useCurrentWeek: boolean; offsetDays: number } {
         const raw = (envValue || '7').trim();
         const useCurrentWeek = raw.toLowerCase() === 'current_week';
         const offsetDays = useCurrentWeek ? 0 : Number(raw) || 7;
@@ -401,21 +401,21 @@ describe('VITE_EFFORT_REMAINING_OFFSET_DAYS parsing logic', () => {
 // ── Required vars — graceful handling when missing ──────────────────
 describe('Required env vars missing', () => {
     it('VITE_MICROSOFT_DYNAMICS_ORG_ID undefined produces "undefined" in API URL (no crash)', async() => {
-        vi.stubEnv('VITE_MICROSOFT_DYNAMICS_ORG_ID', undefined);
+        vi.stubEnv('VITE_MICROSOFT_DYNAMICS_ORG_ID', undefined as unknown as string);
         // Module still loads — the constructed URL will contain "undefined" but won't throw
         const crud = await import('../app/crudFunctions');
         expect(crud).toBeDefined();
     });
 
     it('VITE_MICROSOFT_ENTRA_APP_ID undefined passes through to MSAL config (no crash)', async() => {
-        vi.stubEnv('VITE_MICROSOFT_ENTRA_APP_ID', undefined);
+        vi.stubEnv('VITE_MICROSOFT_ENTRA_APP_ID', undefined as unknown as string);
         // Auth module still loads — MSAL is mocked so no real auth happens
         const auth = await import('../app/auth');
         expect(auth).toBeDefined();
     });
 
     it('VITE_MICROSOFT_ENTRA_TENANT_ID undefined passes through to authority URL (no crash)', async() => {
-        vi.stubEnv('VITE_MICROSOFT_ENTRA_TENANT_ID', undefined);
+        vi.stubEnv('VITE_MICROSOFT_ENTRA_TENANT_ID', undefined as unknown as string);
         const auth = await import('../app/auth');
         expect(auth).toBeDefined();
     });

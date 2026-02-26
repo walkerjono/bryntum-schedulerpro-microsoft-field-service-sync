@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFilterParams, writeFilterParams } from '../../lib/filterUtils';
+import type { FilterState } from '../../lib/filterUtils';
 
 // ── readFilterParams ────────────────────────────────────────────────
 describe('readFilterParams', () => {
@@ -75,8 +76,10 @@ describe('readFilterParams', () => {
 // ── writeFilterParams ───────────────────────────────────────────────
 describe('writeFilterParams', () => {
     it('writes practice values to URL', () => {
-        let capturedUrl;
-        const replaceFn = (url) => { capturedUrl = url; };
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
         writeFilterParams(
             { practices : ['Eng', 'Design'], roles : [], resources : [], useRemainingEffort : false, zoom : null },
             '', '/', replaceFn
@@ -85,8 +88,10 @@ describe('writeFilterParams', () => {
     });
 
     it('removes practice param when array is empty', () => {
-        let capturedUrl;
-        const replaceFn = (url) => { capturedUrl = url; };
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
         writeFilterParams(
             { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null },
             '?practice=Eng', '/', replaceFn
@@ -95,8 +100,10 @@ describe('writeFilterParams', () => {
     });
 
     it('writes useRemainingEffort=true', () => {
-        let capturedUrl;
-        const replaceFn = (url) => { capturedUrl = url; };
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
         writeFilterParams(
             { practices : [], roles : [], resources : [], useRemainingEffort : true, zoom : null },
             '', '/', replaceFn
@@ -105,8 +112,10 @@ describe('writeFilterParams', () => {
     });
 
     it('removes useRemainingEffort when false', () => {
-        let capturedUrl;
-        const replaceFn = (url) => { capturedUrl = url; };
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
         writeFilterParams(
             { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null },
             '?useRemainingEffort=true', '/', replaceFn
@@ -115,8 +124,10 @@ describe('writeFilterParams', () => {
     });
 
     it('writes zoom when not default', () => {
-        let capturedUrl;
-        const replaceFn = (url) => { capturedUrl = url; };
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
         writeFilterParams(
             { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : 'monthAndYear' },
             '', '/', replaceFn
@@ -125,8 +136,10 @@ describe('writeFilterParams', () => {
     });
 
     it('removes zoom when set to default weekAndDayLetter', () => {
-        let capturedUrl;
-        const replaceFn = (url) => { capturedUrl = url; };
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
         writeFilterParams(
             { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : 'weekAndDayLetter' },
             '?zoom=monthAndYear', '/', replaceFn
@@ -135,8 +148,10 @@ describe('writeFilterParams', () => {
     });
 
     it('returns bare pathname when all params are empty', () => {
-        let capturedUrl;
-        const replaceFn = (url) => { capturedUrl = url; };
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
         writeFilterParams(
             { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null },
             '', '/app', replaceFn
@@ -145,9 +160,11 @@ describe('writeFilterParams', () => {
     });
 
     it('round-trips with readFilterParams', () => {
-        let capturedUrl;
-        const replaceFn = (url) => { capturedUrl = url; };
-        const state = {
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
+        const state: FilterState = {
             practices          : ['Engineering'],
             roles              : ['Developer', 'Designer'],
             resources          : ['Alice'],

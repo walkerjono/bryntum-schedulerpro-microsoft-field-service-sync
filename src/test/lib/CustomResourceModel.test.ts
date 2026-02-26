@@ -1,27 +1,31 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock auth.js before CustomResourceModel imports it
-vi.mock('../../app/auth.js', () => ({
+// Mock auth before CustomResourceModel imports it
+vi.mock('../../app/auth', () => ({
     getToken : vi.fn().mockResolvedValue('mock-token')
 }));
 
 import CustomResourceModel, { loadDefaultImage } from '../../lib/CustomResourceModel';
 
+// Bryntum models set field values as dynamic instance properties (via static `fields`).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyRecord = any;
+
 describe('CustomResourceModel', () => {
     // ── Field defaults ───────────────────────────────────────────
     it('defaults practiceName to "Unassigned"', () => {
         const m = new CustomResourceModel({});
-        expect(m.practiceName).toBe('Unassigned');
+        expect((m as AnyRecord).practiceName).toBe('Unassigned');
     });
 
     it('defaults roleName to "Unassigned"', () => {
         const m = new CustomResourceModel({});
-        expect(m.roleName).toBe('Unassigned');
+        expect((m as AnyRecord).roleName).toBe('Unassigned');
     });
 
     it('defaults workingHours to 40', () => {
         const m = new CustomResourceModel({});
-        expect(m.workingHours).toBe(40);
+        expect((m as AnyRecord).workingHours).toBe(40);
     });
 
     it('defaults calendar to "business"', () => {
@@ -37,18 +41,18 @@ describe('CustomResourceModel', () => {
 
     it('accepts explicit practiceName and roleName', () => {
         const m = new CustomResourceModel({ practiceName : 'Engineering', roleName : 'Developer' });
-        expect(m.practiceName).toBe('Engineering');
-        expect(m.roleName).toBe('Developer');
+        expect((m as AnyRecord).practiceName).toBe('Engineering');
+        expect((m as AnyRecord).roleName).toBe('Developer');
     });
 
     it('accepts explicit workingHours', () => {
         const m = new CustomResourceModel({ workingHours : 32 });
-        expect(m.workingHours).toBe(32);
+        expect((m as AnyRecord).workingHours).toBe(32);
     });
 });
 
 describe('loadDefaultImage', () => {
-    let fetchSpy;
+    let fetchSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
         fetchSpy = vi.spyOn(globalThis, 'fetch');
@@ -63,12 +67,12 @@ describe('loadDefaultImage', () => {
         fetchSpy.mockResolvedValueOnce({
             ok   : true,
             blob : () => Promise.resolve(blob)
-        });
+        } as unknown as Response);
 
         await loadDefaultImage();
 
         expect(fetchSpy).toHaveBeenCalledTimes(1);
-        const callHeaders = fetchSpy.mock.calls[0][1].headers;
+        const callHeaders = (fetchSpy.mock.calls[0] as [string, RequestInit])[1].headers as Record<string, string>;
         expect(callHeaders['Authorization']).toBe('Bearer mock-token');
     });
 
@@ -76,7 +80,7 @@ describe('loadDefaultImage', () => {
         fetchSpy.mockResolvedValueOnce({
             ok         : false,
             statusText : 'Not Found'
-        });
+        } as unknown as Response);
 
         // Should not throw
         await expect(loadDefaultImage()).resolves.not.toThrow();

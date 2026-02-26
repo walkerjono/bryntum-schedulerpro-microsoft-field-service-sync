@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Mock } from 'vitest';
 
-// Mock auth.js before importing crudFunctions
-vi.mock('../app/auth.js', () => ({
+// Mock auth before importing crudFunctions
+vi.mock('../app/auth', () => ({
     getToken : vi.fn().mockResolvedValue('mock-token-123')
 }));
 
@@ -9,27 +10,27 @@ import { getResources, getResourcePractices, getAssignments } from '../app/crudF
 
 // ── Test helpers ────────────────────────────────────────────────────
 /** Build a mock Response object */
-function mockResponse(body, { ok = true, statusText = 'OK' } = {}) {
+function mockResponse(body: unknown, { ok = true, statusText = 'OK' } = {}): Response {
     return {
         ok,
         statusText,
         json : () => Promise.resolve(body),
         text : () => Promise.resolve(JSON.stringify(body))
-    };
+    } as unknown as Response;
 }
 
 /** Single-page OData response */
-function odataPage(value, nextLink = null) {
-    const body = { value };
+function odataPage(value: unknown[], nextLink: string | null = null): Record<string, unknown> {
+    const body: Record<string, unknown> = { value };
     if (nextLink) body['@odata.nextLink'] = nextLink;
     return body;
 }
 
 describe('crudFunctions', () => {
-    let fetchSpy;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
-        fetchSpy = vi.spyOn(globalThis, 'fetch');
+        fetchSpy = vi.spyOn(globalThis, 'fetch') as unknown as Mock;
         vi.spyOn(console, 'log').mockImplementation(() => {});
         vi.spyOn(console, 'warn').mockImplementation(() => {});
         vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -41,7 +42,7 @@ describe('crudFunctions', () => {
 
     // ── getResources ─────────────────────────────────────────────
     describe('getResources', () => {
-        it('returns resources from single-page response', async () => {
+        it('returns resources from single-page response', async() => {
             const resources = [{ bookableresourceid : 'r1', name : 'Alice' }];
             fetchSpy.mockResolvedValueOnce(mockResponse(odataPage(resources)));
 
@@ -50,11 +51,11 @@ describe('crudFunctions', () => {
             expect(result.value).toEqual(resources);
             expect(fetchSpy).toHaveBeenCalledTimes(1);
             // Check Authorization header
-            const callHeaders = fetchSpy.mock.calls[0][1].headers;
+            const callHeaders = (fetchSpy.mock.calls[0] as [string, RequestInit])[1].headers as Record<string, string>;
             expect(callHeaders['Authorization']).toBe('Bearer mock-token-123');
         });
 
-        it('follows @odata.nextLink for paginated responses', async () => {
+        it('follows @odata.nextLink for paginated responses', async() => {
             const page1 = [{ bookableresourceid : 'r1' }];
             const page2 = [{ bookableresourceid : 'r2' }];
 
@@ -66,10 +67,10 @@ describe('crudFunctions', () => {
 
             expect(result.value).toEqual([...page1, ...page2]);
             expect(fetchSpy).toHaveBeenCalledTimes(2);
-            expect(fetchSpy.mock.calls[1][0]).toBe('https://next-page-url');
+            expect((fetchSpy.mock.calls[1] as [string])[0]).toBe('https://next-page-url');
         });
 
-        it('throws on HTTP error', async () => {
+        it('throws on HTTP error', async() => {
             fetchSpy.mockResolvedValueOnce(mockResponse(
                 { error : 'Unauthorized' },
                 { ok : false, statusText : 'Unauthorized' }
@@ -81,12 +82,12 @@ describe('crudFunctions', () => {
 
     // ── getResourcePractices ─────────────────────────────────────
     describe('getResourcePractices', () => {
-        it('returns practiceMap and roleMap', async () => {
+        it('returns practiceMap and roleMap', async() => {
             const assns = [{
-                _resource_value : 'r1',
+                _resource_value  : 'r1',
                 ResourceCategory : {
-                    name : 'Developer',
-                    ws_practice : null,
+                    name                                                    : 'Developer',
+                    ws_practice                                             : null,
                     'ws_practice@OData.Community.Display.V1.FormattedValue' : 'Engineering'
                 }
             }];
@@ -98,11 +99,11 @@ describe('crudFunctions', () => {
             expect(roleMap.get('r1')).toBe('Developer');
         });
 
-        it('falls back to raw ws_practice when formatted value missing', async () => {
+        it('falls back to raw ws_practice when formatted value missing', async() => {
             const assns = [{
-                _resource_value : 'r2',
+                _resource_value  : 'r2',
                 ResourceCategory : {
-                    name : 'Analyst',
+                    name        : 'Analyst',
                     ws_practice : 'Analytics'
                 }
             }];
@@ -113,9 +114,9 @@ describe('crudFunctions', () => {
             expect(practiceMap.get('r2')).toBe('Analytics');
         });
 
-        it('uses "Unassigned" when category name is empty', async () => {
+        it('uses "Unassigned" when category name is empty', async() => {
             const assns = [{
-                _resource_value : 'r3',
+                _resource_value  : 'r3',
                 ResourceCategory : { name : '' }
             }];
             fetchSpy.mockResolvedValueOnce(mockResponse(odataPage(assns)));
@@ -125,7 +126,7 @@ describe('crudFunctions', () => {
             expect(roleMap.get('r3')).toBe('Unassigned');
         });
 
-        it('skips records without ResourceCategory', async () => {
+        it('skips records without ResourceCategory', async() => {
             const assns = [
                 { _resource_value : 'r4', ResourceCategory : null },
                 { _resource_value : null, ResourceCategory : { name : 'Test' } }
@@ -141,42 +142,42 @@ describe('crudFunctions', () => {
 
     // ── getAssignments ───────────────────────────────────────────
     describe('getAssignments', () => {
-        it('fetches assignments without date range', async () => {
+        it('fetches assignments without date range', async() => {
             const assignments = [{ msdyn_resourceassignmentid : 'a1' }];
             fetchSpy.mockResolvedValueOnce(mockResponse(odataPage(assignments)));
 
             const result = await getAssignments();
 
             expect(result.value).toEqual(assignments);
-            const url = fetchSpy.mock.calls[0][0];
+            const url = (fetchSpy.mock.calls[0] as [string])[0];
             expect(url).not.toContain('msdyn_finish ge');
         });
 
-        it('adds date overlap filter when range is supplied', async () => {
+        it('adds date overlap filter when range is supplied', async() => {
             fetchSpy.mockResolvedValueOnce(mockResponse(odataPage([])));
 
             const rangeStart = new Date('2026-03-01T00:00:00Z');
             const rangeEnd   = new Date('2026-03-31T00:00:00Z');
             await getAssignments({ rangeStart, rangeEnd });
 
-            const url = fetchSpy.mock.calls[0][0];
+            const url = (fetchSpy.mock.calls[0] as [string])[0];
             expect(url).toContain('msdyn_finish ge 2026-03-01');
             expect(url).toContain('msdyn_start le 2026-03-31');
         });
 
-        it('includes Prefer header for annotations', async () => {
+        it('includes Prefer header for annotations', async() => {
             fetchSpy.mockResolvedValueOnce(mockResponse(odataPage([])));
 
             await getAssignments();
 
-            const headers = fetchSpy.mock.calls[0][1].headers;
+            const headers = (fetchSpy.mock.calls[0] as [string, RequestInit])[1].headers as Record<string, string>;
             expect(headers['Prefer']).toContain('OData.Community.Display.V1.FormattedValue');
         });
     });
 
     // ── Pagination edge cases ────────────────────────────────────
     describe('pagination', () => {
-        it('stops after max pages and logs a warning', async () => {
+        it('stops after max pages and logs a warning', async() => {
             // The module reads VITE_ODATA_MAX_PAGES from env (fallback 20).
             // To avoid 20 fetch calls, we exploit fetchAllPages's pageLimit option
             // indirectly — we'll just verify that the module-level maxPages default
@@ -200,7 +201,7 @@ describe('crudFunctions', () => {
             expect(result.value.length).toBeGreaterThan(0);
         });
 
-        it('handles empty value arrays gracefully', async () => {
+        it('handles empty value arrays gracefully', async() => {
             fetchSpy.mockResolvedValueOnce(mockResponse(odataPage([])));
 
             const result = await getResources();

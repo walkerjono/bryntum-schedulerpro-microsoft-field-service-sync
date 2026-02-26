@@ -9,9 +9,14 @@ import {
     generateCalendars
 } from '../../lib/schedulingUtils';
 import CustomEventModel from '../../lib/CustomEventModel';
+import type { D365ResourceAssignment } from '../../types/d365';
+
+// resolveRawAssignments expects an EventModelConstructor (non-exported internal type).
+// Our mock CustomEventModel satisfies it at runtime; this alias captures the parameter type.
+type EventModelCtor = Parameters<typeof resolveRawAssignments>[1];
 
 /** Format a Date as YYYY-MM-DD in *local* time (avoids UTC shift from toISOString). */
-const localDate = (d) =>
+const localDate = (d: Date): string =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // ── countWeekdays ───────────────────────────────────────────────────
@@ -181,7 +186,7 @@ describe('calcUnits', () => {
         const units = calcUnits(40, 20, '2026-02-23', '2026-02-28', {
             useRemainingEffort : true,
             hoursPerDay        : 8,
-            clampFn            : (d) => d // identity — no clamping
+            clampFn            : (d) => d as Date // identity — no clamping
         });
         expect(units).toBeCloseTo(50);
     });
@@ -190,7 +195,7 @@ describe('calcUnits', () => {
         const units = calcUnits(40, null, '2026-02-23', '2026-02-28', {
             useRemainingEffort : true,
             hoursPerDay        : 8,
-            clampFn            : (d) => d
+            clampFn            : (d) => d as Date
         });
         expect(units).toBe(0);
     });
@@ -199,7 +204,7 @@ describe('calcUnits', () => {
         const units = calcUnits(40, 0, '2026-02-23', '2026-02-28', {
             useRemainingEffort : true,
             hoursPerDay        : 8,
-            clampFn            : (d) => d
+            clampFn            : (d) => d as Date
         });
         expect(units).toBe(0);
     });
@@ -217,7 +222,7 @@ describe('calcUnits', () => {
     });
 
     it('falls back to default hoursPerDay for unknown resources', () => {
-        const map = new Map();
+        const map = new Map<string, number>();
         // 40 effort / (5 weekdays * 8 hrs/day) = 100%
         const units = calcUnits(40, null, '2026-02-23', '2026-02-28', {
             useRemainingEffort : false,
@@ -269,8 +274,8 @@ describe('calcUnits', () => {
 // ── getProjectColor ─────────────────────────────────────────────────
 describe('getProjectColor', () => {
     const palette = ['#AAA', '#BBB', '#CCC'];
-    let colorMap;
-    let colorIndex;
+    let colorMap: Map<string, string>;
+    let colorIndex: { value: number };
 
     beforeEach(() => {
         colorMap   = new Map();
@@ -315,23 +320,23 @@ describe('getProjectColor', () => {
 });
 
 // ── Helper: simulate a raw D365 OData assignment record ─────────────
-function makeRawAssignment(overrides = {}) {
+function makeRawAssignment(overrides: Partial<D365ResourceAssignment> = {}): D365ResourceAssignment {
     return {
-        msdyn_resourceassignmentid                                          : 'assign-001',
-        msdyn_start                                                         : '2026-03-02T08:00:00Z',
-        msdyn_finish                                                        : '2026-03-06T17:00:00Z',
-        msdyn_effort                                                        : 40,
-        _msdyn_bookableresourceid_value                                     : 'res-001',
-        msdyn_name                                                          : 'Task Alpha',
-        '_msdyn_taskid_value@OData.Community.Display.V1.FormattedValue'     : 'Task Display',
-        msdyn_projectid : {
-            msdyn_subject   : 'Project Alpha',
-            ws_projectid    : 'P-100',
+        msdyn_resourceassignmentid                                      : 'assign-001',
+        msdyn_start                                                     : '2026-03-02T08:00:00Z',
+        msdyn_finish                                                    : '2026-03-06T17:00:00Z',
+        msdyn_effort                                                    : 40,
+        _msdyn_bookableresourceid_value                                 : 'res-001',
+        msdyn_name                                                      : 'Task Alpha',
+        '_msdyn_taskid_value@OData.Community.Display.V1.FormattedValue' : 'Task Display',
+        msdyn_projectid                                                 : {
+            msdyn_subject                                                     : 'Project Alpha',
+            ws_projectid                                                      : 'P-100',
             '_msdyn_customer_value@OData.Community.Display.V1.FormattedValue' : 'Acme Corp'
         },
         msdyn_taskid : {
-            msdyn_effortremaining    : 20,
-            ws_projecttasknumber : 'T-55'
+            msdyn_effortremaining : 20,
+            ws_projecttasknumber  : 'T-55'
         },
         '@odata.etag' : 'W/\\"12345\\"',
         ...overrides
@@ -340,13 +345,14 @@ function makeRawAssignment(overrides = {}) {
 
 // ── resolveRawAssignments ───────────────────────────────────────────
 describe('resolveRawAssignments', () => {
-    const identity = (d) => d;
-    const stubCalcUnits = () => 100;
-    const stubColor = () => '#FF0000';
+    const identity = (d: Date | string): Date => d as Date;
+    const stubCalcUnits = (): number => 100;
+    const stubColor = (): string => '#FF0000';
+    const ModelCtor = CustomEventModel as unknown as EventModelCtor;
 
     it('well-formed record produces correct event + assignment objects', () => {
         const raw = [makeRawAssignment()];
-        const { events, assignments } = resolveRawAssignments(raw, CustomEventModel, {
+        const { events, assignments } = resolveRawAssignments(raw, ModelCtor, {
             useRemainingEffort : false,
             clampFn            : identity,
             calcUnitsFn        : stubCalcUnits,
@@ -383,7 +389,7 @@ describe('resolveRawAssignments', () => {
             msdyn_finish : '2026-03-05T17:00:00Z'
         })];
 
-        const { events, assignments } = resolveRawAssignments(raw, CustomEventModel, {
+        const { events, assignments } = resolveRawAssignments(raw, ModelCtor, {
             clampFn     : identity,
             calcUnitsFn : stubCalcUnits
         });
@@ -396,12 +402,12 @@ describe('resolveRawAssignments', () => {
 
     it('clamps effectiveStart to endDate when clamped start exceeds end', () => {
         // clampFn returns a date far in the future → effectiveStart should be capped to endDate
-        const farFutureClamp = () => new Date('2099-01-01');
+        const farFutureClamp = (): Date => new Date('2099-01-01');
         const raw = [makeRawAssignment({
             msdyn_taskid : { msdyn_effortremaining : 10, ws_projecttasknumber : 'T-1' }
         })];
 
-        const { events } = resolveRawAssignments(raw, CustomEventModel, {
+        const { events } = resolveRawAssignments(raw, ModelCtor, {
             useRemainingEffort : true,
             clampFn            : farFutureClamp,
             calcUnitsFn        : stubCalcUnits,
@@ -419,7 +425,7 @@ describe('resolveRawAssignments', () => {
             msdyn_taskid : { msdyn_effortremaining : 0, ws_projecttasknumber : 'T-1' }
         })];
 
-        const { events } = resolveRawAssignments(raw, CustomEventModel, {
+        const { events } = resolveRawAssignments(raw, ModelCtor, {
             useRemainingEffort : true,
             clampFn            : clampSpy,
             calcUnitsFn        : stubCalcUnits,
@@ -434,13 +440,13 @@ describe('resolveRawAssignments', () => {
 
     it('handles missing expanded fields with null-safe fallbacks', () => {
         const raw = [makeRawAssignment({
-            msdyn_projectid : undefined,
-            msdyn_taskid    : undefined,
-            msdyn_name      : undefined,
+            msdyn_projectid                                                 : undefined as unknown as D365ResourceAssignment['msdyn_projectid'],
+            msdyn_taskid                                                    : undefined as unknown as D365ResourceAssignment['msdyn_taskid'],
+            msdyn_name                                                      : undefined,
             '_msdyn_taskid_value@OData.Community.Display.V1.FormattedValue' : undefined
         })];
 
-        const { events, assignments } = resolveRawAssignments(raw, CustomEventModel, {
+        const { events, assignments } = resolveRawAssignments(raw, ModelCtor, {
             clampFn     : identity,
             calcUnitsFn : stubCalcUnits
         });
@@ -460,7 +466,7 @@ describe('resolveRawAssignments', () => {
             makeRawAssignment({ msdyn_resourceassignmentid : 'a2' })
         ];
 
-        const { events, assignments } = resolveRawAssignments(raw, CustomEventModel, {
+        const { events, assignments } = resolveRawAssignments(raw, ModelCtor, {
             clampFn     : identity,
             calcUnitsFn : stubCalcUnits
         });
@@ -477,7 +483,7 @@ describe('resolveRawAssignments', () => {
         const calcSpy = vi.fn().mockReturnValue(75);
         const raw = [makeRawAssignment()];
 
-        const { assignments } = resolveRawAssignments(raw, CustomEventModel, {
+        const { assignments } = resolveRawAssignments(raw, ModelCtor, {
             clampFn     : identity,
             calcUnitsFn : calcSpy
         });
@@ -487,7 +493,7 @@ describe('resolveRawAssignments', () => {
     });
 
     it('returns empty arrays when given no records', () => {
-        const { events, assignments } = resolveRawAssignments([], CustomEventModel);
+        const { events, assignments } = resolveRawAssignments([], ModelCtor);
         expect(events).toHaveLength(0);
         expect(assignments).toHaveLength(0);
     });
@@ -499,7 +505,7 @@ describe('resolveRawAssignments', () => {
             msdyn_taskid : { msdyn_effortremaining : 15, ws_projecttasknumber : 'T-1' }
         })];
 
-        const { events } = resolveRawAssignments(raw, CustomEventModel, {
+        const { events } = resolveRawAssignments(raw, ModelCtor, {
             useRemainingEffort : true,
             clampFn            : clampSpy,
             calcUnitsFn        : stubCalcUnits,
@@ -514,7 +520,7 @@ describe('resolveRawAssignments', () => {
         const clampSpy = vi.fn(identity);
         const raw = [makeRawAssignment()];
 
-        resolveRawAssignments(raw, CustomEventModel, {
+        resolveRawAssignments(raw, ModelCtor, {
             useRemainingEffort : false,
             clampFn            : clampSpy,
             calcUnitsFn        : stubCalcUnits
@@ -561,7 +567,7 @@ describe('generateCalendars', () => {
     });
 
     it('calculates correct endTime for 40h/week (standard)', () => {
-        const resources = [];
+        const resources: { id: string; workingHours: number; calendar: string }[] = [];
         const calendars = generateCalendars(resources); // no custom resources
         // Business calendar: 40/5 = 8h/day → 08:00 + 8 = 16:00
         expect(calendars[0].intervals[0].recurrentEndDate).toBe('every weekday at 16:00');
@@ -572,7 +578,7 @@ describe('generateCalendars', () => {
         const calendars = generateCalendars(resources);
         const custom = calendars.find((c) => c.id === 'calendar-r1');
         // 32/5 = 6.4h → 6h 24min → 08:00 + 6:24 = 14:24
-        expect(custom.intervals[0].recurrentEndDate).toBe('every weekday at 14:24');
+        expect(custom!.intervals[0].recurrentEndDate).toBe('every weekday at 14:24');
     });
 
     it('mutates resource.calendar to point to custom calendar', () => {
@@ -598,7 +604,7 @@ describe('generateCalendars', () => {
         const custom = calendars.find((c) => c.id === 'calendar-r1');
         expect(custom).toBeDefined();
         // 0/5 = 0h/day → endTime = 08:00 (same as start)
-        expect(custom.intervals[0].recurrentEndDate).toBe('every weekday at 08:00');
+        expect(custom!.intervals[0].recurrentEndDate).toBe('every weekday at 08:00');
     });
 
     it('accepts custom standardWeeklyHours', () => {

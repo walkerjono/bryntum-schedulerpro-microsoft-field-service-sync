@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// The module imports ./auth.js which triggers MSAL — handled by setup.js mock.
+// The module imports ./auth which triggers MSAL — handled by setup.ts mock.
 import {
     nameRenderer,
     treeGroupParentRenderer,
@@ -67,10 +67,13 @@ describe('treeGroupParentRenderer', () => {
 
 // ── eventRenderer ───────────────────────────────────────────────────
 describe('eventRenderer', () => {
-    const renderer = schedulerproConfig.eventRenderer;
+    const renderer = schedulerproConfig.eventRenderer as (args: {
+        eventRecord: Record<string, unknown>;
+        renderData: { eventColor: string; cls: Set<string> };
+    }) => string;
 
     it('marks events with null effortRemaining as inactive', () => {
-        const renderData = { eventColor : '', cls : new Set() };
+        const renderData = { eventColor : '', cls : new Set<string>() };
         const result = renderer({ eventRecord : { name : 'Task A', effortRemaining : null }, renderData });
 
         expect(renderData.eventColor).toBe('gray');
@@ -79,7 +82,7 @@ describe('eventRenderer', () => {
     });
 
     it('marks events with effortRemaining === 0 as inactive', () => {
-        const renderData = { eventColor : '', cls : new Set() };
+        const renderData = { eventColor : '', cls : new Set<string>() };
         renderer({ eventRecord : { name : 'Task B', effortRemaining : 0 }, renderData });
 
         expect(renderData.eventColor).toBe('gray');
@@ -87,7 +90,7 @@ describe('eventRenderer', () => {
     });
 
     it('does not mark events with positive effortRemaining', () => {
-        const renderData = { eventColor : '', cls : new Set() };
+        const renderData = { eventColor : '', cls : new Set<string>() };
         const result = renderer({ eventRecord : { name : 'Task C', effortRemaining : 10 }, renderData });
 
         expect(renderData.eventColor).toBe('');
@@ -97,7 +100,7 @@ describe('eventRenderer', () => {
 
     it('does not mark events with effortRemaining === undefined as inactive', () => {
         // undefined should also == null
-        const renderData = { eventColor : '', cls : new Set() };
+        const renderData = { eventColor : '', cls : new Set<string>() };
         renderer({ eventRecord : { name : 'Task D' }, renderData });
 
         expect(renderData.eventColor).toBe('gray');
@@ -107,7 +110,9 @@ describe('eventRenderer', () => {
 
 // ── eventTooltip template ───────────────────────────────────────────
 describe('eventTooltip template', () => {
-    const template = schedulerproConfig.features.eventTooltip.template;
+    const template = schedulerproConfig.features.eventTooltip.template as (args: {
+        eventRecord: Record<string, unknown>;
+    }) => string;
 
     it('renders all fields in the tooltip', () => {
         const eventRecord = {
@@ -150,8 +155,8 @@ describe('eventTooltip template', () => {
 
     it('renders project label without number when projectNumber is empty', () => {
         const eventRecord = {
-            name        : 'X',
-            projectName : 'Solo',
+            name          : 'X',
+            projectName   : 'Solo',
             projectNumber : ''
         };
         const html = template({ eventRecord });

@@ -113,7 +113,7 @@ export default [
         rules : {
             ...tseslint.configs.recommended.rules,
             // Allow unused vars prefixed with _
-            '@typescript-eslint/no-unused-vars' : ['warn', { argsIgnorePattern : '^_' }],
+            '@typescript-eslint/no-unused-vars'  : ['warn', { argsIgnorePattern : '^_' }],
             // Relax for Bryntum config objects
             '@typescript-eslint/no-explicit-any' : 'warn'
         }

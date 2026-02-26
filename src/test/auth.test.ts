@@ -2,13 +2,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
 import { signIn, getToken, signOut } from '../app/auth';
 
-// The mock MSAL instance is created in setup.js and returned by
+/** Shape of the mock MSAL instance created in setup.ts. */
+interface MockMsalInstance {
+    loginPopup: ReturnType<typeof vi.fn>;
+    acquireTokenSilent: ReturnType<typeof vi.fn>;
+    acquireTokenPopup: ReturnType<typeof vi.fn>;
+    getAccountByUsername: ReturnType<typeof vi.fn>;
+    logoutPopup: ReturnType<typeof vi.fn>;
+}
+
+// The mock MSAL instance is created in setup.ts and returned by
 // PublicClientApplication.createPublicClientApplication().
 // We retrieve it here so we can inspect/override individual method stubs.
-let msalInstance;
+let msalInstance: MockMsalInstance;
 
-beforeEach(async () => {
-    msalInstance = await PublicClientApplication.createPublicClientApplication({});
+beforeEach(async() => {
+    msalInstance = await (PublicClientApplication as unknown as {
+        createPublicClientApplication: (...args: unknown[]) => Promise<unknown>;
+    }).createPublicClientApplication({}) as MockMsalInstance;
     // Reset call counts on shared mock functions
     vi.clearAllMocks();
     // Reset sessionStorage between tests
@@ -21,7 +32,7 @@ afterEach(() => {
 
 // ── signIn ──────────────────────────────────────────────────────────
 describe('signIn', () => {
-    it('calls loginPopup and stores username in sessionStorage', async () => {
+    it('calls loginPopup and stores username in sessionStorage', async() => {
         vi.spyOn(console, 'log').mockImplementation(() => {});
 
         await signIn();
@@ -33,11 +44,11 @@ describe('signIn', () => {
 
 // ── getToken ────────────────────────────────────────────────────────
 describe('getToken', () => {
-    it('throws when no account is in sessionStorage', async () => {
+    it('throws when no account is in sessionStorage', async() => {
         await expect(getToken()).rejects.toThrow('User info cleared from session storage');
     });
 
-    it('returns token from acquireTokenSilent on success', async () => {
+    it('returns token from acquireTokenSilent on success', async() => {
         sessionStorage.setItem('msalAccount', 'test@example.com');
 
         const token = await getToken();
@@ -46,7 +57,7 @@ describe('getToken', () => {
         expect(token).toBe('mock-token');
     });
 
-    it('falls back to acquireTokenPopup on InteractionRequiredAuthError', async () => {
+    it('falls back to acquireTokenPopup on InteractionRequiredAuthError', async() => {
         sessionStorage.setItem('msalAccount', 'test@example.com');
 
         // Make silent fail with InteractionRequiredAuthError
@@ -60,7 +71,7 @@ describe('getToken', () => {
         expect(token).toBe('mock-token-interactive');
     });
 
-    it('re-throws non-interaction errors', async () => {
+    it('re-throws non-interaction errors', async() => {
         sessionStorage.setItem('msalAccount', 'test@example.com');
 
         msalInstance.acquireTokenSilent.mockRejectedValueOnce(
@@ -73,7 +84,7 @@ describe('getToken', () => {
 
 // ── signOut ─────────────────────────────────────────────────────────
 describe('signOut', () => {
-    it('calls logoutPopup and removes account from sessionStorage', async () => {
+    it('calls logoutPopup and removes account from sessionStorage', async() => {
         sessionStorage.setItem('msalAccount', 'test@example.com');
 
         await signOut();
@@ -82,7 +93,7 @@ describe('signOut', () => {
         expect(sessionStorage.getItem('msalAccount')).toBeNull();
     });
 
-    it('does nothing when no account in sessionStorage', async () => {
+    it('does nothing when no account in sessionStorage', async() => {
         await signOut();
 
         expect(msalInstance.logoutPopup).not.toHaveBeenCalled();

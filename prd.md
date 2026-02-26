@@ -342,6 +342,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 1. [ ] SWA deployment (x2 environments)
 1. [ ] change to AU date format in tooltips, check elsewhere e.g. edit
 1. [ ] consider project task dependencies
+1. [ ] day, week don't auto scroll to nearest start of week
 
 ## Tests Required
 
