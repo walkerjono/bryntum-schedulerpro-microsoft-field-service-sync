@@ -323,9 +323,222 @@ All filter selections and the effort toggle state are **persisted as URL query p
 1. [ ] SWA deployment (x2 environments)
 
 ## Tests Required
-- [ ] Resources without `ws_workinghours`
-- [ ] Resources with non standard `ws_workinghours` i.e. <> 40
-- [ ] Clamped effort remaining
-- [ ] Environment variables
-- [ ] historgram allocation logic
-- [ ] histogram conditional styles
+
+### Unit Tests
+
+#### `countWeekdays(start, end)` — [main.js](src/main.js)
+
+- [ ] Same-day input returns 1 (minimum clamp)
+- [ ] Span including weekends skips Sat/Sun correctly
+- [ ] Span entirely within a weekend returns 1
+- [ ] Multi-week span returns correct weekday count
+- [ ] Start date after end date — verify behavior
+
+#### `clampStartToToday(date)` — [main.js](src/main.js)
+
+- [ ] Date in the future returns the original date unchanged
+- [ ] Date in the past with numeric offset returns today + offset
+- [ ] `EFFORT_REMAINING_OFFSET_DAYS = 'current_week'` snaps to Monday of current week
+- [ ] Date already on a Monday vs mid-week — correct Monday snap
+- [ ] Offset of 0 returns today
+
+#### `calcUnits(effort, effortRemaining, startDate, endDate, resourceId)` — [main.js](src/main.js)
+
+- [ ] Standard allocation (e.g. 40h over 5 weekdays at 8h/day) returns 100%
+- [ ] `useRemainingEffort = true` path uses `effortRemaining` instead of `effort`
+- [ ] `useRemainingEffort = false` path uses `effort`
+- [ ] `effortRemaining = null` treated as 0 via `?? 0`
+- [ ] `effortRemaining = 0` returns 0% allocation
+- [ ] Resource with custom `hoursPerDay` (non-8h) scales correctly
+- [ ] Resource not in `resourceHoursMap` falls back to default hours
+
+#### `getProjectColor(projectName)` — [main.js](src/main.js)
+
+- [ ] Same name called twice returns the same color (stable mapping)
+- [ ] `null` project name returns `'#888'`
+- [ ] 16+ unique project names wraps around the 15-color palette
+
+#### `computeBufferedRange(start, end)` — [main.js](src/main.js)
+
+- [ ] Extends start and end by `VIEWPORT_BUFFER_DAYS` in each direction
+- [ ] Different buffer day values produce correct ranges
+
+#### `resolveRawAssignments()` — [main.js](src/main.js)
+
+- [ ] Well-formed record produces correct event + assignment objects
+- [ ] Record with `startDate > endDate` is skipped with console warning
+- [ ] Record where `effectiveStart > endDate` after clamping sets `effectiveStart = endDate`
+- [ ] Record with `effortRemaining = 0` uses original D365 dates (not clamped)
+- [ ] Missing expanded fields (`msdyn_projectid`, `msdyn_taskid`) use null-safe fallbacks
+- [ ] Duplicate `bookableresourceid` across records produces one assignment per event
+
+#### `CustomEventModel` field converters — [CustomEventModel.js](src/lib/CustomEventModel.js)
+
+- [ ] `name`: OData formatted value → `msdyn_name` → value → `'Unnamed Assignment'` fallback chain
+- [ ] `projectName`: expanded `msdyn_subject` → OData annotation → value → `''`
+- [ ] `effortRemaining`: `msdyn_taskid.msdyn_effortremaining` → value → `null`
+- [ ] `etag`: escaped double-quote stripping (`\"W/...\"` → `W/...`)
+- [ ] Each field with missing/null/undefined data at every fallback level
+
+#### `CustomResourceModel` fields — [CustomResourceModel.js](src/lib/CustomResourceModel.js)
+
+- [ ] `workingHours` defaults to 40 when field is missing/null
+- [ ] `workingHours = 0` — verify behavior (`|| 40` treats 0 as falsy → falls back to 40; **potential bug** if 0 is a valid value)
+- [ ] `practiceName` defaults to `'Unassigned'`
+- [ ] `roleName` defaults to `'Unassigned'`
+- [ ] `loadDefaultImage()` caches result and is idempotent (second call returns immediately)
+- [ ] `loadDefaultImage()` silently handles fetch failure (bare `catch {}`)
+
+#### Calendar generation — [main.js](src/main.js)
+
+- [ ] Resources without `ws_workinghours` use the default `business` calendar (Mon–Fri 08:00–16:00)
+- [ ] Resources with non-standard `ws_workinghours` (e.g. 32h) get a custom calendar with correct `endTime`
+- [ ] `ws_workinghours = 40` → 8h/day → `endTime: '17:00'` (09:00 start + 8h)
+- [ ] `ws_workinghours = 32` → 6.4h/day → fractional end time calculated correctly
+- [ ] `ws_workinghours = 0` falls back to 40 via `|| 40` (verify this is intentional)
+
+#### Histogram bar coloring — `getBarClass()` — [histogramConfig.js](src/histogramConfig.js)
+
+- [ ] `maxEffort === 0` returns empty string (no class/color)
+- [ ] Allocation > 110% → `b-overallocated` (red)
+- [ ] Allocation < 80% → `b-underallocated` (orange)
+- [ ] Allocation 80–110% on a leaf → `b-evenly-allocated` (green)
+- [ ] Allocation 80–110% on a parent, all leaves even → `b-evenly-allocated` (green)
+- [ ] Allocation 80–110% on a parent, mixed leaf states → `b-mixed-state` (purple)
+- [ ] Custom threshold values from env vars are respected
+- [ ] Cache is populated on leaf render and hit on subsequent calls
+
+#### `getLeafDescendants(resource)` — [histogramConfig.js](src/histogramConfig.js)
+
+- [ ] Leaf node returns `[self]`
+- [ ] Parent with 2 levels of nesting returns all leaf descendants
+- [ ] Parent with no children returns empty array
+
+#### Renderers — [schedulerproConfig.js](src/schedulerproConfig.js)
+
+- [ ] `nameRenderer`: leaf resource with valid `imageUrl` renders `<img>` tag
+- [ ] `nameRenderer`: leaf resource with no `imageUrl` renders name only (no `<img>`)
+- [ ] `nameRenderer`: parent node renders without avatar
+- [ ] `treeGroupParentRenderer`: Practice field renders `fa-users` icon
+- [ ] `treeGroupParentRenderer`: Role field renders `fa-briefcase` icon
+- [ ] `eventRenderer`: `effortRemaining == null` → `b-inactive` class applied
+- [ ] `eventRenderer`: `effortRemaining == 0` → `b-inactive` class applied
+- [ ] `eventRenderer`: `effortRemaining > 0` → normal rendering (no inactive class)
+
+#### URL parameter round-trip — [main.js](src/main.js)
+
+- [ ] `writeFilterParams()` → `readFilterParams()` produces identical values
+- [ ] Empty/missing params return correct defaults
+- [ ] Special characters in filter values survive encode/decode
+- [ ] `useRemainingEffort` string `'true'`/`'false'` coerces correctly
+
+#### `fetchAllPages()` — [crudFunctions.js](src/crudFunctions.js)
+
+- [ ] Single-page response returns all records
+- [ ] Response with `@odata.nextLink` follows pagination correctly
+- [ ] Maximum page limit reached → logs warning, returns partial data
+- [ ] Non-OK HTTP response → throws with error text and page number
+- [ ] Empty result set returns empty array
+
+#### Environment variables
+
+- [ ] All required `VITE_` variables are validated at startup (or fail gracefully)
+- [ ] Default values are applied correctly when optional vars are missing
+- [ ] `VITE_EFFORT_REMAINING_OFFSET_DAYS = 'current_week'` string value handled correctly
+- [ ] Numeric env vars (`VITE_HOURS_PER_DAY`, thresholds, etc.) parsed as numbers
+
+---
+
+### End-to-End Tests
+
+#### Authentication flow
+
+- [ ] Sign-in happy path: click sign-in → MSAL popup → data loads → scheduler renders
+- [ ] Sign-in with popup blocked → graceful handling (currently unhandled)
+- [ ] Token expiry mid-session → silent token fails → popup fallback → API call succeeds
+- [ ] Sign-out clears session, shows sign-in link, hides content
+- [ ] Return visit with valid `sessionStorage('msalAccount')` → auto-loads without sign-in click
+
+#### Initial data loading
+
+- [ ] Resources, assignments, and practices fetched in parallel → scheduler renders with correct Practice → Role → Resource tree
+- [ ] Empty dataset (no resources/assignments) → scheduler renders empty without errors
+- [ ] Partial API failure (`getResourcePractices()` fails) → app continues with "Unassigned" groups
+- [ ] `loadDefaultImage()` failure → app continues without default avatar
+
+#### Viewport-based incremental loading
+
+- [ ] Scroll right past buffer → `fetchAndMergeRange()` fires → new events appear
+- [ ] Rapid scrolling → only one fetch fires (400ms debounce)
+- [ ] Concurrent fetch prevention → `_viewportFetchInFlight` lock blocks overlapping fetches
+- [ ] Scroll back to previously-loaded range → no duplicate events (dedup on merge)
+
+#### Filtering
+
+- [ ] Practice filter selection → Role combo updates to matching roles → Resource combo updates accordingly
+- [ ] Role filter selection → Resource combo shows only resources in selected roles
+- [ ] Resource filter selection → only matching resources shown in scheduler
+- [ ] Clear all filters → full dataset visible
+- [ ] Filter cascading: select Practice A → select Role → change Practice to B → Role filter resets if role not in B
+- [ ] URL persistence: apply filters → reload page → same filters restored
+- [ ] Auto-expand: filtered tree auto-expands to reveal matching resources
+
+#### Effort toggle
+
+- [ ] Toggle remaining effort ON → events recalculate with clamped start dates and remaining effort hours
+- [ ] Toggle remaining effort OFF → events revert to original D365 dates and total effort
+- [ ] Toggle state persisted in URL → reload → same state
+- [ ] Events with `effortRemaining = null` marked inactive regardless of toggle state
+
+#### Zoom presets
+
+- [ ] Day/Week/Month buttons each change the view preset correctly
+- [ ] Zoom selection persisted in URL → reload → same zoom level
+- [ ] Histogram time axis syncs with scheduler after zoom change
+
+#### Refresh
+
+- [ ] Refresh button: spinner animates → all data re-fetched → stores rebuilt → filters preserved
+- [ ] Refresh button disabled during loading (prevents double-click)
+
+#### Histogram
+
+- [ ] Histogram bars render with heights matching allocation percentages
+- [ ] Over-allocated resource → red bar
+- [ ] Under-allocated resource → orange bar
+- [ ] Evenly-allocated resource → green bar
+- [ ] Mixed parent node → purple bar when children have different allocation states
+- [ ] Expanding/collapsing tree groups updates histogram correctly
+
+---
+
+### Security Tests
+
+#### XSS
+
+- [ ] **`htmlEncode: false` in `nameRenderer`** ([schedulerproConfig.js](src/schedulerproConfig.js)) — inject `<script>alert(1)</script>` as a resource name → verify it does NOT execute (**known vulnerability** — D365 data rendered as raw HTML)
+- [ ] Tooltip template with D365-sourced project/client/task names → verify HTML entities are escaped
+- [ ] URL filter parameters with malicious `practice`, `role`, or `resource` values → verify no injection when rendered in combo boxes
+
+#### Token / credential handling
+
+- [ ] Bearer tokens are NOT logged in any `console.error` / `console.warn` calls
+- [ ] Only `msalAccount` (username) is stored in `sessionStorage`, never the access token
+- [ ] MSAL token scope is limited to `{orgId}.api.{crmRegion}.dynamics.com/.default` (no excessive permissions)
+
+#### Headers & transport
+
+- [ ] `X-Frame-Options: DENY` header served (clickjacking protection) — configured in [staticwebapp.config.json](staticwebapp.config.json)
+- [ ] `X-Content-Type-Options: nosniff` header served
+- [ ] `Referrer-Policy: strict-origin-when-cross-origin` header served — mitigates cross-origin URL param leakage
+
+#### Information leakage
+
+- [ ] All `VITE_` env vars embedded in client bundle contain no secrets (only semi-public app/tenant/org IDs)
+- [ ] Filter values in URL query params (practice/role/resource names) — acceptable per data classification? Could leak in browser history, shared URLs, Referer headers
+- [ ] D365 API `$select` clauses do not over-fetch sensitive PII fields
+
+#### Session management
+
+- [ ] `sessionStorage('msalAccount')` cannot be pre-set by an attacker to hijack another user's session (session fixation)
+- [ ] Session is fully cleared on sign-out (no stale tokens or account references remain)

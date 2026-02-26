@@ -17,7 +17,7 @@ export const PROJECT_COLORS = [
  * Renders the name cell for leaf resource rows (actual resources).
  * Generated TreeGroup parents use parentRenderer instead.
  */
-function nameRenderer({ record }) {
+export function nameRenderer({ record }) {
     const name     = record.name || '';
     const imageUrl = record.imageUrl;
 
@@ -34,7 +34,7 @@ function nameRenderer({ record }) {
 /**
  * Renders the name cell for generated TreeGroup parent rows (Practice / Role).
  */
-function treeGroupParentRenderer({ field, value }) {
+export function treeGroupParentRenderer({ field, value }) {
     if (field === 'practiceName') {
         return `<div style="display: flex; align-items: center; gap: 8px;">
             <i class="fa fa-users" style="font-size: 16px; color: #666; width: 20px; text-align: center;"></i>

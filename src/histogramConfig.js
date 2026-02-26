@@ -45,7 +45,7 @@ function cacheKey(resourceId, tickStart) {
 /**
  * Collect all leaf (non-group) descendants of a TreeGroup resource.
  */
-function getLeafDescendants(resource) {
+export function getLeafDescendants(resource) {
     if (!resource.children || resource.children.length === 0) {
         return resource.isLeaf !== false ? [resource] : [];
     }
@@ -84,7 +84,7 @@ export function clearLeafStateCache() {
  * Allocation data lives on the 3rd parameter `datum` (ResourceAllocationInterval).
  * The 5th parameter `renderData` carries the resource model for this row.
  */
-function getBarClass(series, domConfig, datum, index, renderData) {
+export function getBarClass(series, domConfig, datum, index, renderData) {
     // Calculate allocation % from effort/maxEffort (both in ms).
     // datum.units is unreliable for aggregate (group) rows.
     const maxEffort = datum?.maxEffort ?? 0;

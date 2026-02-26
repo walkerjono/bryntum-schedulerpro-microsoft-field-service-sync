@@ -12,9 +12,16 @@ import CustomEventModel from './lib/CustomEventModel.js';
 import CustomResourceModel, {
     loadDefaultImage
 } from './lib/CustomResourceModel.js';
+import {
+    countWeekdays as _countWeekdays,
+    computeBufferedRange as _computeBufferedRange,
+    clampStartToToday as _clampStartToToday,
+    calcUnits as _calcUnits,
+    getProjectColor as _getProjectColor
+} from './lib/schedulingUtils.js';
 
-const signInLink = document.getElementById('signin');
-const loaderContainer = document.querySelector('.loader-container');
+const signInLink = typeof document !== 'undefined' ? document.getElementById('signin') : null;
+const loaderContainer = typeof document !== 'undefined' ? document.querySelector('.loader-container') : null;
 
 // Default from env var; may be overridden by URL param or runtime toggle
 let useRemainingEffort = import.meta.env.VITE_USE_EFFORT_REMAINING === 'true';
@@ -46,28 +53,19 @@ let projectColorNextIndex = 0;
 
 /**
  * Compute the buffered date window for OData queries.
- * Extends the given start/end by VIEWPORT_BUFFER_DAYS on each side.
+ * Delegates to the extracted pure function in schedulingUtils.
  */
 function computeBufferedRange(start, end) {
-    const bufStart = new Date(start);
-    bufStart.setDate(bufStart.getDate() - VIEWPORT_BUFFER_DAYS);
-    const bufEnd = new Date(end);
-    bufEnd.setDate(bufEnd.getDate() + VIEWPORT_BUFFER_DAYS);
-    return { start : bufStart, end : bufEnd };
+    return _computeBufferedRange(start, end, VIEWPORT_BUFFER_DAYS);
 }
 
-/**
- * Assign a colour to a project name (stable across incremental loads).
- * Known projects keep their existing colour; new ones get the next
- * colour from the palette.
- */
+/** Stable project colour assignment — delegates to extracted pure function. */
+const _projectColorIndex = { value : 0 };
 function getProjectColor(projectName) {
-    if (!projectName) return '#888';
-    if (projectColorMap.has(projectName)) return projectColorMap.get(projectName);
-    const color = PROJECT_COLORS[projectColorNextIndex % PROJECT_COLORS.length];
-    projectColorMap.set(projectName, color);
-    projectColorNextIndex++;
-    return color;
+    _projectColorIndex.value = projectColorNextIndex;
+    const result = _getProjectColor(projectName, projectColorMap, _projectColorIndex, PROJECT_COLORS);
+    projectColorNextIndex = _projectColorIndex.value;
+    return result;
 }
 
 async function displayUI() {
@@ -121,66 +119,28 @@ async function displayUI() {
     }
     console.log(`[main] Built resourceHoursMap for ${resourceHoursMap.size} resources`);
 
-    // ── Helper: count weekdays (Mon–Fri) between two dates ──────────────
-    function countWeekdays(start, end) {
-        let count = 0;
-        const d = new Date(start);
-        const endTime = new Date(end).getTime();
-        while (d.getTime() < endTime) {
-            const day = d.getDay();
-            if (day !== 0 && day !== 6) count++;
-            d.setDate(d.getDate() + 1);
-        }
-        return count || 1; // at least 1 to avoid division by zero
-    }
+    // countWeekdays — delegates to extracted pure function
+    const countWeekdays = _countWeekdays;
 
     const HOURS_PER_DAY = Number(import.meta.env.VITE_HOURS_PER_DAY) || 8;
 
-    /**
-     * Return the later of `date` and the offset date (midnight-normalised).
-     * When using remaining effort we assume no past work remains, so the
-     * effective start of an assignment is at earliest the offset date.
-     *
-     * The offset date is computed as:
-     *  - "current_week" → Monday 00:00 of the current week
-     *  - A number N     → today minus N days
-     */
+    // clampStartToToday — delegates to extracted pure function with module-level config
     function clampStartToToday(date) {
-        let offsetDate;
-        if (EFFORT_REMAINING_USE_CURRENT_WEEK) {
-            offsetDate = new Date();
-            offsetDate.setHours(0, 0, 0, 0);
-            // getDay(): 0 = Sun, 1 = Mon … 6 = Sat → shift back to Monday
-            const dayOfWeek = offsetDate.getDay();
-            const daysFromMonday = (dayOfWeek + 6) % 7; // Mon=0 … Sun=6
-            offsetDate.setDate(offsetDate.getDate() - daysFromMonday);
-        }
-        else {
-            offsetDate = new Date();
-            offsetDate.setHours(0, 0, 0, 0);
-            offsetDate.setDate(offsetDate.getDate() - EFFORT_REMAINING_OFFSET_DAYS);
-        }
-        const d = new Date(date);
-        d.setHours(0, 0, 0, 0);
-        return d.getTime() < offsetDate.getTime() ? offsetDate : d;
+        return _clampStartToToday(date, {
+            useCurrentWeek : EFFORT_REMAINING_USE_CURRENT_WEEK,
+            offsetDays     : EFFORT_REMAINING_OFFSET_DAYS
+        });
     }
 
-    /**
-     * Calculate allocation % (units) for a single assignment.
-     * Reads the module-level `useRemainingEffort` flag to choose the effort source.
-     * When remaining-effort mode is active the start date is clamped to today so
-     * effort is spread only over future working days.
-     */
+    // calcUnits — delegates to extracted pure function with module-level config
     function calcUnits(effort, effortRemaining, startDate, endDate, resourceId) {
-        const effortSource = useRemainingEffort ? (effortRemaining ?? 0) : effort;
-        const effectiveStart = useRemainingEffort ? clampStartToToday(startDate) : startDate;
-        const workingDays  = countWeekdays(effectiveStart, endDate);
-        // Use the resource's actual hours-per-day from their calendar,
-        // falling back to the global default for unknown resources.
-        const hrsPerDay    = resourceHoursMap.get(resourceId) || HOURS_PER_DAY;
-        const workingHours = workingDays * hrsPerDay;
-        const rawUnits = effortSource > 0 && workingHours > 0 ? (effortSource / workingHours) * 100 : 0;
-        return Number.isFinite(rawUnits) ? rawUnits : 0;
+        return _calcUnits(effort, effortRemaining, startDate, endDate, {
+            useRemainingEffort,
+            hoursPerDay : HOURS_PER_DAY,
+            resourceHoursMap,
+            resourceId,
+            clampFn     : clampStartToToday
+        });
     }
 
     // ── Resolve events via temporary CustomEventModel (runs convert fns) ─
@@ -939,16 +899,20 @@ async function displayUI() {
     window.histogram = histogram;
 }
 
-if (sessionStorage.getItem('msalAccount')) {
-    console.log('[main] Existing session found, restoring UI…');
-    displayUI().catch((err) => console.error('[main] displayUI error:', err));
-    signInLink.style = 'display: none';
-}
-else {
-    console.log('[main] No session – showing sign-in link');
-    signInLink.style = 'display: block';
-}
+// ── Boot sequence ───────────────────────────────────────────────────
+// Guarded to prevent side-effects when this module is imported in tests.
+if (typeof document !== 'undefined' && signInLink) {
+    if (sessionStorage.getItem('msalAccount')) {
+        console.log('[main] Existing session found, restoring UI…');
+        displayUI().catch((err) => console.error('[main] displayUI error:', err));
+        signInLink.style = 'display: none';
+    }
+    else {
+        console.log('[main] No session – showing sign-in link');
+        signInLink.style = 'display: block';
+    }
 
-loaderContainer.style = 'display: none';
+    if (loaderContainer) loaderContainer.style = 'display: none';
 
-signInLink.addEventListener('click', displayUI);
+    signInLink.addEventListener('click', displayUI);
+}
