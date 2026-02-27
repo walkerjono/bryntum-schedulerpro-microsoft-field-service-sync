@@ -24,7 +24,7 @@ export function readFilterParams(searchString: string): FilterState {
     return {
         practices          : params.get('practice')?.split(',').filter(Boolean) || [],
         roles              : params.get('role')?.split(',').filter(Boolean) || [],
-        resources          : params.get('resource')?.split(',').filter(Boolean) || [],
+        resources          : (params.get('resourceId') ?? params.get('resource'))?.split(',').filter(Boolean) || [],
         useRemainingEffort : effortParam != null ? effortParam === 'true' : null,
         zoom               : params.get('zoom') || null
     };
@@ -56,11 +56,13 @@ export function writeFilterParams(
     }
 
     if (state.resources && state.resources.length > 0) {
-        params.set('resource', state.resources.join(','));
+        params.set('resourceId', state.resources.join(','));
     }
     else {
-        params.delete('resource');
+        params.delete('resourceId');
     }
+    // Clean up legacy 'resource' param (was name-based, now uses resourceId)
+    params.delete('resource');
 
     if (state.useRemainingEffort) {
         params.set('useRemainingEffort', 'true');

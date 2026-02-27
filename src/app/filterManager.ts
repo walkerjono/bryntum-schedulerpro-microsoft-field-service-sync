@@ -64,14 +64,16 @@ export function updateResourceFilterItems(widgets: AppWidgetMap): void {
         filtered = filtered.filter((r) => rv.includes(r.roleName));
     }
 
-    const resourceNames = [
-        ...new Set(filtered.map((r) => r.name).filter(Boolean))
-    ].sort();
-    resourceCombo.items = resourceNames.map((n) => ({ value : n, text : n }));
+    // Use bookableresourceid as value to handle duplicate names
+    const sortedResources = [...filtered]
+        .filter((r) => r.name && r.id)
+        .sort((a, b) => a.name.localeCompare(b.name));
+    resourceCombo.items = sortedResources.map((r) => ({ value : r.id, text : r.name }));
 
     // Clear any resource selections that are no longer valid
     if (resourceCombo.value && resourceCombo.value.length > 0) {
-        const validValues = resourceCombo.value.filter((v) => resourceNames.includes(v));
+        const validIds = new Set(sortedResources.map((r) => r.id));
+        const validValues = resourceCombo.value.filter((v: string) => validIds.has(v));
         resourceCombo.value = validValues.length > 0 ? validValues : null;
     }
 }
@@ -172,10 +174,11 @@ export function wireFilters(
 
     // ── Resource filter ────────────────────────────────────────────
     if (resourceCombo) {
-        const resourceNames = [
-            ...new Set(flatResources.map((r) => r.name).filter(Boolean))
-        ].sort();
-        resourceCombo.items = resourceNames.map((n) => ({ value : n, text : n }));
+        // Use bookableresourceid as value to handle duplicate names
+        const sortedResources = [...flatResources]
+            .filter((r) => r.name && r.id)
+            .sort((a, b) => a.name.localeCompare(b.name));
+        resourceCombo.items = sortedResources.map((r) => ({ value : r.id, text : r.name }));
 
         resourceCombo.on('change', ({ value }: { value: string[] | null }) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -185,7 +188,7 @@ export function wireFilters(
                 store.filter({
                     id       : 'resourceFilter',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    filterBy : (r: any) => value.includes(r.name)
+                    filterBy : (r: any) => value.includes(r.id)
                 });
 
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

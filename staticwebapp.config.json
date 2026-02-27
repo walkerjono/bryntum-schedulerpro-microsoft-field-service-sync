@@ -8,6 +8,8 @@
     "Referrer-Policy": "strict-origin-when-cross-origin"
   },
   "mimeTypes": {
-    ".wasm": "application/wasm"
+    ".wasm": "application/wasm",
+    ".js": "application/javascript",
+    ".mjs": "application/javascript"
   }
 }

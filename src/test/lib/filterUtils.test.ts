@@ -24,9 +24,9 @@ describe('readFilterParams', () => {
         expect(result.roles).toEqual(['Developer', 'Designer']);
     });
 
-    it('parses comma-separated resource values', () => {
-        const result = readFilterParams('?resource=Alice,Bob');
-        expect(result.resources).toEqual(['Alice', 'Bob']);
+    it('parses comma-separated resource IDs', () => {
+        const result = readFilterParams('?resourceId=abc-123,def-456');
+        expect(result.resources).toEqual(['abc-123', 'def-456']);
     });
 
     it('parses useRemainingEffort=true', () => {
@@ -55,20 +55,20 @@ describe('readFilterParams', () => {
     });
 
     it('handles all parameters together', () => {
-        const search = '?practice=Eng&role=Dev&resource=Alice&useRemainingEffort=true&zoom=weekAndMonth';
+        const search = '?practice=Eng&role=Dev&resourceId=abc-123&useRemainingEffort=true&zoom=weekAndMonth';
         const result = readFilterParams(search);
         expect(result).toEqual({
             practices          : ['Eng'],
             roles              : ['Dev'],
-            resources          : ['Alice'],
+            resources          : ['abc-123'],
             useRemainingEffort : true,
             zoom               : 'weekAndMonth'
         });
     });
 
-    it('handles URL-encoded special characters', () => {
-        const result = readFilterParams('?practice=Engineering%20%26%20Design');
-        expect(result.practices).toEqual(['Engineering & Design']);
+    it('falls back to legacy resource param when resourceId is absent', () => {
+        const result = readFilterParams('?resource=Alice,Bob');
+        expect(result.resources).toEqual(['Alice', 'Bob']);
     });
 });
 
@@ -84,6 +84,32 @@ describe('writeFilterParams', () => {
             '', '/', replaceFn
         );
         expect(capturedUrl).toContain('practice=Eng%2CDesign');
+    });
+
+    it('writes resource IDs to URL as resourceId param', () => {
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
+        writeFilterParams(
+            { practices : [], roles : [], resources : ['abc-123'], useRemainingEffort : false, zoom : null },
+            '', '/', replaceFn
+        );
+        expect(capturedUrl).toContain('resourceId=abc-123');
+        expect(capturedUrl).not.toMatch(/[?&]resource=/);
+    });
+
+    it('removes legacy resource param when writing', () => {
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
+        writeFilterParams(
+            { practices : [], roles : [], resources : ['abc-123'], useRemainingEffort : false, zoom : null },
+            '?resource=Alice', '/', replaceFn
+        );
+        expect(capturedUrl).toContain('resourceId=abc-123');
+        expect(capturedUrl).not.toMatch(/[?&]resource=/);
     });
 
     it('removes practice param when array is empty', () => {
@@ -166,7 +192,7 @@ describe('writeFilterParams', () => {
         const state: FilterState = {
             practices          : ['Engineering'],
             roles              : ['Developer', 'Designer'],
-            resources          : ['Alice'],
+            resources          : ['abc-123'],
             useRemainingEffort : true,
             zoom               : 'weekAndMonth'
         };
