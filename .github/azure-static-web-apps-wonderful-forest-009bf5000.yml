@@ -43,6 +43,9 @@ jobs:
           VITE_REDIRECT_URI: ${{ secrets.VITE_REDIRECT_URI }}
           VITE_CRM_REGION: ${{ secrets.VITE_CRM_REGION }}
 
+      - name: Include Static Web App config
+        run: cp staticwebapp.config.json dist/staticwebapp.config.json
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -50,9 +53,9 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WONDERFUL_FOREST_009BF5000 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "/"
+          app_location: "dist"
           api_location: ""
-          output_location: "dist"
+          output_location: ""
           skip_app_build: true
 
   close_pull_request_job:
