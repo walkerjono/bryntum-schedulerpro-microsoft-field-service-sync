@@ -358,7 +358,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 1. [ ] change to AU date format in tooltips, check elsewhere e.g. edit
 1. [ ] consider project task dependencies
 1. [ ] day, week don't auto scroll to nearest start of week
-1. [ ] use bookableresourceid in url paramater to avoid duplicate issue
+1. [x] use bookableresourceid in url paramater to avoid duplicate issue
 
 ## Tests Required
 
