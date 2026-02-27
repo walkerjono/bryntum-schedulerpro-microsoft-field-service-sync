@@ -9,13 +9,15 @@ It is based on the following [Bryntum Example](https://bryntum.com/blog/how-to-c
 
 **Status:** Read-only viewer (no write-back to D365 yet).
 
+**Technology:** Fully migrated to TypeScript with comprehensive type definitions for improved type safety, IDE support, and code documentation.
+
 ---
 
 ## 2. Architecture
 
 | Layer         | Technology                                  | Details                                                          |
 | ------------- | ------------------------------------------- | ---------------------------------------------------------------- |
-| **Frontend**  | Vanilla JS (ES Modules)                     | No framework — direct DOM + Bryntum API                          |
+| **Frontend**  | TypeScript (ES Modules)                     | No framework — direct DOM + Bryntum API with full type safety    |
 | **Scheduler** | Bryntum Scheduler Pro 7.1.x (trial)         | TreeGroup-based resource store, custom models                    |
 | **Histogram** | Bryntum ResourceHistogram                   | Partnered with scheduler; shows allocation bars per resource     |
 | **Auth**      | MSAL.js 4.x (`@azure/msal-browser`)         | OAuth2 popup flow via Microsoft Entra ID                         |
@@ -257,37 +259,49 @@ All filter selections and the effort toggle state are **persisted as URL query p
 
 ```text
 ├── index.html                          # Shell with #app + #histogram containers, sign-in link, loader
-├── package.json                        # Dependencies: MSAL, Bryntum (trial), Vite
+├── package.json                        # Dependencies: MSAL, Bryntum (trial), Vite, TypeScript
 ├── vite.config.ts                      # Vite + Vitest config (jsdom env, setup file)
+├── tsconfig.json                       # TypeScript compiler config
 ├── eslint.config.mjs                   # Bryntum-style ESLint rules (aligned colons, 4-space indent)
 ├── .env.test                           # Dummy VITE_* env vars for test runner
 ├── src/
-│   ├── main.js                         # App entry: auth gating, data fetch, scheduler + histogram init,
+│   ├── main.ts                         # App entry: auth gating, data fetch, scheduler + histogram init,
 │   │                                   #   calendar generation, filter combos, effort toggle, refresh, URL params
-│   ├── auth.js                         # MSAL config, signIn/signOut/getToken
-│   ├── crudFunctions.js                # D365 API calls (getResources, getAssignments, getResourcePractices)
-│   ├── schedulerproConfig.js           # Scheduler config: columns, features, toolbar, renderers, tooltip
-│   ├── histogramConfig.js              # ResourceHistogram config: bar coloring, tree columns, time ranges
+│   ├── app/
+│   │   ├── appState.ts                 # Global application state management
+│   │   ├── auth.ts                     # MSAL config, signIn/signOut/getToken
+│   │   ├── crudFunctions.ts            # D365 API calls (getResources, getAssignments, getResourcePractices)
+│   │   ├── dataLoader.ts               # Data fetching and merging logic
+│   │   ├── filterManager.ts            # Filter combo configuration and cascading logic
+│   │   ├── schedulerproConfig.ts       # Scheduler config: columns, features, toolbar, renderers, tooltip
+│   │   ├── histogramConfig.ts          # ResourceHistogram config: bar coloring, tree columns, time ranges
+│   │   └── uiSetup.ts                  # UI initialization and event handlers
 │   ├── style.css                       # Bryntum theme imports, Poppins font, loader, inactive events,
 │   │                                   #   histogram bar colors, current-time styling
 │   ├── lib/
-│   │   ├── CustomEventModel.js         # Extends EventModel with D365 field mappings (effort, project, task, client)
-│   │   ├── CustomResourceModel.js      # Extends ResourceModel with imageUrl, practiceName, roleName,
+│   │   ├── CustomEventModel.ts         # Extends EventModel with D365 field mappings (effort, project, task, client)
+│   │   ├── CustomResourceModel.ts      # Extends ResourceModel with imageUrl, practiceName, roleName,
 │   │   │                               #   workingHours, calendar; also exports loadDefaultImage()
-│   │   ├── schedulingUtils.js          # Pure functions: countWeekdays, computeBufferedRange, clampStartToToday,
+│   │   ├── schedulingUtils.ts          # Pure functions: countWeekdays, computeBufferedRange, clampStartToToday,
 │   │   │                               #   calcUnits, getProjectColor, resolveRawAssignments, generateCalendars
-│   │   └── filterUtils.js             # URL filter utilities: readFilterParams, writeFilterParams
+│   │   └── filterUtils.ts              # URL filter utilities: readFilterParams, writeFilterParams
+│   ├── types/
+│   │   ├── app.ts                      # Application-level type definitions
+│   │   ├── bryntum.d.ts                # Bryntum type augmentations
+│   │   ├── d365.ts                     # Dynamics 365 API response types
+│   │   └── env.d.ts                    # Environment variable type definitions
 │   └── test/
-│       ├── setup.js                    # Global Vitest mocks for Bryntum Scheduler Pro + MSAL
-│       ├── auth.test.js                # Auth module tests (signIn, getToken, signOut)
-│       ├── crudFunctions.test.js       # CRUD/API tests (pagination, error handling)
-│       ├── schedulerproConfig.test.js  # Renderer tests (nameRenderer, treeGroupParent, eventRenderer, tooltip)
-│       ├── histogramConfig.test.js     # Histogram tests (getBarClass thresholds, getLeafDescendants, cache)
+│       ├── setup.ts                    # Global Vitest mocks for Bryntum Scheduler Pro + MSAL
+│       ├── auth.test.ts                # Auth module tests (signIn, getToken, signOut)
+│       ├── crudFunctions.test.ts       # CRUD/API tests (pagination, error handling)
+│       ├── envVars.test.ts             # Environment variable validation tests
+│       ├── schedulerproConfig.test.ts  # Renderer tests (nameRenderer, treeGroupParent, eventRenderer, tooltip)
+│       ├── histogramConfig.test.ts     # Histogram tests (getBarClass thresholds, getLeafDescendants, cache)
 │       └── lib/
-│           ├── schedulingUtils.test.js # 56 tests for pure scheduling functions
-│           ├── filterUtils.test.js     # 19 tests for URL filter round-trip
-│           ├── CustomEventModel.test.js    # 25 tests for field mappings + convert fallback chains
-│           └── CustomResourceModel.test.js # 9 tests for field defaults + loadDefaultImage
+│           ├── schedulingUtils.test.ts # 56 tests for pure scheduling functions
+│           ├── filterUtils.test.ts     # 19 tests for URL filter round-trip
+│           ├── CustomEventModel.test.ts    # 25 tests for field mappings + convert fallback chains
+│           └── CustomResourceModel.test.ts # 9 tests for field defaults + loadDefaultImage
 ```
 
 ---
@@ -298,6 +312,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 | ------------------------------------------ | ------- | --------------------------------- |
 | `@bryntum/schedulerpro` (trial)            | ^7.1.3  | Scheduler Pro + ResourceHistogram |
 | `@azure/msal-browser`                      | ^4.26.0 | Microsoft Entra ID authentication |
+| `typescript`                               | ^5.9.3  | TypeScript compiler               |
 | `vite`                                     | ^7.1.7  | Build tool / dev server           |
 | `vite-console-forward-plugin`              | ^2.0.1  | Forward browser logs to terminal  |
 | `eslint`                                   | ^9.38.0 | Linting                           |
@@ -305,7 +320,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 | `@rollup/rollup-win32-x64-msvc` (optional) | ^4.57.1 | Platform-specific Rollup binary   |
 | `vitest`                                   | ^4.0.18 | Unit test runner (dev)            |
 | `@vitest/coverage-v8`                      | ^4.0.18 | V8 code coverage (dev)            |
-| `jsdom`                                    | ^26.1.0 | DOM environment for tests (dev)   |
+| `jsdom`                                    | ^28.1.0 | DOM environment for tests (dev)   |
 
 ---
 
@@ -348,7 +363,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 
 ### Unit Tests
 
-#### `countWeekdays(start, end)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
+#### `countWeekdays(start, end)` — [schedulingUtils.ts](src/lib/schedulingUtils.ts)
 
 - [x] Same-day input returns 1 (minimum clamp)
 - [x] Span including weekends skips Sat/Sun correctly
@@ -356,7 +371,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] Multi-week span returns correct weekday count
 - [x] Start date after end date — verify behavior
 
-#### `clampStartToToday(date)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
+#### `clampStartToToday(date)` — [schedulingUtils.ts](src/lib/schedulingUtils.ts)
 
 - [x] Date in the future returns the original date unchanged
 - [x] Date in the past with numeric offset returns today + offset
@@ -364,7 +379,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] Date already on a Monday vs mid-week — correct Monday snap
 - [x] Offset of 0 returns today
 
-#### `calcUnits(effort, effortRemaining, startDate, endDate, resourceId)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
+#### `calcUnits(effort, effortRemaining, startDate, endDate, resourceId)` — [schedulingUtils.ts](src/lib/schedulingUtils.ts)
 
 - [x] Standard allocation (e.g. 40h over 5 weekdays at 8h/day) returns 100%
 - [x] `useRemainingEffort = true` path uses `effortRemaining` instead of `effort`
@@ -374,18 +389,18 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] Resource with custom `hoursPerDay` (non-8h) scales correctly
 - [x] Resource not in `resourceHoursMap` falls back to default hours
 
-#### `getProjectColor(projectName)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
+#### `getProjectColor(projectName)` — [schedulingUtils.ts](src/lib/schedulingUtils.ts)
 
 - [x] Same name called twice returns the same color (stable mapping)
 - [x] `null` project name returns `'#888'`
 - [x] 16+ unique project names wraps around the 15-color palette
 
-#### `computeBufferedRange(start, end)` — [schedulingUtils.js](src/lib/schedulingUtils.js)
+#### `computeBufferedRange(start, end)` — [schedulingUtils.ts](src/lib/schedulingUtils.ts)
 
 - [x] Extends start and end by `VIEWPORT_BUFFER_DAYS` in each direction
 - [x] Different buffer day values produce correct ranges
 
-#### `resolveRawAssignments()` — [schedulingUtils.js](src/lib/schedulingUtils.js)
+#### `resolveRawAssignments()` — [schedulingUtils.ts](src/lib/schedulingUtils.ts)
 
 - [x] Well-formed record produces correct event + assignment objects
 - [x] Record with `startDate > endDate` is skipped with console warning
@@ -394,7 +409,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] Missing expanded fields (`msdyn_projectid`, `msdyn_taskid`) use null-safe fallbacks
 - [x] Duplicate `bookableresourceid` across records produces one assignment per event
 
-#### `CustomEventModel` field converters — [CustomEventModel.js](src/lib/CustomEventModel.js)
+#### `CustomEventModel` field converters — [CustomEventModel.ts](src/lib/CustomEventModel.ts)
 
 - [x] `name`: OData formatted value → `msdyn_name` → value → `'Unnamed Assignment'` fallback chain
 - [x] `projectName`: expanded `msdyn_subject` → OData annotation → value → `''`
@@ -402,7 +417,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] `etag`: escaped double-quote stripping (`\"W/...\"` → `W/...`)
 - [x] Each field with missing/null/undefined data at every fallback level
 
-#### `CustomResourceModel` fields — [CustomResourceModel.js](src/lib/CustomResourceModel.js)
+#### `CustomResourceModel` fields — [CustomResourceModel.ts](src/lib/CustomResourceModel.ts)
 
 - [x] `workingHours` defaults to 40 when field is missing/null
 - [x] `workingHours = 0` — verify behavior (`|| 40` treats 0 as falsy → falls back to 40; **potential bug** if 0 is a valid value)
@@ -411,7 +426,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] `loadDefaultImage()` caches result and is idempotent (second call returns immediately)
 - [x] `loadDefaultImage()` silently handles fetch failure (bare `catch {}`)
 
-#### Calendar generation — [schedulingUtils.js](src/lib/schedulingUtils.js)
+#### Calendar generation — [schedulingUtils.ts](src/lib/schedulingUtils.ts)
 
 - [x] Resources without `ws_workinghours` use the default `business` calendar (Mon–Fri 08:00–16:00)
 - [x] Resources with non-standard `ws_workinghours` (e.g. 32h) get a custom calendar with correct `endTime`
@@ -419,7 +434,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] `ws_workinghours = 32` → 6.4h/day → fractional end time calculated correctly
 - [x] `ws_workinghours = 0` falls back to 40 via `|| 40` (verify this is intentional)
 
-#### Histogram bar coloring — `getBarClass()` — [histogramConfig.js](src/histogramConfig.js)
+#### Histogram bar coloring — `getBarClass()` — [histogramConfig.ts](src/app/histogramConfig.ts)
 
 - [x] `maxEffort === 0` returns empty string (no class/color)
 - [x] Allocation > 110% → `b-overallocated` (red)
@@ -430,13 +445,13 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] Custom threshold values from env vars are respected
 - [x] Cache is populated on leaf render and hit on subsequent calls
 
-#### `getLeafDescendants(resource)` — [histogramConfig.js](src/histogramConfig.js)
+#### `getLeafDescendants(resource)` — [histogramConfig.ts](src/app/histogramConfig.ts)
 
 - [x] Leaf node returns `[self]`
 - [x] Parent with 2 levels of nesting returns all leaf descendants
 - [x] Parent with no children returns empty array
 
-#### Renderers — [schedulerproConfig.js](src/schedulerproConfig.js)
+#### Renderers — [schedulerproConfig.ts](src/app/schedulerproConfig.ts)
 
 - [x] `nameRenderer`: leaf resource with valid `imageUrl` renders `<img>` tag
 - [x] `nameRenderer`: leaf resource with no `imageUrl` renders name only (no `<img>`)
@@ -447,14 +462,14 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] `eventRenderer`: `effortRemaining == 0` → `b-inactive` class applied
 - [x] `eventRenderer`: `effortRemaining > 0` → normal rendering (no inactive class)
 
-#### URL parameter round-trip — [filterUtils.js](src/lib/filterUtils.js)
+#### URL parameter round-trip — [filterUtils.ts](src/lib/filterUtils.ts)
 
 - [x] `writeFilterParams()` → `readFilterParams()` produces identical values
 - [x] Empty/missing params return correct defaults
 - [x] Special characters in filter values survive encode/decode
 - [x] `useRemainingEffort` string `'true'`/`'false'` coerces correctly
 
-#### `fetchAllPages()` — [crudFunctions.js](src/crudFunctions.js)
+#### `fetchAllPages()` — [crudFunctions.ts](src/app/crudFunctions.ts)
 
 - [x] Single-page response returns all records
 - [x] Response with `@odata.nextLink` follows pagination correctly
@@ -538,7 +553,7 @@ All filter selections and the effort toggle state are **persisted as URL query p
 
 #### XSS
 
-- [ ] **`htmlEncode: false` in `nameRenderer`** ([schedulerproConfig.js](src/schedulerproConfig.js)) — inject `<script>alert(1)</script>` as a resource name → verify it does NOT execute (**known vulnerability** — D365 data rendered as raw HTML)
+- [ ] **`htmlEncode: false` in `nameRenderer`** ([schedulerproConfig.ts](src/app/schedulerproConfig.ts)) — inject `<script>alert(1)</script>` as a resource name → verify it does NOT execute (**known vulnerability** — D365 data rendered as raw HTML)
 - [ ] Tooltip template with D365-sourced project/client/task names → verify HTML entities are escaped
 - [ ] URL filter parameters with malicious `practice`, `role`, or `resource` values → verify no injection when rendered in combo boxes
 

@@ -4,9 +4,11 @@ The code for the complete example app is on the `completed-app` branch.
 
 Please read the [PRD](./prd.md) for current state of the project
 
+**Technology:** This project is built with **TypeScript** for enhanced type safety, better IDE support, and improved code documentation.
+
 ## Getting started
 
-The starter repository uses [Vite](https://vitejs.dev/), which is a development server and JavaScript bundler. You’ll need Node.js version 20.19+ for Vite to work.
+The starter repository uses [Vite](https://vitejs.dev/) with TypeScript, which is a development server and JavaScript bundler. You'll need Node.js version 20.19+ for Vite to work.
 Install the Vite dev dependency by running the following command:
 
 ```sh
@@ -39,7 +41,7 @@ You'll see a Bryntum Scheduler Pro with a two resources and two events that are 
 
 ## Testing
 
-The project has **155 unit tests** powered by [Vitest](https://vitest.dev/) with a jsdom environment. Tests mock Bryntum Scheduler Pro and MSAL modules so they run without licences or network access.
+The project has **155 unit tests** powered by [Vitest](https://vitest.dev/) with a jsdom environment. All tests are written in TypeScript and mock Bryntum Scheduler Pro and MSAL modules so they run without licences or network access.
 
 ### Commands
 
@@ -53,20 +55,24 @@ The project has **155 unit tests** powered by [Vitest](https://vitest.dev/) with
 
 ```text
 src/test/
-├── setup.js                        # Global mocks (Bryntum + MSAL)
-├── auth.test.js                    # signIn, getToken (silent + popup), signOut
-├── crudFunctions.test.js           # API calls, pagination, error handling
-├── schedulerproConfig.test.js      # Renderers (name, treeGroupParent, event), tooltip, config shape
-├── histogramConfig.test.js         # getBarClass thresholds, getLeafDescendants, cache behaviour
+├── setup.ts                        # Global mocks (Bryntum + MSAL)
+├── auth.test.ts                    # signIn, getToken (silent + popup), signOut
+├── crudFunctions.test.ts           # API calls, pagination, error handling
+├── envVars.test.ts                 # Environment variable validation
+├── schedulerproConfig.test.ts      # Renderers (name, treeGroupParent, event), tooltip, config shape
+├── histogramConfig.test.ts         # getBarClass thresholds, getLeafDescendants, cache behaviour
 └── lib/
-    ├── schedulingUtils.test.js     # countWeekdays, computeBufferedRange, clampStartToToday, calcUnits, getProjectColor
-    ├── filterUtils.test.js         # readFilterParams, writeFilterParams, round-trip
-    ├── CustomEventModel.test.js    # Field mappings + convert fallback chains
+    ├── schedulingUtils.test.ts     # countWeekdays, computeBufferedRange, clampStartToToday, calcUnits, getProjectColor
+    ├── filterUtils.test.ts         # readFilterParams, writeFilterParams, round-trip
+    ├── CustomEventModel.test.ts    # Field mappings + convert fallback chains
     └── CustomResourceModel.test.js # Field defaults + loadDefaultImage
 ```
 
 ### Key design decisions
 
-- **Pure function extraction** — Scheduling logic (`countWeekdays`, `calcUnits`, etc.) and URL filter utilities were extracted from `main.js` into `src/lib/schedulingUtils.js` and `src/lib/filterUtils.js` so they can be tested without DOM or app-state dependencies.
-- **Bryntum mock** — A lightweight stub `Model` class in `src/test/setup.js` processes Bryntum's `static fields` and `convert` functions, enabling model tests without the commercial library.
+- **TypeScript migration** — All source code migrated from JavaScript to TypeScript, providing full type safety and better IDE support.
+- **Type definitions** — Comprehensive type definitions in `src/types/` for Dynamics 365 API responses, Bryntum components, environment variables, and application state.
+- **Modular architecture** — Application code organized into logical modules under `src/app/` (auth, crudFunctions, dataLoader, filterManager, schedulerproConfig, histogramConfig, uiSetup, appState) with clear separation of concerns.
+- **Pure function extraction** — Scheduling logic (`countWeekdays`, `calcUnits`, etc.) and URL filter utilities were extracted from `main.ts` into `src/lib/schedulingUtils.ts` and `src/lib/filterUtils.ts` so they can be tested without DOM or app-state dependencies.
+- **Bryntum mock** — A lightweight stub `Model` class in `src/test/setup.ts` processes Bryntum's `static fields` and `convert` functions, enabling model tests without the commercial library.
 - **Environment variables** — A `.env.test` file provides dummy `VITE_*` values so Vitest can import source modules that reference `import.meta.env`.
