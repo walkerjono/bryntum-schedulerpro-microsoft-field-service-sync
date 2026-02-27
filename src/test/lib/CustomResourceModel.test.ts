@@ -30,9 +30,12 @@ describe('CustomResourceModel', () => {
         expect((m as AnyRecord).workingHours).toBe(40);
     });
 
-    it('defaults calendar to "business"', () => {
+    it('has no calendar override (uses Bryntum built-in field)', () => {
         const m = new CustomResourceModel({});
-        expect(m.calendar).toBe('business');
+        // calendar is Bryntum's built-in ResourceModel field — without a project
+        // context it returns undefined. At runtime, resources inherit the project
+        // calendar ('business') unless generateCalendars assigns a custom one.
+        expect(m.calendar).toBeUndefined();
     });
 
     // ── Explicit values ──────────────────────────────────────────

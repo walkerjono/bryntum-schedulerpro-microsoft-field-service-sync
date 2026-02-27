@@ -58,8 +58,10 @@ export default class CustomResourceModel extends ResourceModel {
         { name : 'practiceName', type : 'string', defaultValue : 'Unassigned' },
         { name : 'roleName', type : 'string', defaultValue : 'Unassigned' },
         // Working hours per week (from D365 ws_workinghours)
-        { name : 'workingHours', type : 'number', defaultValue : 40 },
-        // Calendar reference – links resource to a working-time calendar
-        { name : 'calendar', type : 'string', defaultValue : 'business' }
+        { name : 'workingHours', type : 'number', defaultValue : 40 }
+        // NOTE: Do NOT define a 'calendar' field here. Bryntum's built-in
+        // ResourceModel.calendar field handles calendar resolution (string ID →
+        // CalendarModel). Overriding it with type:'string' breaks the link and
+        // causes the histogram to fall back to the project default calendar.
     ];
 }
