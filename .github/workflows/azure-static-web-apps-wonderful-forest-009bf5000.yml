@@ -25,15 +25,24 @@ jobs:
         with:
           node-version: 20
 
-      - name: Configure Bryntum npm registry
-        env:
-          BRYNTUM_USER: ${{ secrets.BRYNTUM_NPM_USERNAME }}
-          BRYNTUM_PASS: ${{ secrets.BRYNTUM_NPM_PASSWORD }}
+      - name: Verify secrets exist
         run: |
-          echo "@bryntum:registry=https://npm.bryntum.com" >> .npmrc
-          echo "//npm.bryntum.com/:username=${BRYNTUM_USER}" >> .npmrc
-          echo "//npm.bryntum.com/:_password=$(echo -n "${BRYNTUM_PASS}" | base64)" >> .npmrc
-          echo "always-auth=true" >> .npmrc
+          if [ -z "${{ secrets.BRYNTUM_NPM_USERNAME }}" ]; then
+            echo "::error::BRYNTUM_NPM_USERNAME secret is empty or not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.BRYNTUM_NPM_PASSWORD }}" ]; then
+            echo "::error::BRYNTUM_NPM_PASSWORD secret is empty or not set"
+            exit 1
+          fi
+          echo "Both secrets are set"
+
+      - name: Configure Bryntum npm registry
+        run: |
+          npm config set @bryntum:registry https://npm.bryntum.com
+          echo "//npm.bryntum.com/:_auth=$(echo -n '${{ secrets.BRYNTUM_NPM_USERNAME }}:${{ secrets.BRYNTUM_NPM_PASSWORD }}' | base64 -w 0)" >> ~/.npmrc
+          echo "always-auth=true" >> ~/.npmrc
+          cat ~/.npmrc
 
       - name: Install dependencies
         run: npm install
