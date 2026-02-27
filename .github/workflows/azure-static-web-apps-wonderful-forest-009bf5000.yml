@@ -26,28 +26,10 @@ jobs:
         with:
           node-version: 20
 
-      - name: Verify secrets exist
-        run: |
-          if [ -z "${{ secrets.BRYNTUM_NPM_USERNAME }}" ]; then
-            echo "::error::BRYNTUM_NPM_USERNAME secret is empty or not set"
-            exit 1
-          fi
-          if [ -z "${{ secrets.BRYNTUM_NPM_PASSWORD }}" ]; then
-            echo "::error::BRYNTUM_NPM_PASSWORD secret is empty or not set"
-            exit 1
-          fi
-          echo "Both secrets are set"
-
       - name: Configure Bryntum npm registry
         run: |
-          cat << EOF > .npmrc
-          @bryntum:registry=https://npm.bryntum.com
-          //npm.bryntum.com/:username=${{ secrets.BRYNTUM_NPM_USERNAME }}
-          //npm.bryntum.com/:_password=$(echo -n '${{ secrets.BRYNTUM_NPM_PASSWORD }}' | base64 -w 0)
-          //npm.bryntum.com/:always-auth=true
-          EOF
-          echo "--- .npmrc contents ---"
-          cat .npmrc
+          echo "@bryntum:registry=https://npm.bryntum.com" > .npmrc
+          echo "//npm.bryntum.com/:_authToken=${{ secrets.BRYNTUM_NPM_TOKEN }}" >> .npmrc
 
       - name: Install dependencies
         run: npm install --no-package-lock
