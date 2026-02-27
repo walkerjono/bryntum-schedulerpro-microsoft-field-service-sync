@@ -13,6 +13,7 @@ jobs:
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
+    environment: staging
     name: Build and Deploy Job
     steps:
       - uses: actions/checkout@v3
@@ -73,3 +74,4 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WONDERFUL_FOREST_009BF5000 }}
           action: "close"
+
