@@ -26,9 +26,14 @@ jobs:
           node-version: 20
 
       - name: Configure Bryntum npm registry
+        env:
+          BRYNTUM_USER: ${{ secrets.BRYNTUM_NPM_USERNAME }}
+          BRYNTUM_PASS: ${{ secrets.BRYNTUM_NPM_PASSWORD }}
         run: |
           echo "@bryntum:registry=https://npm.bryntum.com" >> .npmrc
-          echo "//npm.bryntum.com/:_auth=$(echo -n '${{ secrets.BRYNTUM_NPM_USERNAME }}:${{ secrets.BRYNTUM_NPM_PASSWORD }}' | base64)" >> .npmrc
+          echo "//npm.bryntum.com/:username=${BRYNTUM_USER}" >> .npmrc
+          echo "//npm.bryntum.com/:_password=$(echo -n "${BRYNTUM_PASS}" | base64)" >> .npmrc
+          echo "always-auth=true" >> .npmrc
 
       - name: Install dependencies
         run: npm install
