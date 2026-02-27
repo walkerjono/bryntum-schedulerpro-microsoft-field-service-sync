@@ -46,7 +46,9 @@ jobs:
           cat ~/.npmrc
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm cache clean --force
+          npm install --no-package-lock
 
       - name: Build
         run: npm run build
@@ -74,4 +76,5 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WONDERFUL_FOREST_009BF5000 }}
           action: "close"
+
 
