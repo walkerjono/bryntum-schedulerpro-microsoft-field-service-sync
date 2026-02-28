@@ -20,6 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Configure Bryntum npm registry
         run: |
@@ -45,6 +46,17 @@ jobs:
         run: |
           if grep -q 'src/main.ts' dist/index.html; then
             echo "Error: dist/index.html still references src/main.ts (non-built entry)."
+            exit 1
+          fi
+      
+      - name: Verify Static Web App config is included
+        run: |
+          if [ ! -f dist/staticwebapp.config.json ]; then
+            echo "Error: dist/staticwebapp.config.json does not exist."
+            exit 1
+          fi
+          if ! grep -q 'navigationFallback' dist/staticwebapp.config.json; then
+            echo "Error: dist/staticwebapp.config.json does not include navigationFallback."
             exit 1
           fi
 
