@@ -3,17 +3,28 @@
         "target": "ESNext",
         "module": "ESNext",
         "moduleResolution": "bundler",
+        "outDir": "dist",
+        "rootDir": "./src",
         "allowJs": false,
         "noEmit": true,
         "strict": true,
+        "noImplicitAny": true,
         "noUncheckedIndexedAccess": true,
         "isolatedModules": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
+        "sourceMap": true,
         "resolveJsonModule": true,
-        "types": ["vitest/globals"]
+        "forceConsistentCasingInFileNames": true,
+        "types": [
+            "vitest/globals"
+        ]
     },
-    "include": ["src/**/*.ts"],
-    "exclude": ["node_modules"]
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
 }
