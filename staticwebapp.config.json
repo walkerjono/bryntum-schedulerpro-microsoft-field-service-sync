@@ -2,18 +2,8 @@
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
-      "*.js",
-      "*.mjs",
-      "*.json",
       "*.png",
       "*.svg",
-      "*.jpg",
-      "*.jpeg",
-      "*.gif",
-      "*.ico",
-      "*.txt",
-      "*.wasm",
-      "*.webp",
       "/assets/*"
     ]
   },
