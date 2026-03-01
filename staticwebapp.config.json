@@ -2,23 +2,9 @@
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
-      "/*.png",
-      "/*.svg",
-      "/assets/*.css",
-      "/assets/*.js",
-      "/assets/*.json",
-      "/assets/*.ico",
-      "/assets/*.png",
-      "/assets/*.svg",
-      "/assets/*.jpg",
-      "/assets/*.jpeg",
-      "/assets/*.gif",
-      "/assets/*.webp",
-      "/assets/*.woff",
-      "/assets/*.woff2",
-      "/assets/*.ttf",
-      "/assets/*.eot",
-      "/assets/*.webmanifest"
+      "*.png",
+      "*.svg",
+      "/assets/*"
     ]
   },
   "globalHeaders": {
