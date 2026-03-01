@@ -33,11 +33,20 @@ jobs:
       - name: Build
         run: npm run build
         env:
+            VITE_MICROSOFT_ENTRA_TENANT_ID: ${{ vars.VITE_MICROSOFT_ENTRA_TENANT_ID }}  
             VITE_MICROSOFT_ENTRA_APP_ID: ${{ vars.VITE_MICROSOFT_ENTRA_APP_ID }}
-            VITE_MICROSOFT_ENTRA_TENANT_ID: ${{ vars.VITE_MICROSOFT_ENTRA_TENANT_ID }}
-            VITE_MICROSOFT_DYNAMICS_ORG_ID: ${{ vars.VITE_MICROSOFT_DYNAMICS_ORG_ID }}
             VITE_REDIRECT_URI: ${{ vars.VITE_REDIRECT_URI }}
+            VITE_MICROSOFT_DYNAMICS_ORG_ID: ${{ vars.VITE_MICROSOFT_DYNAMICS_ORG_ID }}
             VITE_CRM_REGION: ${{ vars.VITE_CRM_REGION }}
+            VITE_DATAVERSE_API_VERSION: ${{ vars.VITE_DATAVERSE_API_VERSION }}
+            VITE_ODATA_MAX_PAGES: ${{ vars.VITE_ODATA_MAX_PAGES }}
+            VITE_DEFAULT_VIEW_MODE: ${{ vars.VITE_DEFAULT_VIEW_MODE }}
+            VITE_USE_EFFORT_REMAINING: ${{ vars.VITE_USE_EFFORT_REMAINING }}
+            VITE_VIEWPORT_BUFFER_DAYS: ${{ vars.VITE_VIEWPORT_BUFFER_DAYS }}
+            VITE_HOURS_PER_DAY: ${{ vars.VITE_HOURS_PER_DAY }}
+            VITE_EFFORT_REMAINING_OFFSET_DAYS: ${{ vars.VITE_EFFORT_REMAINING_OFFSET_DAYS }}
+            VITE_UNDERALLOCATED_THRESHOLD: ${{ vars.VITE_UNDERALLOCATED_THRESHOLD }}
+            VITE_OVERALLOCATED_THRESHOLD: ${{ vars.VITE_OVERALLOCATED_THRESHOLD }}
 
       - name: Include Static Web App config
         run: cp staticwebapp.config.json dist/staticwebapp.config.json
