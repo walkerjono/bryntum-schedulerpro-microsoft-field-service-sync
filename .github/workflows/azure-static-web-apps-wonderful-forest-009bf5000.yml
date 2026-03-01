@@ -33,11 +33,11 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_MICROSOFT_ENTRA_APP_ID: ${{ secrets.VITE_MICROSOFT_ENTRA_APP_ID }}
-          VITE_MICROSOFT_ENTRA_TENANT_ID: ${{ secrets.VITE_MICROSOFT_ENTRA_TENANT_ID }}
-          VITE_MICROSOFT_DYNAMICS_ORG_ID: ${{ secrets.VITE_MICROSOFT_DYNAMICS_ORG_ID }}
-          VITE_REDIRECT_URI: ${{ secrets.VITE_REDIRECT_URI }}
-          VITE_CRM_REGION: ${{ secrets.VITE_CRM_REGION }}
+            VITE_MICROSOFT_ENTRA_APP_ID: ${{ vars.VITE_MICROSOFT_ENTRA_APP_ID }}
+            VITE_MICROSOFT_ENTRA_TENANT_ID: ${{ vars.VITE_MICROSOFT_ENTRA_TENANT_ID }}
+            VITE_MICROSOFT_DYNAMICS_ORG_ID: ${{ vars.VITE_MICROSOFT_DYNAMICS_ORG_ID }}
+            VITE_REDIRECT_URI: ${{ vars.VITE_REDIRECT_URI }}
+            VITE_CRM_REGION: ${{ vars.VITE_CRM_REGION }}
 
       - name: Include Static Web App config
         run: cp staticwebapp.config.json dist/staticwebapp.config.json
