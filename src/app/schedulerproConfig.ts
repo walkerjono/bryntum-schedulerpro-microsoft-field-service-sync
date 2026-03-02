@@ -87,6 +87,9 @@ export const schedulerproConfig: Record<string, any> = {
             renderData.eventColor = 'gray';
             renderData.cls.add('b-inactive');
         }
+        if (eventRecord.isRescheduledFromPast) {
+            renderData.cls.add('b-rescheduled-from-past');
+        }
         return eventRecord.name;
     },
 
@@ -113,6 +116,8 @@ export const schedulerproConfig: Record<string, any> = {
             template({ eventRecord }: { eventRecord: any }) {
                 const start  = eventRecord.startDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.startDate) : '';
                 const end    = eventRecord.endDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.endDate) : '';
+                const originalStart = eventRecord.originalStartDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.originalStartDate) : '';
+                const originalEnd = eventRecord.originalEndDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.originalEndDate) : '';
                 const effort      = eventRecord.effort != null ? `${eventRecord.effort} hrs` : '';
                 const effortRemaining = eventRecord.effortRemaining;
                 const clientName   = eventRecord.clientName || '';
@@ -126,10 +131,20 @@ export const schedulerproConfig: Record<string, any> = {
                     <div><strong>Client:</strong> ${clientName}</div>
                     <div><strong>Project:</strong> ${projectLabel}</div>
                     <div><strong>Task:</strong> ${taskLabel}</div>
-                    <div><strong>Start:</strong> ${start}</div>
-                    <div><strong>End:</strong> ${end}</div>
+                    <div style="margin-top: 8px; border-top: 1px solid #e5e5e5; padding-top: 8px;">
+                    ${eventRecord.isRescheduledFromPast ? `
+                    <div style="font-style: italic; color: #666;">
+                        <div><strong>Originally Scheduled:</strong></div>
+                        <div>${originalStart} → ${originalEnd}</div>
+                    </div>
+                    ` : ''}\
+                    <div><strong>Scheduled:</strong></div>
+                    <div>${start} → ${end}</div>
+                    </div>
+                    <div style="margin-top: 8px; border-top: 1px solid #e5e5e5; padding-top: 8px;">
                     <div><strong>Effort:</strong> ${effort}</div>
                     ${effortRemaining != null ? `<div><strong>Effort Remaining:</strong> ${effortRemaining} hrs</div>` : ''}
+                    </div>
                 </div>`;
             }
         },

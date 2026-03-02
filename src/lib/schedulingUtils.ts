@@ -32,6 +32,9 @@ export interface ResolveOpts {
     clampFn?: (d: Date | string) => Date;
     calcUnitsFn?: (effort: number, effortRemaining: number | null, startDate: Date | string, endDate: Date | string, resourceId: string) => number;
     getProjectColorFn?: (projectName: string | null) => string;
+    resourceHoursMap?: Map<string, number>;
+    _hoursPerDay?: number;
+    today?: Date;
 }
 
 export interface ResolvedEvent {
@@ -39,6 +42,7 @@ export interface ResolvedEvent {
     startDate: Date | string;
     originalStartDate: Date | string;
     endDate: Date | string;
+    originalEndDate: Date | string;
     duration: number;
     durationUnit: string;
     name: string;
@@ -50,6 +54,7 @@ export interface ResolvedEvent {
     taskNumber: string;
     manuallyScheduled: boolean;
     eventColor: string;
+    isRescheduledFromPast: boolean;
 }
 
 export interface ResolvedAssignment {
@@ -118,6 +123,39 @@ export function countWeekdays(start: Date | string, end: Date | string): number 
         d.setDate(d.getDate() + 1);
     }
     return count || 1; // at least 1 to avoid division by zero
+}
+
+/**
+ * Add a number of working days (Mon–Fri) to a start date.
+ * The start date counts as day 1 (if it's a weekday).
+ * Returns the date that is N working days from the start, inclusive.
+ * Example: addWorkingDays(Monday, 5) = Friday (same week)
+ */
+export function addWorkingDays(start: Date | string, numDays: number): Date {
+    if (numDays <= 0) {
+        const d = new Date(start);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+
+    const d = new Date(start);
+    d.setHours(0, 0, 0, 0);
+
+    // Check if start day is a weekday; if so, it counts as day 1
+    let added = 0;
+    const dayOfWeek = d.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        added = 1; // Start day is a weekday, counts as day 1
+    }
+
+    // Add days until we reach numDays
+    while (added < numDays) {
+        d.setDate(d.getDate() + 1);
+        const day = d.getDay();
+        if (day !== 0 && day !== 6) added++;
+    }
+
+    return d;
 }
 
 /**
@@ -203,10 +241,15 @@ export function resolveRawAssignments(rawRecords: D365ResourceAssignment[], Even
     useRemainingEffort = false,
     clampFn            = (d: Date | string) => typeof d === 'string' ? new Date(d) : d,
     calcUnitsFn        = () => 0,
-    getProjectColorFn  = () => '#888'
+    getProjectColorFn  = () => '#888',
+    resourceHoursMap   = new Map<string, number>(),
+    _hoursPerDay       = 8,
+    today              = new Date()
 }: ResolveOpts = {}): { events: ResolvedEvent[]; assignments: ResolvedAssignment[] } {
     const events: ResolvedEvent[] = [];
     const assignments: ResolvedAssignment[] = [];
+    const todayNormalized = new Date(today);
+    todayNormalized.setHours(0, 0, 0, 0);
 
     rawRecords.forEach((raw) => {
         const e = new EventModelClass(raw);
@@ -217,36 +260,73 @@ export function resolveRawAssignments(rawRecords: D365ResourceAssignment[], Even
             return;
         }
 
+        // Track original dates for potential reschedule detection
+        const originalStart = new Date(e.startDate);
+        originalStart.setHours(0, 0, 0, 0);
+        const originalEnd = new Date(e.endDate);
+        originalEnd.setHours(0, 0, 0, 0);
+
         // Only shift start date for incomplete assignments with remaining effort.
         // Completed assignments (effortRemaining === 0) keep their original D365 dates.
         let effectiveStart: Date | string = e.startDate;
+        let effectiveEnd: Date | string = e.endDate;
+        let isRescheduledFromPast = false;
+
         if (useRemainingEffort && (e.effortRemaining ?? 0) > 0) {
-            effectiveStart = clampFn(e.startDate);
+            const clampedStart = clampFn(e.startDate);
+            const clampedStartDate = new Date(clampedStart);
+            clampedStartDate.setHours(0, 0, 0, 0);
+
+            // Detect if start was shifted forward (reschedulation)
+            if (clampedStartDate > originalStart) {
+                effectiveStart = clampedStart;
+
+                // Smart end-date handling: if original end is also in the past, recalculate it based on remaining effort
+                if (originalEnd <= todayNormalized) {
+                    // Only mark as rescheduled from past when the end date was also in the past
+                    isRescheduledFromPast = true;
+
+                    // Look up resource's working hours, fall back to global default
+                    const resourceHoursPerWeek = resourceHoursMap.get(e.resourceId) ?? 40;
+                    const resourceHoursPerDay = resourceHoursPerWeek / 5; // Assuming 5-day work week
+                    const workingDaysNeeded = Math.ceil((e.effortRemaining ?? 0) / resourceHoursPerDay);
+
+                    // Add working days to the effective start date
+                    effectiveEnd = addWorkingDays(effectiveStart, workingDaysNeeded);
+                }
+                else {
+                    // Original end is in the future, keep it unchanged (duration compresses)
+                    effectiveEnd = e.endDate;
+                }
+            }
         }
+
         // Ensure start never exceeds end to avoid scheduling errors
-        if (new Date(effectiveStart) > new Date(e.endDate)) {
-            effectiveStart = e.endDate;
+        if (new Date(effectiveStart) > new Date(effectiveEnd)) {
+            effectiveEnd = effectiveStart;
         }
 
         const units = calcUnitsFn(e.effort, e.effortRemaining, e.startDate, e.endDate, e.resourceId);
-        const durationHours = (new Date(e.endDate).getTime() - new Date(effectiveStart).getTime()) / (1000 * 60 * 60);
+        const durationHours = (new Date(effectiveEnd).getTime() - new Date(effectiveStart).getTime()) / (1000 * 60 * 60);
 
         events.push({
-            id                : e.id,
-            startDate         : effectiveStart,
-            originalStartDate : e.startDate,
-            endDate           : e.endDate,
-            duration          : durationHours,
-            durationUnit      : 'hour',
-            name              : e.name,
-            projectName       : e.projectName,
-            projectNumber     : e.projectNumber,
-            clientName        : e.clientName,
-            effort            : e.effort,
-            effortRemaining   : e.effortRemaining,
-            taskNumber        : e.taskNumber,
-            manuallyScheduled : true,
-            eventColor        : getProjectColorFn(e.projectName)
+            id                    : e.id,
+            startDate             : effectiveStart,
+            originalStartDate     : e.startDate,
+            endDate               : effectiveEnd,
+            originalEndDate       : e.endDate,
+            duration              : durationHours,
+            durationUnit          : 'hour',
+            name                  : e.name,
+            projectName           : e.projectName,
+            projectNumber         : e.projectNumber,
+            clientName            : e.clientName,
+            effort                : e.effort,
+            effortRemaining       : e.effortRemaining,
+            taskNumber            : e.taskNumber,
+            manuallyScheduled     : true,
+            eventColor            : getProjectColorFn(e.projectName),
+            isRescheduledFromPast : isRescheduledFromPast
         });
 
         assignments.push({

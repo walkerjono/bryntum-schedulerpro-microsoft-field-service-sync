@@ -44,6 +44,11 @@ html {
   background-color: #efefef !important;
 }
 
+/* Red border for events rescheduled from the past */
+.b-sch-event.b-rescheduled-from-past {
+  border: 2px solid #ef4444 !important;
+}
+
 #histogram {
   display: flex;
   flex-direction: column;

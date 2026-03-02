@@ -19,6 +19,7 @@ import {
     getUseRemainingEffort,
     getFetchedRange,
     setFetchedRange,
+    getResourceHoursMap,
     setResourceHoursMap,
     setFlatResources,
     getViewportFetchInFlight,
@@ -39,7 +40,9 @@ export function resolveRawAssignments(rawRecords: D365ResourceAssignment[]): { e
         useRemainingEffort : getUseRemainingEffort(),
         clampFn            : clampStartToToday,
         calcUnitsFn        : calcUnits,
-        getProjectColorFn  : getProjectColor
+        getProjectColorFn  : getProjectColor,
+        resourceHoursMap   : getResourceHoursMap(),
+        hoursPerDay        : Number(import.meta.env.VITE_HOURS_PER_DAY) || 8
     });
 }
 
@@ -83,14 +86,14 @@ export async function loadInitialData(): Promise<InitialLoadResult> {
         `[dataLoader] Loaded ${resourcesData.value.length} resources, ${assignmentsData.value.length} assignments, ${practiceMap.size} practice mappings, ${roleMap.size} role mappings`
     );
 
-    // Build resource → hours-per-day lookup
+    // Build resource → weekly-working-hours lookup
     const hoursMap = new Map<string, number>();
     for (const raw of resourcesData.value) {
         const wh = raw.ws_workinghours ?? 40;
-        hoursMap.set(raw.bookableresourceid, wh / 5);
+        hoursMap.set(raw.bookableresourceid, wh);
     }
     setResourceHoursMap(hoursMap);
-    console.log(`[dataLoader] Built resourceHoursMap for ${hoursMap.size} resources`);
+    console.log(`[dataLoader] Built resourceHoursMap for ${hoursMap.size} resources (weekly hours)`);
 
     // Reset colour state for initial load
     resetProjectColors();
@@ -103,7 +106,9 @@ export async function loadInitialData(): Promise<InitialLoadResult> {
             useRemainingEffort : getUseRemainingEffort(),
             clampFn            : clampStartToToday,
             calcUnitsFn        : calcUnits,
-            getProjectColorFn  : getProjectColor
+            getProjectColorFn  : getProjectColor,
+            resourceHoursMap   : hoursMap,
+            hoursPerDay        : Number(import.meta.env.VITE_HOURS_PER_DAY) || 8
         }
     );
 
