@@ -106,6 +106,41 @@ describe('eventRenderer', () => {
         expect(renderData.eventColor).toBe('gray');
         expect(renderData.cls.has('b-inactive')).toBe(true);
     });
+
+    it('applies red border class when isRescheduledFromPast is true', () => {
+        const renderData = { eventColor : '', cls : new Set<string>() };
+        renderer({
+            eventRecord : { name : 'Rescheduled Task', effortRemaining : 10, isRescheduledFromPast : true },
+            renderData
+        });
+
+        expect(renderData.cls.has('b-rescheduled-from-past')).toBe(true);
+    });
+
+    it('does not apply red border class when isRescheduledFromPast is false', () => {
+        const renderData = { eventColor : '', cls : new Set<string>() };
+        renderer({
+            eventRecord : { name : 'Normal Task', effortRemaining : 10, isRescheduledFromPast : false },
+            renderData
+        });
+
+        expect(renderData.cls.has('b-rescheduled-from-past')).toBe(false);
+    });
+
+    it('can apply both b-inactive and b-rescheduled-from-past classes', () => {
+        const renderData = { eventColor : '', cls : new Set<string>() };
+        renderer({
+            eventRecord : {
+                name                  : 'Completed Rescheduled',
+                effortRemaining       : 0,
+                isRescheduledFromPast : true
+            },
+            renderData
+        });
+
+        expect(renderData.cls.has('b-inactive')).toBe(true);
+        expect(renderData.cls.has('b-rescheduled-from-past')).toBe(true);
+    });
 });
 
 // ── eventTooltip template ───────────────────────────────────────────
@@ -182,6 +217,65 @@ describe('eventTooltip template', () => {
         expect(html).toContain('Bare');
         expect(html).toContain('<strong>Client:</strong> ');
         expect(html).toContain('<strong>Project:</strong> ');
+    });
+
+    it('shows "Originally scheduled" section when isRescheduledFromPast is true', () => {
+        const eventRecord = {
+            name                  : 'Rescheduled Task',
+            startDate             : new Date('2026-03-02'),
+            endDate               : new Date('2026-03-04'),
+            originalStartDate     : new Date('2026-02-22'),
+            originalEndDate       : new Date('2026-02-24'),
+            isRescheduledFromPast : true,
+            effort                : 40,
+            effortRemaining       : 20,
+            clientName            : 'Client',
+            projectName           : 'Project',
+            projectNumber         : '',
+            taskNumber            : ''
+        };
+        const html = template({ eventRecord });
+
+        expect(html).toContain('Originally scheduled');
+        expect(html).toContain('Sun, 22 Feb 2026'); // Original start
+        expect(html).toContain('Tue, 24 Feb 2026'); // Original end
+    });
+
+    it('omits "Originally scheduled" section when isRescheduledFromPast is false', () => {
+        const eventRecord = {
+            name                  : 'Normal Task',
+            startDate             : new Date('2026-03-02'),
+            endDate               : new Date('2026-03-04'),
+            originalStartDate     : new Date('2026-03-02'),
+            originalEndDate       : new Date('2026-03-04'),
+            isRescheduledFromPast : false,
+            effort                : 40,
+            effortRemaining       : 20,
+            clientName            : 'Client',
+            projectName           : 'Project',
+            projectNumber         : '',
+            taskNumber            : ''
+        };
+        const html = template({ eventRecord });
+
+        expect(html).not.toContain('Originally scheduled');
+    });
+
+    it('omits "Originally scheduled" section when isRescheduledFromPast is undefined', () => {
+        const eventRecord = {
+            name            : 'Task',
+            startDate       : new Date('2026-03-02'),
+            endDate         : new Date('2026-03-04'),
+            effort          : 40,
+            effortRemaining : 20,
+            clientName      : 'Client',
+            projectName     : 'Project',
+            projectNumber   : '',
+            taskNumber      : ''
+        };
+        const html = template({ eventRecord });
+
+        expect(html).not.toContain('Originally scheduled');
     });
 });
 

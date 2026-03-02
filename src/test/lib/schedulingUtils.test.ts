@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     countWeekdays,
+    addWorkingDays,
     computeBufferedRange,
     clampStartToToday,
     calcUnits,
@@ -56,6 +57,61 @@ describe('countWeekdays', () => {
 
     it('handles string date inputs', () => {
         expect(countWeekdays('2026-02-23', '2026-02-28')).toBe(5);
+    });
+});
+
+// ── addWorkingDays ──────────────────────────────────────────────────
+describe('addWorkingDays', () => {
+    it('adds 0 working days (returns same date normalized to midnight)', () => {
+        const start = new Date('2026-03-02T14:30:00'); // Monday with time
+        const result = addWorkingDays(start, 0);
+        expect(localDate(result)).toBe('2026-03-02');
+        expect(result.getHours()).toBe(0);
+    });
+
+    it('adds working days where start day counts as day 1 if it is a weekday', () => {
+        const start = new Date('2026-03-02'); // Monday
+        const result = addWorkingDays(start, 1); // Just day 1 = Monday itself
+        expect(localDate(result)).toBe('2026-03-02'); // Same day
+    });
+
+    it('adds 5 working days: Monday → Friday (same week)', () => {
+        const start = new Date('2026-03-02'); // Monday
+        const result = addWorkingDays(start, 5);
+        expect(localDate(result)).toBe('2026-03-06'); // Friday
+    });
+
+    it('skips weekends when adding days', () => {
+        const start = new Date('2026-02-27'); // Friday
+        const result = addWorkingDays(start, 3); // Fri (1) + Mon (2) + Tue (3) = next Tuesday
+        expect(localDate(result)).toBe('2026-03-03'); // Tuesday
+    });
+
+    it('adds 6 working days from Friday → Thursday of next week', () => {
+        const start = new Date('2026-02-27'); // Friday
+        const result = addWorkingDays(start, 6); // Fri + Mon+Tue+Wed+Thu+Fri = next Friday
+        expect(localDate(result)).toBe('2026-03-06'); // Friday (next week)
+    });
+
+    it('handles string date input', () => {
+        const result = addWorkingDays('2026-03-02', 2); // Mon (1) + Tue (2)
+        expect(localDate(result)).toBe('2026-03-03'); // Tuesday
+    });
+
+    it('sets result to midnight (00:00:00)', () => {
+        const start = new Date('2026-03-02');
+        start.setHours(14, 30, 45, 123);
+        const result = addWorkingDays(start, 1);
+        expect(result.getHours()).toBe(0);
+        expect(result.getMinutes()).toBe(0);
+        expect(result.getSeconds()).toBe(0);
+        expect(result.getMilliseconds()).toBe(0);
+    });
+
+    it('adds 10 working days: Mon → Fri (next week)', () => {
+        const start = new Date('2026-03-02'); // Monday week 1
+        const result = addWorkingDays(start, 10); // 2 weeks of weekdays = Fri week 2
+        expect(localDate(result)).toBe('2026-03-13'); // Friday
     });
 });
 
@@ -527,6 +583,196 @@ describe('resolveRawAssignments', () => {
         });
 
         expect(clampSpy).not.toHaveBeenCalled();
+    });
+
+    // ── Past-dated remaining effort tests ────────────────────────────
+    describe('rescheduling past-dated assignments', () => {
+        const today = new Date('2026-03-02'); // Monday
+
+        it('sets isRescheduledFromPast=false when useRemainingEffort=false', () => {
+            const clampFn = (): Date => today; // Always return today
+            const raw = [makeRawAssignment({
+                msdyn_start  : '2026-02-22T08:00:00Z', // Past
+                msdyn_finish : '2026-02-24T17:00:00Z', // Past
+                msdyn_taskid : { msdyn_effortremaining : 20, ws_projecttasknumber : 'T-1' }
+            })];
+
+            const { events } = resolveRawAssignments(raw, ModelCtor, {
+                useRemainingEffort : false,
+                clampFn,
+                calcUnitsFn        : stubCalcUnits,
+                getProjectColorFn  : stubColor,
+                today
+                today
+            });
+
+
+            expect(events[0]!.isRescheduledFromPast).toBe(false);
+        });
+
+        it('rescheduled flag is false when assignment is already future', () => {
+            const clampFn = (): Date => today;
+            const raw = [makeRawAssignment({
+                msdyn_start  : '2026-03-10T08:00:00Z', // Future
+                msdyn_finish : '2026-03-15T17:00:00Z', // Future
+                msdyn_taskid : { msdyn_effortremaining : 20, ws_projecttasknumber : 'T-1' }
+            })];
+
+            const { events } = resolveRawAssignments(raw, ModelCtor, {
+                useRemainingEffort : true,
+                clampFn,
+                calcUnitsFn        : stubCalcUnits,
+                getProjectColorFn  : stubColor,
+                today
+            });
+
+            expect(events[0]!.isRescheduledFromPast).toBe(false);
+            expect(localDate(new Date(events[0]!.startDate))).toBe('2026-03-10');
+        });
+
+        it('rescheduled flag is false for completed work (effortRemaining=0)', () => {
+            const clampFn = (): Date => today;
+            const raw = [makeRawAssignment({
+                msdyn_start  : '2026-02-22T08:00:00Z', // Past
+                msdyn_finish : '2026-02-24T17:00:00Z', // Past
+                msdyn_taskid : { msdyn_effortremaining : 0, ws_projecttasknumber : 'T-1' }
+            })];
+
+            const { events } = resolveRawAssignments(raw, ModelCtor, {
+                useRemainingEffort : true,
+                clampFn,
+                calcUnitsFn        : stubCalcUnits,
+                getProjectColorFn  : stubColor,
+                today
+                today
+            });
+
+            expect(events[0]!.isRescheduledFromPast).toBe(false);
+            // Original dates preserved
+
+            expect(localDate(new Date(events[0]!.startDate))).toBe('2026-02-22');
+        });
+
+        it('reschedules start forward, keeps end unchanged when end is future', () => {
+            const clampFn = (): Date => today; // Clamp to Monday 2 Mar
+            const raw = [makeRawAssignment({
+                msdyn_start  : '2026-02-22T08:00:00Z', // Past Sunday
+                msdyn_finish : '2026-03-10T17:00:00Z', // Future
+                msdyn_taskid : { msdyn_effortremaining : 20, ws_projecttasknumber : 'T-1' }
+            })];
+
+            const { events } = resolveRawAssignments(raw, ModelCtor, {
+                useRemainingEffort : true,
+                clampFn,
+                calcUnitsFn        : stubCalcUnits,
+                getProjectColorFn  : stubColor,
+                today
+            });
+
+            expect(events[0]!.isRescheduledFromPast).toBe(true);
+            expect(localDate(new Date(events[0]!.startDate))).toBe('2026-03-02'); // Clamped to today
+            expect(localDate(new Date(events[0]!.endDate))).toBe('2026-03-10'); // Unchanged (end is future)
+            expect(localDate(new Date(events[0]!.originalStartDate))).toBe('2026-02-22');
+            expect(localDate(new Date(events[0]!.originalEndDate))).toBe('2026-03-10');
+        });
+
+        it('recalculates end date using remaining effort (standard 8h/day)', () => {
+            const clampFn = (): Date => today; // Clamp to Monday 2 Mar
+            const raw = [makeRawAssignment({
+                msdyn_start  : '2026-02-22T08:00:00Z', // Past
+                msdyn_finish : '2026-02-24T17:00:00Z', // Past
+                msdyn_taskid : { msdyn_effortremaining : 16, ws_projecttasknumber : 'T-1' } // 16h = 2 working days
+            })];
+
+            const { events } = resolveRawAssignments(raw, ModelCtor, {
+                useRemainingEffort : true,
+                clampFn,
+                calcUnitsFn        : stubCalcUnits,
+                getProjectColorFn  : stubColor,
+                hoursPerDay        : 8,
+                today
+            });
+
+            expect(events[0]!.isRescheduledFromPast).toBe(true);
+            expect(localDate(new Date(events[0]!.startDate))).toBe('2026-03-02'); // Mon
+            // 16h ÷ 8h/day = 2 days → ends on Wed 4 Mar
+            expect(localDate(new Date(events[0]!.endDate))).toBe('2026-03-04');
+        });
+
+        it('recalculates end date with non-standard working hours (10h/week)', () => {
+            const clampFn = (): Date => today;
+            const raw = [makeRawAssignment({
+                msdyn_start  : '2026-02-22T08:00:00Z', // Past
+                msdyn_finish : '2026-02-24T17:00:00Z', // Past
+                _msdyn_bookableresourceid_value : 'sarah-grant',
+                msdyn_taskid : { msdyn_effortremaining : 20, ws_projecttasknumber : 'T-1' } // 20h with 10h/week = 2h/day
+            })];
+
+            const resourceHoursMap = new Map<string, number>();
+            resourceHoursMap.set('sarah-grant', 10); // 10 hours per week
+
+            const { events } = resolveRawAssignments(raw, ModelCtor, {
+                useRemainingEffort : true,
+                clampFn,
+                calcUnitsFn        : stubCalcUnits,
+                getProjectColorFn  : stubColor,
+                resourceHoursMap,
+                hoursPerDay        : 8,
+                today
+            });
+
+            expect(events[0]!.isRescheduledFromPast).toBe(true);
+            expect(localDate(new Date(events[0]!.startDate))).toBe('2026-03-02'); // Mon
+            // 20h ÷ 2h/day = 10 days → Mon + 10 trading days = Fri 13 Mar
+            expect(localDate(new Date(events[0]!.endDate))).toBe('2026-03-13');
+        });
+
+        it('stores original start and end dates', () => {
+            const clampFn = (): Date => today;
+            const raw = [makeRawAssignment({
+                msdyn_start  : '2026-02-22T08:00:00Z',
+                msdyn_finish : '2026-02-24T17:00:00Z',
+                msdyn_taskid : { msdyn_effortremaining : 20, ws_projecttasknumber : 'T-1' }
+            })];
+
+            const { events } = resolveRawAssignments(raw, ModelCtor, {
+                useRemainingEffort : true,
+                clampFn,
+                calcUnitsFn        : stubCalcUnits,
+                getProjectColorFn  : stubColor,
+                today
+            });
+
+            expect(localDate(new Date(events[0]!.originalStartDate))).toBe('2026-02-22');
+            expect(localDate(new Date(events[0]!.originalEndDate))).toBe('2026-02-24');
+        });
+
+        it('handles fractional working days by rounding up', () => {
+            const clampFn = (): Date => today;
+            const raw = [makeRawAssignment({
+                msdyn_start  : '2026-02-22T08:00:00Z',
+                msdyn_finish : '2026-02-24T17:00:00Z',
+                _msdyn_bookableresourceid_value : 'resource-x',
+                msdyn_taskid : { msdyn_effortremaining : 10, ws_projecttasknumber : 'T-1' }
+            })];
+
+            const resourceHoursMap = new Map<string, number>();
+            resourceHoursMap.set('resource-x', 15); // 15 hours per week = 3h/day
+            // 10h ÷ 3h/day = 3.33 days → Math.ceil = 4 working days
+
+            const { events } = resolveRawAssignments(raw, ModelCtor, {
+                useRemainingEffort : true,
+                clampFn,
+                calcUnitsFn        : stubCalcUnits,
+                getProjectColorFn  : stubColor,
+                resourceHoursMap,
+                today
+            });
+
+            expect(localDate(new Date(events[0]!.startDate))).toBe('2026-03-02'); // Mon
+            // 4 working days → Thu 5 Mar
+            expect(localDate(new Date(events[0]!.endDate))).toBe('2026-03-05');
+        });
     });
 });
 
