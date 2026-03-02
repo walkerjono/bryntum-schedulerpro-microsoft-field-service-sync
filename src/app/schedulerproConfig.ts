@@ -143,7 +143,7 @@ export const schedulerproConfig: Record<string, any> = {
                     </div>
                     <div style="margin-top: 8px; border-top: 1px solid #e5e5e5; padding-top: 8px;">
                     <div><strong>Effort:</strong> ${effort}</div>
-                    ${effortRemaining != null ? `<div><strong>Effort Remaining:</strong> ${effortRemaining} hrs</div>` : ''}
+                    ${effortRemaining != null ? `<div><strong>Remaining:</strong> ${effortRemaining} hrs</div>` : ''}
                     </div>
                 </div>`;
             }
