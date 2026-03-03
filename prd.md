@@ -384,16 +384,15 @@ A **single-select combo** in the toolbar filters resources and roles by their al
 1. [x] histogram scale / calendar? showing 7 days
 1. [x] auto-expand when selecting role or resource
 1. [x] sarah grant not showing overallocated correctly
-1. [ ] add filter/logic for projectTask.DeliveryStatusCode
-1. [ ] order assignments logically
 1. [x] do we need to consider timezone? or are start/finish date only fields? `msdyn_start` and `msdyn_finish` are date only fields
 1. [x] SWA deployment (x2 environments)
-1. [-] change to AU date format in tooltips, check elsewhere e.g. edit. Not working on histogram tooltip or task edit
-1. [ ] consider project task dependencies
-1. [ ] day, week don't auto scroll to nearest start of week
+1. [x] change to AU date format in tooltips, check elsewhere e.g. edit. Not working on histogram tooltip or task edit
 1. [x] use bookableresourceid in url paramater to avoid duplicate issue
 1. [x] decide what to do when there is effort remaining on an assignment in the past i.e. sarah grant w/c 22/2. **Solution**: Reschedule past-dated work forward using `EFFORT_REMAINING_OFFSET_DAYS` logic. Apply smart hybrid end-date handling: keep original end if future; recalculate from remaining effort using per-resource working hours if past. Apply red-border CSS class and show original dates in tooltip.
 1. [x] filter to roles and resources that are over capacity? **Solution**: Added allocation filter dropdown with 5 states (All/Over/Under/Balanced/Mixed) that analyzes histogram data across visible viewport and filters resources/roles by allocation state.
+1. [ ] add filter/logic for projectTask.DeliveryStatusCode
+1. [ ] order assignments logically
+1. [ ] consider project task dependencies
 
 ### Future Requirements
 
