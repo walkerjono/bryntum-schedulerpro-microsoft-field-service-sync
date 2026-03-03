@@ -74,13 +74,13 @@ vi.mock('@bryntum/schedulerpro', () => {
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const tokens: Record<string, string> = {
-                ddd  : days[d.getDay()],
+                ddd  : days[d.getDay()]!,
                 YYYY : String(d.getFullYear()),
-                MMM  : months[d.getMonth()],
+                MMM  : months[d.getMonth()]!,
                 DD   : String(d.getDate()).padStart(2, '0'),
                 D    : String(d.getDate())
             };
-            return format.replace(/ddd|YYYY|MMM|DD|D/g, (m) => tokens[m]);
+            return format.replace(/ddd|YYYY|MMM|DD|D/g, (m) => tokens[m] ?? m);
         }
     };
 
