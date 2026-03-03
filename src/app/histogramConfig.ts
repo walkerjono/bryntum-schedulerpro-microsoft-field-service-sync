@@ -34,7 +34,7 @@ type LeafState = 'under' | 'even' | 'over';
  *
  * On the very first render parents are processed before their children,
  * so the cache is empty and parents default to mixed-state (safe).
- * main.js schedules a single histogram.refresh() after first paint so that
+ * uiSetup.ts schedules a single histogram.refresh() after first paint so that
  * the second pass sees fully-populated cache and colours parents correctly.
  */
 const leafStateCache = new Map<string, LeafState>();

@@ -166,7 +166,7 @@ A **ResourceHistogram** is rendered below the scheduler (40% height), partnered 
 | Bar tips        | Shown                                                                       |
 | Max effort line | Shown                                                                       |
 | Bar text        | Hidden                                                                      |
-| Bar coloring    | Green (`#6EE7B7`) when under-allocated, Red (`#F87171`) when over-allocated |
+| Bar coloring    | Orange (`#FBBF24`) when under-allocated, Green (`#6EE7B7`) when evenly-allocated, Red (`#F87171`) when over-allocated |
 | Current time    | Shown with formatted date label (en-AU)                                     |
 
 Histogram allocation is driven by `units` on AssignmentModel records, calculated as:
@@ -187,7 +187,7 @@ Bars are colored based on allocation percentage, calculated as `(effort / maxEff
 - Thresholds are defined as constants: `UNDERALLOCATED_THRESHOLD = 80`, `OVERALLOCATED_THRESHOLD = 110`.
 - Parent vs leaf distinction uses `datum.isGroup` (true for TreeGroup aggregate rows).
 - Parent rows in the 80–110% band inspect cached leaf-descendant states for the same tick: green if every leaf is also 80–110%, purple if any leaf is under- or over-allocated.
-- A **leaf-state cache** is built as leaf bars render. Because parent rows render before children in tree order, main.js schedules a single `histogram.refresh()` after first paint so the second pass sees fully-populated cache. The cache is cleared on data refresh.
+- A **leaf-state cache** is built as leaf bars render. Because parent rows render before children in tree order, uiSetup.ts schedules a single `histogram.refresh()` after first paint so the second pass sees fully-populated cache. The cache is cleared on data refresh.
 - Color is applied both as a CSS class on the bar element and as an inline `fill` style on the SVG `<rect>` to reliably override Bryntum defaults.
 - Bars with zero `maxEffort` (no capacity) receive no class or color.
 
@@ -297,8 +297,8 @@ A **single-select combo** in the toolbar filters resources and roles by their al
 ├── eslint.config.mjs                   # Bryntum-style ESLint rules (aligned colons, 4-space indent)
 ├── .env.test                           # Dummy VITE_* env vars for test runner
 ├── src/
-│   ├── main.ts                         # App entry: auth gating, data fetch, scheduler + histogram init,
-│   │                                   #   calendar generation, filter combos, effort toggle, refresh, URL params
+│   ├── main.ts                         # App entry: orchestrates auth → data load → locale → scheduler/histogram
+│   │                                   #   creation → widget wiring; delegates to app/ modules
 │   ├── app/
 │   │   ├── appState.ts                 # Global application state management
 │   │   ├── auth.ts                     # MSAL config, signIn/signOut/getToken
@@ -330,9 +330,9 @@ A **single-select combo** in the toolbar filters resources and roles by their al
 │       ├── schedulerproConfig.test.ts  # Renderer tests (nameRenderer, treeGroupParent, eventRenderer, tooltip)
 │       ├── histogramConfig.test.ts     # Histogram tests (getBarClass thresholds, getLeafDescendants, cache)
 │       └── lib/
-│           ├── schedulingUtils.test.ts # 56 tests for pure scheduling functions
-│           ├── filterUtils.test.ts     # 19 tests for URL filter round-trip
-│           ├── CustomEventModel.test.ts    # 25 tests for field mappings + convert fallback chains
+│           ├── schedulingUtils.test.ts # 85 tests for pure scheduling functions
+│           ├── filterUtils.test.ts     # 25 tests for URL filter round-trip
+│           ├── CustomEventModel.test.ts    # 28 tests for field mappings + convert fallback chains
 │           └── CustomResourceModel.test.ts # 9 tests for field defaults + loadDefaultImage
 ```
 
@@ -353,6 +353,8 @@ A **single-select combo** in the toolbar filters resources and roles by their al
 | `vitest`                                   | ^4.0.18 | Unit test runner (dev)            |
 | `@vitest/coverage-v8`                      | ^4.0.18 | V8 code coverage (dev)            |
 | `jsdom`                                    | ^28.1.0 | DOM environment for tests (dev)   |
+| `@typescript-eslint/eslint-plugin`         | ^8.56.1 | TypeScript ESLint rules (dev)     |
+| `@typescript-eslint/parser`                | ^8.56.1 | TypeScript ESLint parser (dev)    |
 
 ---
 
@@ -364,7 +366,7 @@ A **single-select combo** in the toolbar filters resources and roles by their al
 4. **Redirect URI via env** — MSAL redirect URI is configurable via `VITE_REDIRECT_URI` (defaults to `window.location.origin`)
 5. **No write-back** — All data is read-only; `etag` values are captured for future write-back support
 6. **Debug code in API** — `getResources()` contains a commented-out single-resource filter (`TODO: temp limit`)
-7. **No E2E / security tests** — 214 unit tests exist (see [Tests Required](#tests-required)); end-to-end and security tests are not yet implemented
+7. **No E2E / security tests** — 258 unit tests exist (see [Tests Required](#tests-required)); end-to-end and security tests are not yet implemented
 
 ## TODO: changes
 

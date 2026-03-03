@@ -10,6 +10,14 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// Mock auth module directly to avoid the top-level `await` in auth.ts
+// hanging after vi.resetModules() clears the module registry.
+vi.mock('../app/auth', () => ({
+    signIn   : vi.fn().mockResolvedValue(undefined),
+    signOut  : vi.fn().mockResolvedValue(undefined),
+    getToken : vi.fn().mockResolvedValue('mock-token')
+}));
+
 beforeEach(() => {
     vi.resetModules();
 });
