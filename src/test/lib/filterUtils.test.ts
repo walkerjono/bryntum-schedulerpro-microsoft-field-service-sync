@@ -10,7 +10,8 @@ describe('readFilterParams', () => {
             roles              : [],
             resources          : [],
             useRemainingEffort : null,
-            zoom               : null
+            zoom               : null,
+            allocation         : null
         });
     });
 
@@ -62,13 +63,24 @@ describe('readFilterParams', () => {
             roles              : ['Dev'],
             resources          : ['abc-123'],
             useRemainingEffort : true,
-            zoom               : 'weekAndMonth'
+            zoom               : 'weekAndMonth',
+            allocation         : null
         });
     });
 
     it('falls back to legacy resource param when resourceId is absent', () => {
         const result = readFilterParams('?resource=Alice,Bob');
         expect(result.resources).toEqual(['Alice', 'Bob']);
+    });
+
+    it('parses allocation state', () => {
+        const result = readFilterParams('?allocation=over');
+        expect(result.allocation).toBe('over');
+    });
+
+    it('returns null for missing allocation', () => {
+        const result = readFilterParams('?practice=Eng');
+        expect(result.allocation).toBeNull();
     });
 });
 
@@ -80,7 +92,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : ['Eng', 'Design'], roles : [], resources : [], useRemainingEffort : false, zoom : null },
+            { practices : ['Eng', 'Design'], roles : [], resources : [], useRemainingEffort : false, zoom : null, allocation : null },
             '', '/', replaceFn
         );
         expect(capturedUrl).toContain('practice=Eng%2CDesign');
@@ -92,7 +104,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : [], roles : [], resources : ['abc-123'], useRemainingEffort : false, zoom : null },
+            { practices : [], roles : [], resources : ['abc-123'], useRemainingEffort : false, zoom : null, allocation : null },
             '', '/', replaceFn
         );
         expect(capturedUrl).toContain('resourceId=abc-123');
@@ -105,7 +117,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : [], roles : [], resources : ['abc-123'], useRemainingEffort : false, zoom : null },
+            { practices : [], roles : [], resources : ['abc-123'], useRemainingEffort : false, zoom : null, allocation : null },
             '?resource=Alice', '/', replaceFn
         );
         expect(capturedUrl).toContain('resourceId=abc-123');
@@ -118,7 +130,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null },
+            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null, allocation : null },
             '?practice=Eng', '/', replaceFn
         );
         expect(capturedUrl).not.toContain('practice');
@@ -130,7 +142,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : [], roles : [], resources : [], useRemainingEffort : true, zoom : null },
+            { practices : [], roles : [], resources : [], useRemainingEffort : true, zoom : null, allocation : null },
             '', '/', replaceFn
         );
         expect(capturedUrl).toContain('useRemainingEffort=true');
@@ -142,7 +154,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null },
+            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null, allocation : null },
             '?useRemainingEffort=true', '/', replaceFn
         );
         expect(capturedUrl).not.toContain('useRemainingEffort');
@@ -154,7 +166,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : 'monthAndYear' },
+            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : 'monthAndYear', allocation : null },
             '', '/', replaceFn
         );
         expect(capturedUrl).toContain('zoom=monthAndYear');
@@ -166,7 +178,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : 'weekAndDayLetter' },
+            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : 'weekAndDayLetter', allocation : null },
             '?zoom=monthAndYear', '/', replaceFn
         );
         expect(capturedUrl).not.toContain('zoom');
@@ -178,7 +190,7 @@ describe('writeFilterParams', () => {
             capturedUrl = url;
         };
         writeFilterParams(
-            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null },
+            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null, allocation : null },
             '', '/app', replaceFn
         );
         expect(capturedUrl).toBe('/app');
@@ -194,7 +206,8 @@ describe('writeFilterParams', () => {
             roles              : ['Developer', 'Designer'],
             resources          : ['abc-123'],
             useRemainingEffort : true,
-            zoom               : 'weekAndMonth'
+            zoom               : 'weekAndMonth',
+            allocation         : 'over'
         };
         writeFilterParams(state, '', '/', replaceFn);
 
@@ -207,5 +220,30 @@ describe('writeFilterParams', () => {
         expect(parsed.resources).toEqual(state.resources);
         expect(parsed.useRemainingEffort).toBe(state.useRemainingEffort);
         expect(parsed.zoom).toBe(state.zoom);
+        expect(parsed.allocation).toBe(state.allocation);
+    });
+
+    it('does not write allocation param when value is "all"', () => {
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
+        writeFilterParams(
+            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null, allocation : 'all' },
+            '', '/', replaceFn
+        );
+        expect(capturedUrl).not.toContain('allocation=');
+    });
+
+    it('writes allocation param when value is not "all"', () => {
+        let capturedUrl = '';
+        const replaceFn = (url: string): void => {
+            capturedUrl = url;
+        };
+        writeFilterParams(
+            { practices : [], roles : [], resources : [], useRemainingEffort : false, zoom : null, allocation : 'under' },
+            '', '/', replaceFn
+        );
+        expect(capturedUrl).toContain('allocation=under');
     });
 });

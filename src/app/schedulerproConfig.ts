@@ -202,6 +202,24 @@ export const schedulerproConfig: Record<string, any> = {
                         tooltip       : 'Toggle histogram between total effort and remaining effort',
                         checked       : false
                     },
+                    allocationFilter : {
+                        type        : 'combo',
+                        ref         : 'allocationFilter',
+                        label       : 'Allocation',
+                        multiSelect : false,
+                        editable    : false,
+                        clearable   : false,
+                        width       : 300,
+                        placeholder : 'All allocations',
+                        items       : [
+                            { value : 'all', text : 'All' },
+                            { value : 'over', text : 'Overallocated' },
+                            { value : 'under', text : 'Underallocated' },
+                            { value : 'balanced', text : 'Balanced' },
+                            { value : 'mixed', text : 'Mixed' }
+                        ],
+                        value : 'all'
+                    },
                     spacer1       : { type : 'widget', flex : 1 },
                     signoutButton : {
                         text : 'Signout',

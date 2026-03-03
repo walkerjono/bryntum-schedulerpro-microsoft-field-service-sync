@@ -28,3 +28,6 @@ export interface EffortConfig {
 
 /** Friendly view-mode names mapped to Bryntum view-preset ids. */
 export type ViewMode = 'day' | 'week' | 'month';
+
+/** Allocation state for filtering — used in histogram bar coloring and filter logic. */
+export type AllocationState = 'over' | 'under' | 'balanced' | 'mixed';

@@ -6,6 +6,23 @@
  */
 import type { D365ResourceAssignment } from '../types/d365';
 
+/**
+ * Extract the date portion from a Dataverse datetime value.
+ * D365 date-only fields are stored as datetime; the time component
+ * is a storage artifact and should be ignored.
+ */
+function toDateOnly(dateInput: Date | string): string {
+    if (typeof dateInput === 'string') {
+        // D365 ISO strings: take the date portion directly
+        return dateInput.split('T')[0]!;
+    }
+    // Date objects (e.g. from addWorkingDays): read local date components
+    const y = dateInput.getFullYear();
+    const m = String(dateInput.getMonth() + 1).padStart(2, '0');
+    const d = String(dateInput.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 // ── Interfaces ──────────────────────────────────────────────────────
 
 export interface BufferedRange {
@@ -277,26 +294,32 @@ export function resolveRawAssignments(rawRecords: D365ResourceAssignment[], Even
             const clampedStartDate = new Date(clampedStart);
             clampedStartDate.setHours(0, 0, 0, 0);
 
-            // Detect if start was shifted forward (reschedulation)
-            if (clampedStartDate > originalStart) {
+            // Only apply clamping to assignments that aren't already in the future
+            if (originalStart <= todayNormalized) {
+                // Use the clamped start (normalizes time component even if date is same)
                 effectiveStart = clampedStart;
 
-                // Smart end-date handling: if original end is also in the past, recalculate it based on remaining effort
-                if (originalEnd <= todayNormalized) {
-                    // Only mark as rescheduled from past when the end date was also in the past
+                // Detect if start was shifted forward (reschedulation from past)
+                if (clampedStartDate > originalStart) {
                     isRescheduledFromPast = true;
 
-                    // Look up resource's working hours, fall back to global default
-                    const resourceHoursPerWeek = resourceHoursMap.get(e.resourceId) ?? 40;
-                    const resourceHoursPerDay = resourceHoursPerWeek / 5; // Assuming 5-day work week
-                    const workingDaysNeeded = Math.ceil((e.effortRemaining ?? 0) / resourceHoursPerDay);
+                    // Smart end-date handling: if original end is also in the past, recalculate it based on remaining effort
+                    if (originalEnd <= todayNormalized) {
+                        // Look up resource's working hours, fall back to _hoursPerDay parameter
+                        const hasCustomHours = resourceHoursMap.has(e.resourceId);
+                        const resourceHoursPerWeek = resourceHoursMap.get(e.resourceId) ?? (_hoursPerDay * 5);
+                        const resourceHoursPerDay = resourceHoursPerWeek / 5; // Assuming 5-day work week
+                        const workingDaysNeeded = Math.ceil((e.effortRemaining ?? 0) / resourceHoursPerDay);
 
-                    // Add working days to the effective start date
-                    effectiveEnd = addWorkingDays(effectiveStart, workingDaysNeeded);
-                }
-                else {
-                    // Original end is in the future, keep it unchanged (duration compresses)
-                    effectiveEnd = e.endDate;
+                        // Add working days to the effective start date
+                        // Note: Add +1 for default hours to account for D365 finish date semantics
+                        const daysToAdd = hasCustomHours ? workingDaysNeeded : workingDaysNeeded + 1;
+                        effectiveEnd = addWorkingDays(effectiveStart, daysToAdd);
+                    }
+                    else {
+                        // Original end is in the future, keep it unchanged (duration compresses)
+                        effectiveEnd = e.endDate;
+                    }
                 }
             }
         }
@@ -311,10 +334,10 @@ export function resolveRawAssignments(rawRecords: D365ResourceAssignment[], Even
 
         events.push({
             id                    : e.id,
-            startDate             : effectiveStart,
-            originalStartDate     : e.startDate,
-            endDate               : effectiveEnd,
-            originalEndDate       : e.endDate,
+            startDate             : toDateOnly(effectiveStart),
+            originalStartDate     : toDateOnly(e.startDate),
+            endDate               : toDateOnly(effectiveEnd),
+            originalEndDate       : toDateOnly(e.endDate),
             duration              : durationHours,
             durationUnit          : 'hour',
             name                  : e.name,
@@ -402,4 +425,129 @@ export function generateCalendars(flatResources: Pick<FlatResource, 'id' | 'work
     });
 
     return calendars;
+}
+
+/**
+ * Compute allocation state for each resource/role in the visible histogram.
+ *
+ * Returns a Map where:
+ *   - Key: resource ID (string)
+ *   - Value: allocation state ('over' | 'under' | 'balanced' | 'mixed')
+ *
+ * States are aggregated across all visible histogram ticks:
+ *   - If ANY tick is over thresholdOver% → 'over'
+ *   - If ANY tick is under thresholdUnder% → 'under'
+ *   - If mixed under/balanced/over across ticks → 'mixed'
+ *   - Otherwise all ticks in range → 'balanced'
+ *
+ * Parent (TreeGroup) rows are inferred from child states:
+ *   - If all children are 'balanced' → parent is 'balanced'
+ *   - If all children are the same state → parent is that state
+ *   - Otherwise → parent is 'mixed'
+ *
+ * @param resourceStore Bryntum resource store with tree structure
+ * @param rows Array of { resource: {id, children?}, allocation: {percent} }
+ * @param thresholdUnder Underallocated threshold (default 80)
+ * @param thresholdOver Overallocated threshold (default 110)
+ * @returns Map of resourceId → AllocationState
+ */
+export function getAllocationStates(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resourceStore: any,
+    rows: Array<{ resource: { id: string; children?: unknown }; allocation: { percent: number } }>,
+    thresholdUnder: number = 80,
+    thresholdOver: number = 110
+): Map<string, 'over' | 'under' | 'balanced' | 'mixed'> {
+    const allocationMap = new Map<string, 'over' | 'under' | 'balanced' | 'mixed'>();
+
+    if (!resourceStore || rows.length === 0) {
+        return allocationMap;
+    }
+
+    // Helper to determine state from allocation %
+    function stateFromPercent(percent: number): 'over' | 'under' | 'balanced' {
+        if (percent > thresholdOver) return 'over';
+        if (percent < thresholdUnder) return 'under';
+        return 'balanced';
+    }
+
+    // Collect states per resource across all data points
+    const resourceStates = new Map<string, Set<'over' | 'under' | 'balanced'>>();
+
+    for (const row of rows) {
+        if (!row.resource?.id || !row.allocation) continue;
+
+        const resourceId = row.resource.id;
+        const percent = row.allocation.percent ?? 0;
+        const state = stateFromPercent(percent);
+
+        if (!resourceStates.has(resourceId)) {
+            resourceStates.set(resourceId, new Set());
+        }
+        resourceStates.get(resourceId)!.add(state);
+    }
+
+    // Aggregate per-resource multi-state into single state
+    for (const [resourceId, states] of resourceStates) {
+        if (states.has('over')) {
+            allocationMap.set(resourceId, 'over');
+        }
+        else if (states.has('under')) {
+            // If we have both under and balanced, it's mixed
+            allocationMap.set(resourceId, states.size > 1 ? 'mixed' : 'under');
+        }
+        else {
+            allocationMap.set(resourceId, 'balanced');
+        }
+    }
+
+    // Infer parent (group) rows from child states
+    interface Resource {
+        id: string;
+        children?: Resource[];
+    }
+    function getResourceChildren(resource: Resource): Resource[] {
+        return (resource.children ?? []).filter((c: Resource) => c.id);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function updateParentState(resource: any) {
+        const children = getResourceChildren(resource);
+        if (children.length === 0) return; // Leaf – already handled
+
+        // Recursively update children first
+        for (const child of children) {
+            updateParentState(child);
+        }
+
+        // Collect child states
+        const childStates = new Set<string>();
+        for (const child of children) {
+            const childState = allocationMap.get(child.id);
+            if (childState) {
+                childStates.add(childState);
+            }
+        }
+
+        if (childStates.size === 0) {
+            return;
+        }
+
+        let parentState: 'over' | 'under' | 'balanced' | 'mixed';
+        if (childStates.size === 1) {
+            parentState = Array.from(childStates)[0] as 'over' | 'under' | 'balanced' | 'mixed';
+        }
+        else {
+            parentState = 'mixed';
+        }
+
+        allocationMap.set(resource.id, parentState);
+    }
+
+    // Walk the store tree and update parent states
+    if (resourceStore.rootNode) {
+        updateParentState(resourceStore.rootNode);
+    }
+
+    return allocationMap;
 }

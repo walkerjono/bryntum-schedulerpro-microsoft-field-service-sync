@@ -168,7 +168,7 @@ describe('eventTooltip template', () => {
         expect(html).toContain('T-55: Implement Feature');
         expect(html).toContain('40 hrs');
         expect(html).toContain('20 hrs');
-        expect(html).toContain('Effort Remaining');
+        expect(html).toContain('Remaining');
     });
 
     it('omits effortRemaining row when null', () => {
@@ -236,12 +236,12 @@ describe('eventTooltip template', () => {
         };
         const html = template({ eventRecord });
 
-        expect(html).toContain('Originally scheduled');
+        expect(html).toContain('Originally Scheduled');
         expect(html).toContain('Sun, 22 Feb 2026'); // Original start
         expect(html).toContain('Tue, 24 Feb 2026'); // Original end
     });
 
-    it('omits "Originally scheduled" section when isRescheduledFromPast is false', () => {
+    it('omits "Originally Scheduled" section when isRescheduledFromPast is false', () => {
         const eventRecord = {
             name                  : 'Normal Task',
             startDate             : new Date('2026-03-02'),
@@ -258,10 +258,10 @@ describe('eventTooltip template', () => {
         };
         const html = template({ eventRecord });
 
-        expect(html).not.toContain('Originally scheduled');
+        expect(html).not.toContain('Originally Scheduled');
     });
 
-    it('omits "Originally scheduled" section when isRescheduledFromPast is undefined', () => {
+    it('omits "Originally Scheduled" section when isRescheduledFromPast is undefined', () => {
         const eventRecord = {
             name            : 'Task',
             startDate       : new Date('2026-03-02'),
@@ -275,7 +275,7 @@ describe('eventTooltip template', () => {
         };
         const html = template({ eventRecord });
 
-        expect(html).not.toContain('Originally scheduled');
+        expect(html).not.toContain('Originally Scheduled');
     });
 });
 

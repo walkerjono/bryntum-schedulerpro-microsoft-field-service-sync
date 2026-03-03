@@ -8,6 +8,59 @@ import type { SchedulerPro, ResourceHistogram } from '@bryntum/schedulerpro';
 import type { AppWidgetMap } from '../types/bryntum.d';
 import { getFlatResources } from './appState';
 import { readFilterParams, writeFilterParams, type FilterState } from '../lib/filterUtils';
+import { getAllocationStates } from '../lib/schedulingUtils';
+
+// ── Helpers ─────────────────────────────────────────────────────────
+
+type AllocationRow = { resource: { id: string; children?: unknown }; allocation: { percent: number } };
+
+/**
+ * Build allocation rows by querying the histogram's async API for each
+ * leaf resource.  `getRecordAllocationData(resource)` returns a
+ * `ResourceAllocationInfo` whose `.allocation.total[]` array contains
+ * one `ResourceAllocationInterval` per visible tick, each carrying
+ * `effort`, `maxEffort`, and `units` (the allocation %).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function buildAllocationRows(store: any, histogram: any): Promise<AllocationRow[]> {
+    const rows: AllocationRow[] = [];
+
+    // Collect leaf resources
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const leaves: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    store.forEach((r: any) => {
+        if (r.id && r.isLeaf) leaves.push(r);
+    });
+
+    if (leaves.length === 0) return rows;
+
+    // Query allocation data for all leaves in parallel
+    const promises = leaves.map(async(resource) => {
+        try {
+            const info = await histogram.getRecordAllocationData(resource);
+            // info is ResourceAllocationInfo: { allocation: { total: ResourceAllocationInterval[] } }
+            const intervals = info?.allocation?.total;
+            if (!Array.isArray(intervals)) return;
+
+            for (const interval of intervals) {
+                const maxEffort = interval.maxEffort ?? 0;
+                if (maxEffort === 0) continue;
+                const percent = (interval.effort / maxEffort) * 100;
+                rows.push({
+                    resource   : { id : resource.id, children : resource.children },
+                    allocation : { percent }
+                });
+            }
+        }
+        catch (err) {
+            console.warn('[buildAllocationRows] Error for resource', resource.id, err);
+        }
+    });
+
+    await Promise.all(promises);
+    return rows;
+}
 
 // ── URL parameter helpers ───────────────────────────────────────────
 
@@ -25,6 +78,7 @@ export function writeFiltersToUrl(
     const practiceCombo = widgets.practiceFilter;
     const roleCombo = widgets.roleFilter;
     const resourceCombo = widgets.resourceFilter;
+    const allocationCombo = widgets.allocationFilter;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeZoomBtn = widgets.viewPresetGroup?.items?.find((b: any) => b.pressed);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,11 +86,12 @@ export function writeFiltersToUrl(
 
     writeFilterParams(
         {
-            practices : practiceCombo?.value ?? [],
-            roles     : roleCombo?.value ?? [],
-            resources : resourceCombo?.value ?? [],
+            practices  : practiceCombo?.value ?? [],
+            roles      : roleCombo?.value ?? [],
+            resources  : resourceCombo?.value ?? [],
             useRemainingEffort,
-            zoom      : activePreset
+            zoom       : activePreset,
+            allocation : (allocationCombo?.value ?? 'all') as string
         },
         window.location.search,
         window.location.pathname,
@@ -199,6 +254,37 @@ export function wireFilters(
         });
     }
 
+    // ── Allocation filter ──────────────────────────────────────────
+    const allocationCombo = widgets.allocationFilter;
+    if (allocationCombo) {
+        allocationCombo.on('change', ({ value }: { value: string | null }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const store = (scheduler as any).project.resourceStore;
+            store.removeFilter('allocationFilter');
+
+            if (value && value !== 'all') {
+                // Async: query histogram API for each leaf resource
+                buildAllocationRows(store, histogram).then((rows) => {
+                    const allocationMap = getAllocationStates(store, rows);
+
+                    store.filter({
+                        id       : 'allocationFilter',
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        filterBy : (r: any) => {
+                            const state = allocationMap.get(r.id);
+                            return state === value;
+                        }
+                    });
+
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    setTimeout(() => (scheduler as any).expandAll(), 100);
+                });
+            }
+
+            syncUrl();
+        });
+    }
+
     // ── Restore filters from URL ───────────────────────────────────
     if (initialParams.practices.length > 0 && practiceCombo) {
         practiceCombo.value = initialParams.practices;
@@ -208,6 +294,54 @@ export function wireFilters(
     }
     if (initialParams.resources.length > 0 && resourceCombo) {
         resourceCombo.value = initialParams.resources;
+    }
+    if (initialParams.allocation && initialParams.allocation !== 'all' && allocationCombo) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (allocationCombo as any).value = initialParams.allocation;
+
+        // Histogram rows may not be rendered yet at this point.
+        // Wait for histogram to render, then apply the allocation filter.
+
+        const applyAllocationFilter = async() => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const store = (scheduler as any).project.resourceStore;
+
+            console.log('[filterManager] Applying allocation filter from URL:', initialParams.allocation);
+
+            // Check if histogram has timeAxis with ticks
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (!(histogram as any)?.timeAxis?.ticks || (histogram as any).timeAxis.ticks.length === 0) {
+                console.warn('[filterManager] Histogram timeAxis not yet available, deferring allocation filter');
+                return false;
+            }
+
+            const rows = await buildAllocationRows(store, histogram);
+            const allocationMap = getAllocationStates(store, rows);
+            console.log('[filterManager] Allocation states computed:', allocationMap.size, 'resources');
+
+            store.filter({
+                id       : 'allocationFilter',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                filterBy : (r: any) => {
+                    const state = allocationMap.get(r.id);
+                    const matches = state === initialParams.allocation;
+                    return matches;
+                }
+            });
+            return true;
+        };
+
+        // Try applying immediately (in case histogram is already rendered)
+        applyAllocationFilter().then((applied) => {
+            if (!applied) {
+                // If histogram not ready, wait for renderRows event
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (histogram as any).on('renderRows', () => {
+                    console.log('[filterManager] Histogram renderRows fired, applying deferred allocation filter');
+                    applyAllocationFilter();
+                }, { once : true });
+            }
+        });
     }
 }
 
@@ -225,7 +359,9 @@ export function autoExpandForFilters(
     const hasActiveFilters =
         ((widgets.practiceFilter?.value?.length ?? 0) > 0) ||
         ((widgets.roleFilter?.value?.length ?? 0) > 0) ||
-        ((widgets.resourceFilter?.value?.length ?? 0) > 0);
+        ((widgets.resourceFilter?.value?.length ?? 0) > 0) ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (widgets.allocationFilter?.value && (widgets.allocationFilter as any).value !== 'all');
 
     if (hasActiveFilters) {
         setTimeout(() => {

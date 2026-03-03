@@ -195,4 +195,27 @@ describe('CustomEventModel', () => {
         // originalStartDate has no dataSource and no defaultValue — should be undefined
         expect(m).toHaveProperty('originalStartDate');
     });
+
+    it('declares originalStartDate with type "date" so string values are auto-converted', () => {
+        const field = CustomEventModel.fields.find(
+            (f) => typeof f === 'object' && f.name === 'originalStartDate'
+        );
+        expect(field).toBeDefined();
+        expect((field as { type?: string }).type).toBe('date');
+    });
+
+    // ── originalEndDate ──────────────────────────────────────────
+    it('has originalEndDate field (undefined by default)', () => {
+        const m = new CustomEventModel(makeD365Record());
+        // originalEndDate has no dataSource and no defaultValue — should be undefined
+        expect(m).toHaveProperty('originalEndDate');
+    });
+
+    it('declares originalEndDate with type "date" so string values are auto-converted', () => {
+        const field = CustomEventModel.fields.find(
+            (f) => typeof f === 'object' && f.name === 'originalEndDate'
+        );
+        expect(field).toBeDefined();
+        expect((field as { type?: string }).type).toBe('date');
+    });
 });

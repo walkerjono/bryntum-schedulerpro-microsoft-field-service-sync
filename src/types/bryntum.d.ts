@@ -45,6 +45,7 @@ export interface AppWidgetMap {
     practiceFilter?: BryntumCombo;
     roleFilter?: BryntumCombo;
     resourceFilter?: BryntumCombo;
+    allocationFilter?: BryntumCombo;
     effortToggle?: BryntumToggle;
     refreshButton?: BryntumButton;
     zoomInButton?: BryntumButton;

@@ -42,7 +42,7 @@ export function resolveRawAssignments(rawRecords: D365ResourceAssignment[]): { e
         calcUnitsFn        : calcUnits,
         getProjectColorFn  : getProjectColor,
         resourceHoursMap   : getResourceHoursMap(),
-        hoursPerDay        : Number(import.meta.env.VITE_HOURS_PER_DAY) || 8
+        _hoursPerDay       : Number(import.meta.env.VITE_HOURS_PER_DAY) || 8
     });
 }
 
@@ -108,7 +108,7 @@ export async function loadInitialData(): Promise<InitialLoadResult> {
             calcUnitsFn        : calcUnits,
             getProjectColorFn  : getProjectColor,
             resourceHoursMap   : hoursMap,
-            hoursPerDay        : Number(import.meta.env.VITE_HOURS_PER_DAY) || 8
+            _hoursPerDay       : Number(import.meta.env.VITE_HOURS_PER_DAY) || 8
         }
     );
 

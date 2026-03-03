@@ -95,6 +95,7 @@ async function displayUI(): Promise<void> {
         practiceFilter  : (scheduler as any).widgetMap.practiceFilter,
         roleFilter      : (scheduler as any).widgetMap.roleFilter,
         resourceFilter  : (scheduler as any).widgetMap.resourceFilter,
+        allocationFilter: (scheduler as any).widgetMap.allocationFilter,
         effortToggle    : (scheduler as any).widgetMap.effortToggle,
         refreshButton   : (scheduler as any).widgetMap.refreshButton,
         zoomInButton    : (scheduler as any).widgetMap.zoomInButton,

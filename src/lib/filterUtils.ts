@@ -13,6 +13,7 @@ export interface FilterState {
     resources: string[];
     useRemainingEffort: boolean | null;
     zoom: string | null;
+    allocation: string | null;
 }
 
 /**
@@ -26,7 +27,8 @@ export function readFilterParams(searchString: string): FilterState {
         roles              : params.get('role')?.split(',').filter(Boolean) || [],
         resources          : (params.get('resourceId') ?? params.get('resource'))?.split(',').filter(Boolean) || [],
         useRemainingEffort : effortParam != null ? effortParam === 'true' : null,
-        zoom               : params.get('zoom') || null
+        zoom               : params.get('zoom') || null,
+        allocation         : params.get('allocation') || null
     };
 }
 
@@ -83,6 +85,13 @@ export function writeFilterParams(
     }
     else {
         params.delete('zoom');
+    }
+
+    if (state.allocation && state.allocation !== 'all') {
+        params.set('allocation', state.allocation);
+    }
+    else {
+        params.delete('allocation');
     }
 
     const qs = params.toString();

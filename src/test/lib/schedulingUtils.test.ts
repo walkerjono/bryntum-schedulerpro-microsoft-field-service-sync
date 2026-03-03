@@ -7,7 +7,8 @@ import {
     calcUnits,
     getProjectColor,
     resolveRawAssignments,
-    generateCalendars
+    generateCalendars,
+    getAllocationStates
 } from '../../lib/schedulingUtils';
 import CustomEventModel from '../../lib/CustomEventModel';
 import type { D365ResourceAssignment } from '../../types/d365';
@@ -491,7 +492,7 @@ describe('resolveRawAssignments', () => {
         expect(events).toHaveLength(1);
         // clampFn should NOT have been called — completed assignment keeps D365 dates
         expect(clampSpy).not.toHaveBeenCalled();
-        expect(events[0]!.startDate).toBe('2026-03-02T08:00:00Z');
+        expect(events[0]!.startDate).toBe('2026-03-02');
     });
 
     it('handles missing expanded fields with null-safe fallbacks', () => {
@@ -569,7 +570,7 @@ describe('resolveRawAssignments', () => {
         });
 
         expect(clampSpy).toHaveBeenCalledOnce();
-        expect(events[0]!.startDate).toEqual(monday);
+        expect(events[0]!.startDate).toBe('2026-03-02');
     });
 
     it('does not call clampFn when useRemainingEffort is false', () => {
@@ -602,7 +603,6 @@ describe('resolveRawAssignments', () => {
                 clampFn,
                 calcUnitsFn        : stubCalcUnits,
                 getProjectColorFn  : stubColor,
-                today
                 today
             });
 
@@ -643,7 +643,6 @@ describe('resolveRawAssignments', () => {
                 clampFn,
                 calcUnitsFn        : stubCalcUnits,
                 getProjectColorFn  : stubColor,
-                today
                 today
             });
 
@@ -689,7 +688,7 @@ describe('resolveRawAssignments', () => {
                 clampFn,
                 calcUnitsFn        : stubCalcUnits,
                 getProjectColorFn  : stubColor,
-                hoursPerDay        : 8,
+                _hoursPerDay       : 8,
                 today
             });
 
@@ -702,10 +701,10 @@ describe('resolveRawAssignments', () => {
         it('recalculates end date with non-standard working hours (10h/week)', () => {
             const clampFn = (): Date => today;
             const raw = [makeRawAssignment({
-                msdyn_start  : '2026-02-22T08:00:00Z', // Past
-                msdyn_finish : '2026-02-24T17:00:00Z', // Past
+                msdyn_start                     : '2026-02-22T08:00:00Z', // Past
+                msdyn_finish                    : '2026-02-24T17:00:00Z', // Past
                 _msdyn_bookableresourceid_value : 'sarah-grant',
-                msdyn_taskid : { msdyn_effortremaining : 20, ws_projecttasknumber : 'T-1' } // 20h with 10h/week = 2h/day
+                msdyn_taskid                    : { msdyn_effortremaining : 20, ws_projecttasknumber : 'T-1' } // 20h with 10h/week = 2h/day
             })];
 
             const resourceHoursMap = new Map<string, number>();
@@ -717,7 +716,7 @@ describe('resolveRawAssignments', () => {
                 calcUnitsFn        : stubCalcUnits,
                 getProjectColorFn  : stubColor,
                 resourceHoursMap,
-                hoursPerDay        : 8,
+                _hoursPerDay       : 8,
                 today
             });
 
@@ -750,10 +749,10 @@ describe('resolveRawAssignments', () => {
         it('handles fractional working days by rounding up', () => {
             const clampFn = (): Date => today;
             const raw = [makeRawAssignment({
-                msdyn_start  : '2026-02-22T08:00:00Z',
-                msdyn_finish : '2026-02-24T17:00:00Z',
+                msdyn_start                     : '2026-02-22T08:00:00Z',
+                msdyn_finish                    : '2026-02-24T17:00:00Z',
                 _msdyn_bookableresourceid_value : 'resource-x',
-                msdyn_taskid : { msdyn_effortremaining : 10, ws_projecttasknumber : 'T-1' }
+                msdyn_taskid                    : { msdyn_effortremaining : 10, ws_projecttasknumber : 'T-1' }
             })];
 
             const resourceHoursMap = new Map<string, number>();
@@ -893,3 +892,156 @@ describe('generateCalendars', () => {
         expect(calendars[1]!.unspecifiedTimeIsWorking).toBe(false);
     });
 });
+
+// ── getAllocationStates ──────────────────────────────────────────────
+describe('getAllocationStates', () => {
+    it('returns empty map when histogramRows is empty', () => {
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, []);
+        expect(result.size).toBe(0);
+    });
+
+    it('returns empty map when resourceStore is null', () => {
+        const result = getAllocationStates(null, []);
+        expect(result.size).toBe(0);
+    });
+
+    it('classifies single leaf as "over" when allocation > 110%', () => {
+        const histogramRows = [
+            {
+                resource   : { id : 'r1', children : undefined },
+                allocation : { percent : 120 }
+            }
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('over');
+    });
+
+    it('classifies single leaf as "under" when allocation < 80%', () => {
+        const histogramRows = [
+            {
+                resource   : { id : 'r1', children : undefined },
+                allocation : { percent : 60 }
+            }
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('under');
+    });
+
+    it('classifies single leaf as "balanced" when 80 <= allocation <= 110', () => {
+        const histogramRows = [
+            {
+                resource   : { id : 'r1', children : undefined },
+                allocation : { percent : 95 }
+            }
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('balanced');
+    });
+
+    it('aggregates leaf states across multiple ticks — any over makes it over', () => {
+        const histogramRows = [
+            { resource : { id : 'r1', children : undefined }, allocation : { percent : 90 } },
+            { resource : { id : 'r1', children : undefined }, allocation : { percent : 120 } } // over
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('over');
+    });
+
+    it('marks mixed when leaf has both under and balanced ticks', () => {
+        const histogramRows = [
+            { resource : { id : 'r1', children : undefined }, allocation : { percent : 60 } }, // under
+            { resource : { id : 'r1', children : undefined }, allocation : { percent : 95 } } // balanced
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('mixed');
+    });
+
+    it('respects custom thresholds', () => {
+        const histogramRows = [
+            {
+                resource   : { id : 'r1', children : undefined },
+                allocation : { percent : 75 }
+            }
+        ];
+        const resourceStore = { rootNode : null };
+        // With custom threshold of 100, 75 is definitely under
+        const result = getAllocationStates(resourceStore, histogramRows, 100, 150);
+
+        expect(result.get('r1')).toBe('under');
+    });
+
+    it('ignores rows with no allocation data', () => {
+        const histogramRows = [
+            { resource : { id : 'r1', children : undefined }, allocation : null as unknown as { percent: number } },
+            { resource : { id : 'r1', children : undefined }, allocation : { percent : 95 } }
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('balanced');
+    });
+
+    it('handles thresholds at exact boundary (80%)', () => {
+        const histogramRows = [
+            {
+                resource   : { id : 'r1', children : undefined },
+                allocation : { percent : 80 }
+            }
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('balanced');
+    });
+
+    it('handles thresholds at exact boundary (110%)', () => {
+        const histogramRows = [
+            {
+                resource   : { id : 'r1', children : undefined },
+                allocation : { percent : 110 }
+            }
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('balanced');
+    });
+
+    it('classifies 111% as overallocated (just above threshold)', () => {
+        const histogramRows = [
+            {
+                resource   : { id : 'r1', children : undefined },
+                allocation : { percent : 111 }
+            }
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('over');
+    });
+
+    it('classifies 79% as underallocated (just below threshold)', () => {
+        const histogramRows = [
+            {
+                resource   : { id : 'r1', children : undefined },
+                allocation : { percent : 79 }
+            }
+        ];
+        const resourceStore = { rootNode : null };
+        const result = getAllocationStates(resourceStore, histogramRows, 80, 110);
+
+        expect(result.get('r1')).toBe('under');
+    });
+});
+

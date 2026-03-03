@@ -93,6 +93,7 @@ export default class CustomEventModel extends EventModel {
         },
         // Stores the original D365 start date so we can restore it when toggling
         // effort-remaining mode off (the visible startDate may be clamped to today).
-        { name : 'originalStartDate', type : 'date' }
+        { name : 'originalStartDate', type : 'date' },
+        { name : 'originalEndDate', type : 'date' }
     ];
 }

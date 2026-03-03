@@ -241,13 +241,45 @@ Left-to-right layout:
 2. **Practice filter** — Multi-select combo (`width: 350`); filters resources by practice. Cascades into Role and Resource filter options.
 3. **Role filter** — Multi-select combo (`width: 350`); editable with `*` filter operator for search. Cascades into Resource filter options.
 4. **Resource filter** — Multi-select combo (`width: 350`); editable with `*` filter operator for search.
-5. **Effort toggle** — Slide toggle labelled "Use Effort Remaining"; toggles remaining-effort mode.
-6. **Spacer** — Flex spacer pushing sign-out to the right.
-7. **Sign-out button** — Triggers MSAL logout + page reload.
+5. **Allocation filter** — Single-select combo (`width: 200`); filters roles/resources by allocation state based on histogram data. Options: All / Over / Under / Balanced / Mixed.
+6. **Effort toggle** — Slide toggle labelled "Use Effort Remaining"; toggles remaining-effort mode.
+7. **Spacer** — Flex spacer pushing sign-out to the right.
+8. **Sign-out button** — Triggers MSAL logout + page reload.
 
-All filter selections and the effort toggle state are **persisted as URL query parameters** (`practice`, `role`, `resource`, `useRemainingEffort`) and restored on page load.
+All filter selections and the effort toggle state are **persisted as URL query parameters** (`practice`, `role`, `resource`, `allocation`, `useRemainingEffort`) and restored on page load.
 
-### 5.10 Loading UX
+### 5.10 Allocation Filter
+
+A **single-select combo** in the toolbar filters resources and roles by their allocation state computed from histogram data.
+
+**Filter Options:**
+
+| Value       | Display     | Behavior                                                                                   |
+| ----------- | ----------- | ------------------------------------------------------------------------------------------ |
+| `all`       | All         | Shows all resources/roles (no filtering)                                                   |
+| `over`      | Over        | Shows only roles/resources with allocation > 110% in any visible time tick                 |
+| `under`     | Under       | Shows only roles/resources with allocation < 80% in any visible time tick                  |
+| `balanced`  | Balanced    | Shows only roles/resources with allocation 80–110% in all visible time ticks               |
+| `mixed`     | Mixed       | Shows only parent roles with children having different allocation states (purple in chart) |
+
+**Allocation Calculation:**
+
+- Computed by `getAllocationStates(resourceStore, histogramRows, thresholdUnder, thresholdOver)` from [schedulingUtils.ts](src/lib/schedulingUtils.ts)
+- Aggregates allocation percentages across all visible histogram time ticks for each resource
+- **Leaf resources** (individual people): Classified as over/under/balanced based on any tick exceeding thresholds
+- **Parent nodes** (roles/practices):
+  - Classified as over/under if any descendant leaf is over/under
+  - Classified as balanced only if ALL descendant leaves are balanced
+  - Classified as mixed if parent is in 80–110% band but has children both inside and outside the band
+- Thresholds default to 80% (under) and 110% (over), configurable via `VITE_UNDERALLOCATED_THRESHOLD` and `VITE_OVERALLOCATED_THRESHOLD`
+
+**Implementation:**
+
+- Filter triggers on combo `change` event, recomputes allocation states, applies `resourceStore.filter()`, auto-expands matching groups
+- State persisted in URL as `?allocation=over` (omitted when value is `all`)
+- Scoped to the **current viewport** — only ticks visible in the scheduler timeline are analyzed
+
+### 5.11 Loading UX
 
 1. Spinner shown on initial page load
 2. If no session exists → "Sign in with Microsoft" button shown (centered image link)
@@ -336,7 +368,8 @@ All filter selections and the effort toggle state are **persisted as URL query p
 
 ## TODO: changes
 
-1. [ ] **Read-only** — No create, update, or delete operations back to D365
+### Current POC
+
 1. [x] **No pagination** — All resources/assignments fetched in a single request (may not scale)
 1. [x] **Viewport-based date filtering** — Filter assignments by the visible scheduler date range (± buffer as config) to reduce API payload size and improve load times for large datasets
 1. [x] **No filtering** — No date range filter, resource search, or project filter
@@ -355,11 +388,21 @@ All filter selections and the effort toggle state are **persisted as URL query p
 1. [ ] order assignments logically
 1. [x] do we need to consider timezone? or are start/finish date only fields? `msdyn_start` and `msdyn_finish` are date only fields
 1. [x] SWA deployment (x2 environments)
-1. [ ] change to AU date format in tooltips, check elsewhere e.g. edit
+1. [-] change to AU date format in tooltips, check elsewhere e.g. edit. Not working on histogram tooltip.
 1. [ ] consider project task dependencies
 1. [ ] day, week don't auto scroll to nearest start of week
 1. [x] use bookableresourceid in url paramater to avoid duplicate issue
 1. [x] decide what to do when there is effort remaining on an assignment in the past i.e. sarah grant w/c 22/2. **Solution**: Reschedule past-dated work forward using `EFFORT_REMAINING_OFFSET_DAYS` logic. Apply smart hybrid end-date handling: keep original end if future; recalculate from remaining effort using per-resource working hours if past. Apply red-border CSS class and show original dates in tooltip.
+1. [x] filter to roles and resources that are over capacity? **Solution**: Added allocation filter dropdown with 5 states (All/Over/Under/Balanced/Mixed) that analyzes histogram data across visible viewport and filters resources/roles by allocation state.
+
+### Future Requirements
+
+1. [ ] **Read-only** — No create, update, or delete operations back to D365
+    1. create variations
+    1. auto approve variations if PM makes the change
+1. [ ] Include Actuals
+1. [ ] Log time
+1. [ ] Gantt WBS of project tasks
 
 ## Tests Required
 
@@ -453,6 +496,22 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] Parent with 2 levels of nesting returns all leaf descendants
 - [x] Parent with no children returns empty array
 
+#### `getAllocationStates(resourceStore, histogramRows, thresholdUnder, thresholdOver)` — [schedulingUtils.ts](src/lib/schedulingUtils.ts)
+
+- [x] Empty histogram data returns empty Map
+- [x] Leaf resource with allocation > 110% in any tick returns 'over'
+- [x] Leaf resource with allocation < 80% in any tick returns 'under'
+- [x] Leaf resource with all ticks 80–110% returns 'balanced'
+- [x] Parent with all children balanced returns 'balanced'
+- [x] Parent with any child over/under aggregates to that state
+- [x] Parent with children in mixed states (some over, some under) returns 'mixed'
+- [x] Parent in 80–110% band with children outside band returns 'mixed'
+- [x] Threshold boundary conditions: 80%, 110%, 79.9%, 110.1%
+- [x] Allocation aggregated across multiple ticks (e.g., 70%, 90%, 120% → 'over')
+- [x] Custom threshold values (e.g., 70, 120) work correctly
+- [x] Resources with zero maxEffort (no capacity) ignored
+- [x] TreeGroup hierarchy traversal (Practice → Role → Resource)
+
 #### Renderers — [schedulerproConfig.ts](src/app/schedulerproConfig.ts)
 
 - [x] `nameRenderer`: leaf resource with valid `imageUrl` renders `<img>` tag
@@ -470,6 +529,10 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [x] Empty/missing params return correct defaults
 - [x] Special characters in filter values survive encode/decode
 - [x] `useRemainingEffort` string `'true'`/`'false'` coerces correctly
+- [x] `allocation` param parsed correctly from URL (`?allocation=over`)
+- [x] `allocation` param written to URL when non-default value
+- [x] `allocation=all` omitted from URL (default value)
+- [x] FilterState schema includes `allocation: string | null` in all test objects
 
 #### `fetchAllPages()` — [crudFunctions.ts](src/app/crudFunctions.ts)
 
@@ -517,9 +580,14 @@ All filter selections and the effort toggle state are **persisted as URL query p
 - [ ] Practice filter selection → Role combo updates to matching roles → Resource combo updates accordingly
 - [ ] Role filter selection → Resource combo shows only resources in selected roles
 - [ ] Resource filter selection → only matching resources shown in scheduler
+- [ ] Allocation filter selection (Over) → only over-allocated resources shown
+- [ ] Allocation filter selection (Under) → only under-allocated resources shown
+- [ ] Allocation filter selection (Balanced) → only balanced resources shown
+- [ ] Allocation filter selection (Mixed) → only mixed-state parent nodes shown
+- [ ] Allocation filter updates when scrolling to new viewport (new histogram data)
 - [ ] Clear all filters → full dataset visible
 - [ ] Filter cascading: select Practice A → select Role → change Practice to B → Role filter resets if role not in B
-- [ ] URL persistence: apply filters → reload page → same filters restored
+- [ ] URL persistence: apply filters → reload page → same filters restored (including allocation)
 - [ ] Auto-expand: filtered tree auto-expands to reveal matching resources
 
 #### Effort toggle
