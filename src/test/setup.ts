@@ -67,11 +67,39 @@ vi.mock('@bryntum/schedulerpro', () => {
     class SchedulerPro {}
     class ResourceHistogram {}
 
+    const DateHelper = {
+        format(date: Date | string, format: string): string {
+            const d = date instanceof Date ? date : new Date(date);
+            const days   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const tokens: Record<string, string> = {
+                ddd  : days[d.getDay()],
+                YYYY : String(d.getFullYear()),
+                MMM  : months[d.getMonth()],
+                DD   : String(d.getDate()).padStart(2, '0'),
+                D    : String(d.getDate())
+            };
+            return format.replace(/ddd|YYYY|MMM|DD|D/g, (m) => tokens[m]);
+        }
+    };
+
+    const LocaleHelper = {
+        publishLocale : vi.fn()
+    };
+
+    const LocaleManager = {
+        applyLocale : vi.fn()
+    };
+
     return {
         EventModel,
         ResourceModel,
         SchedulerPro,
-        ResourceHistogram
+        ResourceHistogram,
+        DateHelper,
+        LocaleHelper,
+        LocaleManager
     };
 });
 

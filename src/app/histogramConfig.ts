@@ -1,3 +1,5 @@
+import { DateHelper } from '@bryntum/schedulerpro';
+
 /**
  * ResourceHistogram configuration.
  *
@@ -218,7 +220,7 @@ export const histogramConfig: Record<string, any> = {
         },
         timeRanges : {
             showCurrentTimeLine : {
-                name : new Intl.DateTimeFormat('en-AU', { day : 'numeric', month : 'short', year : 'numeric' }).format(new Date())
+                name : DateHelper.format(new Date(), 'D MMM YYYY')
             }
         }
     },

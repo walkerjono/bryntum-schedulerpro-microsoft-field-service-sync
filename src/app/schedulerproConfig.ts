@@ -1,3 +1,4 @@
+import { DateHelper } from '@bryntum/schedulerpro';
 import { signOut } from './auth';
 import type { ViewMode } from '../types/app';
 
@@ -114,10 +115,10 @@ export const schedulerproConfig: Record<string, any> = {
         },
         eventTooltip : {
             template({ eventRecord }: { eventRecord: any }) {
-                const start  = eventRecord.startDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.startDate) : '';
-                const end    = eventRecord.endDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.endDate) : '';
-                const originalStart = eventRecord.originalStartDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.originalStartDate) : '';
-                const originalEnd = eventRecord.originalEndDate ? new Intl.DateTimeFormat('en-AU', { weekday : 'short', year : 'numeric', month : 'short', day : 'numeric' }).format(eventRecord.originalEndDate) : '';
+                const start  = eventRecord.startDate ? DateHelper.format(eventRecord.startDate, 'ddd, D MMM YYYY') : '';
+                const end    = eventRecord.endDate ? DateHelper.format(eventRecord.endDate, 'ddd, D MMM YYYY') : '';
+                const originalStart = eventRecord.originalStartDate ? DateHelper.format(eventRecord.originalStartDate, 'ddd, D MMM YYYY') : '';
+                const originalEnd = eventRecord.originalEndDate ? DateHelper.format(eventRecord.originalEndDate, 'ddd, D MMM YYYY') : '';
                 const effort      = eventRecord.effort != null ? `${eventRecord.effort} hrs` : '';
                 const effortRemaining = eventRecord.effortRemaining;
                 const clientName   = eventRecord.clientName || '';

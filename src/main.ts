@@ -5,7 +5,8 @@
  * modules under app/.  It replaces the monolithic main.js.
  */
 
-import { SchedulerPro } from '@bryntum/schedulerpro';
+import { SchedulerPro, LocaleManager } from '@bryntum/schedulerpro';
+import '@bryntum/schedulerpro/locales/schedulerpro.locale.EnGb.js';
 import './style.css';
 import { schedulerproConfig } from './app/schedulerproConfig';
 import { histogramConfig } from './app/histogramConfig';
@@ -57,6 +58,9 @@ async function displayUI(): Promise<void> {
     const { flatResources, resolvedEvents, assignments, calendars } =
         await loadInitialData();
 
+    // ── Apply en-GB locale for consistent dd/mm/yyyy formatting ────
+    LocaleManager.applyLocale('EnGb');
+
     // ── Create SchedulerPro ─────────────────────────────────────────
     const scheduler = new SchedulerPro({
         ...schedulerproConfig,
@@ -92,15 +96,15 @@ async function displayUI(): Promise<void> {
 
     /* eslint-disable @typescript-eslint/no-explicit-any -- Bryntum widgetMap not typed */
     const widgets: AppWidgetMap = {
-        practiceFilter  : (scheduler as any).widgetMap.practiceFilter,
-        roleFilter      : (scheduler as any).widgetMap.roleFilter,
-        resourceFilter  : (scheduler as any).widgetMap.resourceFilter,
-        allocationFilter: (scheduler as any).widgetMap.allocationFilter,
-        effortToggle    : (scheduler as any).widgetMap.effortToggle,
-        refreshButton   : (scheduler as any).widgetMap.refreshButton,
-        zoomInButton    : (scheduler as any).widgetMap.zoomInButton,
-        zoomOutButton   : (scheduler as any).widgetMap.zoomOutButton,
-        viewPresetGroup : (scheduler as any).widgetMap.viewPresetGroup
+        practiceFilter   : (scheduler as any).widgetMap.practiceFilter,
+        roleFilter       : (scheduler as any).widgetMap.roleFilter,
+        resourceFilter   : (scheduler as any).widgetMap.resourceFilter,
+        allocationFilter : (scheduler as any).widgetMap.allocationFilter,
+        effortToggle     : (scheduler as any).widgetMap.effortToggle,
+        refreshButton    : (scheduler as any).widgetMap.refreshButton,
+        zoomInButton     : (scheduler as any).widgetMap.zoomInButton,
+        zoomOutButton    : (scheduler as any).widgetMap.zoomOutButton,
+        viewPresetGroup  : (scheduler as any).widgetMap.viewPresetGroup
     };
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
