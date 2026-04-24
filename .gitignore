@@ -26,4 +26,4 @@ dist-ssr
 .env.local
 
 # Reference files
-.temp
+#.temp

@@ -1,50 +1,6 @@
 import { getToken } from './auth';
-import type { D365BookableResource, D365ResourceAssignment, D365ResourceCategoryAssignment, ODataResponse } from '../types/d365';
-
-const crmRegion  = import.meta.env.VITE_CRM_REGION || 'crm6';
-const orgUrl     = `https://${import.meta.env.VITE_MICROSOFT_DYNAMICS_ORG_ID}.api.${crmRegion}.dynamics.com`;
-const apiVersion = import.meta.env.VITE_DATAVERSE_API_VERSION || 'v9.2';
-const maxPages   = Number(import.meta.env.VITE_ODATA_MAX_PAGES) || 20;
-
-interface FetchAllPagesOpts {
-    label?: string;
-    maxPages?: number;
-}
-
-/**
- * Generic paginated OData fetch.
- * Follows @odata.nextLink until all pages are consumed.
- * Returns { value: [...allRecords] } to match the single-page response shape.
- */
-async function fetchAllPages<T>(url: string, headers: Record<string, string>, { label = 'records', maxPages: pageLimit = maxPages }: FetchAllPagesOpts = {}): Promise<{ value: T[] }> {
-    const allRecords: T[] = [];
-    let nextUrl: string | null = url;
-    let page = 0;
-
-    while (nextUrl) {
-        page++;
-        if (page > pageLimit) {
-            console.warn(`[crud] ⚠ Reached max page limit (${pageLimit}) fetching ${label}. Some records may be missing.`);
-            break;
-        }
-
-        const response = await fetch(nextUrl, { headers });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[crud] ${label} API Error (page ${page}):`, errorText);
-            throw new Error(`Failed to fetch ${label} (page ${page}): ${response.statusText}`);
-        }
-
-        const data: ODataResponse<T> = await response.json();
-        allRecords.push(...data.value);
-
-        nextUrl = data['@odata.nextLink'] || null;
-    }
-
-    console.log(`[crud] Fetched ${page} page(s), ${allRecords.length} ${label} total`);
-    return { value : allRecords };
-}
+import { fetchAllPages, orgUrl, apiVersion } from './odataHelper';
+import type { D365BookableResource, D365ResourceAssignment, D365ResourceCategoryAssignment } from '../types/d365';
 
 export async function getResources(): Promise<{ value: D365BookableResource[] }> {
     console.log('[crud] Fetching resources…');

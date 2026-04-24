@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container {
+            font-style: normal;
+            font-variant: normal;
+            font-weight: normal;
+            font-size: 14px;
+            font-family: 'SegoeUI', 'Segoe UI';
+            display: flex;
+            height: 40px;
+        }
+
+        .title {
+            width: 20%;
+            padding: 10px;
+            font-weight: 400;
+        }
+
+        .child {
+            background-color: #0000;
+            padding: 10px;
+            width: 80%;
+            font-weight: 600;
+        }
+
+            .child:hover {
+                background-color: #0001;
+            }
+
+        tr.m {
+            margin-bottom: 10px !important;
+        }
+
+        .tbl {
+            width: 90%;
+            font-family: 'SegoeUI', 'Segoe UI';
+            font-size: 14px;
+        }
+
+        .boldRow {
+            font-weight: 600;
+        }
+
+        .boldUnderLine {
+            font-weight: 600;
+            border-bottom: 2px solid black;
+            margin-bottom: 10px;
+        }
+
+        .time {
+            text-align: right;
+        }
+    </style>
+</head>
+<script type="text/javascript">
+
+    // msdyn_entrystatus option set values
+    // Cancelled           =   192354320
+    // Draft               =   192350000
+    // Returned            =   192350001
+    // Recall Requested    =   192350004
+    // Submitted           =   192350003
+    // Approved            =   192350002
+
+    function Simplify(mins, hours) {
+        // absolute of totalminutes
+
+        let parts = mins.toString().split(':');
+        parts[0] = Number.parseInt(parts[0]);
+        parts[1] = Number.parseInt(parts[1]);
+        let totalMins = mins
+
+        parts[0] = Math.floor(Math.abs(totalMins) / 60) * (totalMins < 0 ? -1 : 1);
+        parts[1] = totalMins % 60;
+
+        if (parts[1] % 1 !== 0) {
+            parts[1] = Math.ceil(parts[1]);
+        }
+
+        parts[1] = Math.abs(parts[1]);
+
+        let formattedHours;
+
+        if (hours == null) {
+            formattedHours = parts[0].toLocaleString();
+        } else {
+            formattedHours = hours + parts[0]
+            formattedHours = formattedHours.toLocaleString();
+        }
+
+        if (parts[1] < 10) parts[1] = "0" + parts[1];
+        return formattedHours + ":" + parts[1];
+    }
+
+    function SimplifyDays(n) {
+        const days = n / 60 / 8;
+        const roundedDays = Math.round(days * 100) / 100;
+        return roundedDays.toFixed(2);
+    }
+
+    async function load() {
+        //const currentTask = window.parent.Xrm.Page.data.entity.getId().substring(1, 37)
+        const currentTask = window.parent.Xrm.Page.getAttribute("ws_taskid").getValue()[0].id.substring(1, 37);
+        const remainingTimeVar = window.parent.Xrm.Page.getAttribute("ws_remainingtime").getValue();
+
+        const fetchProject = await fetch(`/api/data/v9.2/msdyn_projecttasks(${currentTask})`)
+        const p = await fetchProject.json();
+
+        const eftremaining = p.msdyn_effortremaining;
+        const eft = p.msdyn_effort;
+
+        // Budget
+        document.getElementById('effortHrs').innerHTML = Simplify(p.msdyn_effort * 60);
+        document.getElementById('effortDays').innerHTML = SimplifyDays(p.msdyn_effort * 60); //(Math.round(p.msdyn_effort / 60 / 24 * 100) / 100).toFixed(2);
+        const budgetDays = SimplifyDays(p.msdyn_effort * 60);
+
+        // Effort Remaining
+        document.getElementById('effortremHrs').innerHTML = Simplify(p.msdyn_effortremaining * 60);
+        document.getElementById('effortremDays').innerHTML = SimplifyDays(p.msdyn_effortremaining * 60);
+
+        const notApproved = await fetch(`/api/data/v9.2/msdyn_timeentries?$filter=_msdyn_projecttask_value eq '${currentTask}' and (msdyn_entrystatus eq 192350001 or msdyn_entrystatus eq 192350000 or msdyn_entrystatus eq 192350004) and statecode eq 0`); // Returned
+        const notApprovedJSON = (await notApproved.json()).value
+        let notApprovedMins = 0;
+        for (let t of notApprovedJSON) {
+            notApprovedMins += t.msdyn_duration
+        }
+
+        const submittedFetch = await fetch(`/api/data/v9.2/msdyn_timeentries?$filter=_msdyn_projecttask_value eq '${currentTask}' and msdyn_entrystatus eq 192350003 and statecode eq 0`);
+        const submittedJSON = (await submittedFetch.json()).value
+        let submittedTime = 0;
+        for (let t of submittedJSON) {
+            submittedTime += t.msdyn_duration
+        }
+
+        const totalFetch = await fetch(`/api/data/v9.2/msdyn_timeentries?$filter=_msdyn_projecttask_value eq '${currentTask}' and msdyn_entrystatus eq 192350002 and statecode eq 0`);
+        const totalJSON = (await totalFetch.json()).value
+        let approvedTime = 0;
+        for (let t of totalJSON) {
+            approvedTime += t.msdyn_duration;
+        }
+
+        // Actuals
+        document.getElementById('approvedHours').innerHTML = Simplify(approvedTime);
+        document.getElementById('approvedDays').innerHTML = SimplifyDays(approvedTime);
+
+        // Current Eac
+        document.getElementById('currentEacHrs').innerHTML = Simplify(approvedTime + (p.msdyn_effortremaining * 60));
+        document.getElementById('currentEacDays').innerHTML = SimplifyDays((p.msdyn_effortremaining * 60) + approvedTime);
+
+        // Not Approved
+        document.getElementById('notApprovedHours').innerHTML = Simplify(notApprovedMins); //(Math.round(notApprovedMins / 60 * 100) / 100).toFixed(2);
+        document.getElementById('notApprovedDays').innerHTML = SimplifyDays(notApprovedMins); //(Math.round(notApprovedMins / 60 / 24 * 100) / 100).toFixed(2);
+
+        // Submitted
+        document.getElementById('submittedHours').innerHTML = Simplify(submittedTime);
+        document.getElementById('submittedDays').innerHTML = SimplifyDays(submittedTime);
+
+        // Forecast
+        document.getElementById('forecastActualsHours').innerHTML = Simplify(submittedTime + notApprovedMins + approvedTime);
+        document.getElementById('forecastActualsDays').innerHTML = SimplifyDays(submittedTime + notApprovedMins + approvedTime);
+
+        // New Remaining
+        document.getElementById('newRemainingHours').innerHTML = Simplify(remainingTimeVar);
+        document.getElementById('newRemainingDays').innerHTML = SimplifyDays(remainingTimeVar)
+
+        // Revised EAC
+        document.getElementById('revisedEacHours').innerHTML = Simplify(submittedTime + notApprovedMins + approvedTime + remainingTimeVar);
+        document.getElementById('revisedEacDays').innerHTML = SimplifyDays(submittedTime + notApprovedMins + approvedTime + remainingTimeVar);
+        const revisedDays = SimplifyDays(submittedTime + notApprovedMins + approvedTime + remainingTimeVar);
+
+        // Variance
+        document.getElementById('varianceHours').innerHTML = Simplify((p.msdyn_effort * 60) - (submittedTime + notApprovedMins + approvedTime + remainingTimeVar));
+        document.getElementById('varianceDays').innerHTML = (budgetDays - revisedDays).toFixed(2);
+    }
+
+</script>
+<body onload="load()">
+    <table class="tbl">
+        <tr>
+            <th></th>
+            <th class="time">Hours : Mins</th>
+            <th class="time">Days</th>
+        </tr>
+        <tr class="boldRow">
+            <td>Budget</td>
+            <td class="time" id="effortHrs"></td>
+            <td class="time" id="effortDays"></td>
+        </tr>
+        <tr>
+            <td>Effort Remaining</td>
+            <td class="time" id="effortremHrs"></td>
+            <td class="time" id="effortremDays"></td>
+        </tr>
+        <tr>
+            <td>Actuals</td>
+            <td class="time" id="approvedHours"></td>
+            <td class="time" id="approvedDays"></td>
+        </tr>
+        <tr class="m">
+            <td class="boldUnderLine">Current EAC</td>
+            <td class="boldUnderLine time" id="currentEacHrs"></td>
+            <td class="boldUnderLine time" id="currentEacDays"></td>
+        </tr>
+        <tr>
+            <td>Not Approved</td>
+            <td class="time" id="notApprovedHours"></td>
+            <td class="time" id="notApprovedDays"></td>
+        </tr>
+        <tr>
+            <td>Submitted</td>
+            <td class="time" id="submittedHours"></td>
+            <td class="time" id="submittedDays"></td>
+        </tr>
+        <tr class="m">
+            <td class="boldUnderLine">Forecast Actuals</td>
+            <td class="boldUnderLine time" id="forecastActualsHours"></td>
+            <td class="boldUnderLine time" id="forecastActualsDays"></td>
+        </tr>
+        <tr>
+            <td>New Remaining</td>
+            <td class="time" id="newRemainingHours"></td>
+            <td class="time" id="newRemainingDays"></td>
+        </tr>
+        <tr class="m">
+            <td class="boldUnderLine">Revised EAC</td>
+            <td id="revisedEacHours" class="boldUnderLine time"></td>
+            <td id="revisedEacDays" class="boldUnderLine time"></td>
+        </tr>
+        <tr>
+            <td>Variance</td>
+            <td class="time" id="varianceHours"></td>
+            <td class="time" id="varianceDays"></td>
+        </tr>
+
+    </table>
+</body>
+</html>

@@ -1,0 +1,23 @@
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ» Failed Suites 1 ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+
+ FAIL  src/test/timesheetGridConfig.test.ts [ src/test/timesheetGridConfig.test.ts ]
+Error: Failed to resolve import "../../app/timesheetGridConfig" from "src/test/timesheetGridConfig.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: C:/walkerjono/source/bryntum-schedulerpro-microsoft-field-service-sync/src/test/timesheetGridConfig.test.ts:7:7
+  5  |    buildTimesheetGridConfig,
+  6  |    formatWeekLabel
+  7  |  } from "../../app/timesheetGridConfig";
+     |          ^
+  8  |  const MONDAY = /* @__PURE__ */ new Date("2026-06-08");
+  9  |  describe("buildTimesheetColumns", () => {
+ Γ¥» TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/config.js:28999:43
+ Γ¥» TransformPluginContext.error node_modules/vite/dist/node/chunks/config.js:28996:14
+ Γ¥» normalizeUrl node_modules/vite/dist/node/chunks/config.js:27119:18
+ Γ¥» node_modules/vite/dist/node/chunks/config.js:27177:32
+ Γ¥» TransformPluginContext.transform node_modules/vite/dist/node/chunks/config.js:27145:4
+ Γ¥» EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/config.js:28797:14
+ Γ¥» loadAndTransform node_modules/vite/dist/node/chunks/config.js:22670:26
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/1]ΓÄ»
+

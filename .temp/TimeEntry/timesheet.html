@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>WS Timesheet</title>
+    <style>
+        .sml {
+            width: 60px !important;
+            height: 24px !important;
+            border: 0;
+            resize: none;
+            overflow: hidden;
+            font-size: .6rem;
+            background-color: transparent;
+        }
+
+        .empty {
+            width: 59px;
+            height: 33px;
+            resize: none;
+            border: solid 1px red;
+            overflow: hidden;
+            font-size: .6rem;
+            background-color: red;
+            color: white;
+        }
+
+        .totals {
+            font-weight: 600;
+        }
+
+        .lg {
+            width: 300px;
+            height: 70px;
+            position: absolute;
+            z-index: 10000;
+            margin-left: -60px;
+        }
+
+        .time {
+            width: 60px;
+        }
+
+        .timeReq {
+            width: 60px;
+            border: solid 1px red;
+        }
+
+        .redBorder {
+            border: solid 1px red;
+        }
+
+        .p-dropdown {
+            height: 24px;
+            padding: 0 5px;
+        }
+
+        .walkerscott {
+            background-color: #eaeaea;
+        }
+
+        .weekends {
+            background-color: #e5f7ff;
+            text-align: right;
+        }
+
+        .altRow:nth-child(even) {
+            background-color: #dddddd;
+        }
+
+        .p-dropdown > .p-inputtext {
+            height: 24px;
+            padding: 0;
+        }
+
+        textarea::placeholder {
+            color: #363535;
+            font-style: italic;
+            padding-left: 15px;
+            padding-top: 15px;
+        }
+
+        .empty::placeholder {
+            color: #ffffff;
+            font-style: italic;
+            font-weight: bold;
+            padding: 0;
+        }
+
+        .projectColumn {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 100px;
+        }
+
+        .p-datatable .p-datatable-tbody > tr > td {
+            padding: 0.25rem 0.5rem;
+        }
+
+        .ml {
+            margin-left: auto;
+        }
+
+        .dropdown {
+            width: 170px;
+        }
+
+        .p-datatable .p-sortable-column:not(.p-highlight):hover {
+            background: none !important;
+        }
+
+        .p-datatable .p-sortable-column.p-highlight {
+            background: none !important;
+        }
+
+        .p-column-header-content {
+            display: block !important;
+        }
+
+        .null-calendar {
+            border: 1px solid red !important;
+        }
+
+        .today {
+            background-color: #dff6dd;
+            text-align: right;
+        }
+
+        .toolbarText {
+            font-size: 14px !important;
+        }
+
+        .menu {
+            display: block;
+            position: absolute;
+            top: 48px;
+            left: 15px;
+            background-color: #f9f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            padding: 12px 16px;
+            z-index: 5;
+        }
+
+        .buttonWidth {
+            min-width: 100px !important;
+        }
+
+        .menuBox {
+            padding: 10px;
+        }
+
+        .statusMsg {
+            text-align: center;
+        }
+
+        .p-button-secondary {
+            background-color: #f1f5f9 !important;
+            border-color: #f1f5f9 !important;
+            color: #475569 !important;
+        }
+
+            .p-button-secondary:hover {
+                background-color: #e2e8f0;
+                border-color: #e2e8f0 !important;
+                color: #334155 !important;
+            }
+
+        /* Modal Css*/
+        .custom-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+            .form-group label {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+
+        .date-group {
+            display: flex;
+            width: 100%;
+            gap: 16px;
+        }
+
+        .date-field {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .p-error {
+            color: red;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .button-group {
+            display: flex;
+            width: 100%;
+            margin-top: 16px;
+        }
+
+            .button-group button {
+                width: 100%;
+            }
+
+        .custom-label-font .p-inputtext {
+            font-size: 1em;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeflex@3.0.0/primeflex.css">
+    <link id="primetheme" href="https://cdn.jsdelivr.net/npm/primevue@3.29.2/resources/themes/fluent-light/theme.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.3.10/dist/vue.global.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/primevue@3.29.2/resources/primevue.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/core/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/api/api.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/config/config.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/utils/utils.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/ripple/ripple.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/overlayeventbus/overlayeventbus.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/confirmationeventbus/confirmationeventbus.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/useconfirm/useconfirm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/confirmationservice/confirmationservice.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/virtualscroller/virtualscroller.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/button/button.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/inputtext/inputtext.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/inputnumber/inputnumber.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/dropdown/dropdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/calendar/calendar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/multiselect/multiselect.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/textarea/textarea.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/menu/menu.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/menubar/menubar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/paginator/paginator.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/column/column.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/datatable/datatable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/dialog/dialog.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/tabpanel/tabpanel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/tabview/tabview.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/message/message.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/togglebutton/togglebutton.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/progressbar/progressbar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/accordion/accordion.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/accordiontab/accordiontab.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/badge/badge.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/badgedirective/badgedirective.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/selectbutton/selectbutton.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/toasteventbus/toasteventbus.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/usetoast/usetoast.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/toastservice/toastservice.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/toast/toast.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/confirmdialog/confirmdialog.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/checkbox/checkbox.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/password/password.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/message/message.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/styleclass/styleclass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/row/row.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/togglebutton/togglebutton.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/splitbutton/splitbutton.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/badge/badge.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/badgedirective/badgedirective.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/menu/menu.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/ripple/ripple.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/inputswitch/inputswitch.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/primevue@3.29.2/autocomplete/autocomplete.min.js"></script>
+    <script>
+        "use strict";
+        window.FilterMatchMode = primevue.api.FilterMatchMode;
+        window.FilterOperator = primevue.api.FilterOperator;
+        const STDHEADERS = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        };
+
+        primevue.config.zIndex = {
+            modal: 1100,        //dialog, sidebar
+            overlay: 1000,      //dropdown, overlaypanel
+            menu: 1000,         //overlay menus
+            tooltip: 1100       //tooltip
+        };
+        primevue.config.locale = {
+            startsWith: 'Starts with',
+            contains: 'Contains',
+            notContains: 'Not contains',
+            endsWith: 'Ends with',
+            equals: 'Equals',
+            notEquals: 'Not equals',
+            noFilter: 'No Filter',
+            lt: 'Less than',
+            lte: 'Less than or equal to',
+            gt: 'Greater than',
+            gte: 'Greater than or equal to',
+            dateIs: 'Date is',
+            dateIsNot: 'Date is not',
+            dateBefore: 'Date is before',
+            dateAfter: 'Date is after',
+            clear: 'Clear',
+            apply: 'Apply',
+            matchAll: 'Match All',
+            matchAny: 'Match Any',
+            addRule: 'Add Rule',
+            removeRule: 'Remove Rule',
+            accept: 'Yes',
+            reject: 'No',
+            choose: 'Choose',
+            upload: 'Upload',
+            cancel: 'Cancel',
+            dayNames: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            dayNamesShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+            dayNamesMin: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+            monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+            monthNamesShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+            today: 'Today',
+            weekHeader: 'Wk',
+            firstDayOfWeek: 0,
+            dateFormat: 'dd/mm/yy',
+            weak: 'Weak',
+            medium: 'Medium',
+            strong: 'Strong',
+            passwordPrompt: 'Enter a password',
+            emptyFilterMessage: 'No results found',
+            emptyMessage: 'No available options'
+        };
+        primevue.config.filterMatchModeOptions = {
+            text: [
+                primevue.api.FilterMatchMode.STARTS_WITH,
+                primevue.api.FilterMatchMode.CONTAINS,
+                primevue.api.FilterMatchMode.NOT_CONTAINS,
+                primevue.api.FilterMatchMode.ENDS_WITH,
+                primevue.api.FilterMatchMode.EQUALS,
+                primevue.api.FilterMatchMode.NOT_EQUALS
+            ],
+            numeric: [
+                primevue.api.FilterMatchMode.EQUALS,
+                primevue.api.FilterMatchMode.NOT_EQUALS,
+                primevue.api.FilterMatchMode.LESS_THAN,
+                primevue.api.FilterMatchMode.LESS_THAN_OR_EQUAL_TO,
+                primevue.api.FilterMatchMode.GREATER_THAN,
+                primevue.api.FilterMatchMode.GREATER_THAN_OR_EQUAL_TO
+            ],
+            date: [
+                primevue.api.FilterMatchMode.DATE_IS,
+                primevue.api.FilterMatchMode.DATE_BEFORE,
+                primevue.api.FilterMatchMode.DATE_AFTER
+            ],
+            picklist: [
+                primevue.api.FilterMatchMode.EQUALS,
+                primevue.api.FilterMatchMode.NOT_EQUALS
+            ]
+        };
+        /**
+         * Checks if requested property exists with kebab-case and provides it as camelCase
+         * because PrimeVue properties are camelCase
+         * See https://github.com/primefaces/primevue/issues/797
+         */
+        function columnPropWithKebabCase(col, prop, original) {
+
+            var toKebabCase = function (value) {
+                return value.replace(/[A-Z]+(?![a-z])|[A-Z]/g, (match, offset) => (offset ? "-" : "") + match.toLowerCase());
+            };
+
+            var propWithKebabCase;
+
+            // handle Column components
+            if (col && !prop && this.column) {
+                var colWithKebabCase = toKebabCase(col);
+                propWithKebabCase = this.column.props[colWithKebabCase];
+
+                if (propWithKebabCase) {
+                    this.column.props[col] = propWithKebabCase;
+                }
+
+                return original.call(this, col, prop);
+            } else {
+                // handle other components
+                // see: https://github.com/primefaces/primevue/issues/797#issuecomment-816438158
+                propWithKebabCase = toKebabCase(prop);
+
+                if (col.props && typeof col.props[propWithKebabCase] !== 'undefined') {
+                    return ((col.type.props[prop].type && col.props[propWithKebabCase] === '') ? true : col.props[propWithKebabCase])
+                }
+
+                return original.call(this, col, prop);
+            }
+        }
+
+        /**
+         * Overrides `columnProp` method to enable support for kebab-case properties
+         * See https://github.com/primefaces/primevue/issues/797
+         */
+        function overrideColumnPropMethod(obj) {
+            for (let key in obj) {
+                if (typeof obj[key] === "object") {
+                    overrideColumnPropMethod(obj[key])
+                } else {
+                    // base case, stop recurring
+                    if (key === 'columnProp') {
+                        var original = obj[key];
+
+                        obj[key] = function (col, prop) {
+                            return columnPropWithKebabCase.call(this, col, prop, original);
+                        };
+                    }
+                }
+            }
+        }
+
+        overrideColumnPropMethod(this.primevue);
+        primevue.datatable.methods.sortSingle = async function (value) {
+
+            return await timesheetApp.sortTasks(value);
+        }
+        const { createApp, ref, reactive } = Vue;
+        const timesheet = {
+            components: {
+                'p-button': primevue.button,
+                'p-dialog': primevue.dialog,
+                'p-toastservice': primevue.toastservice,
+                'p-toast': primevue.toast,
+                'p-inputtext': primevue.inputtext,
+                'p-menu': primevue.menu,
+                'p-password': primevue.password,
+                'p-datatable': primevue.datatable,
+                'p-column': primevue.column,
+                'p-dropdown': primevue.dropdown,
+                'p-calendar': primevue.calendar,
+                'p-row': primevue.row,
+                'p-checkbox': primevue.checkbox,
+                'p-togglebutton': primevue.togglebutton,
+                'p-splitbutton': primevue.splitbutton,
+                'p-badge': primevue.badge,
+                'p-menu': primevue.menu,
+                'p-inputswitch': primevue.inputswitch,
+                'p-message': primevue.message,
+                'p-autocomplete': primevue.autocomplete
+            },
+            directives: {
+                'styleclass': primevue.styleclass,
+                'badge': primevue.badgedirective,
+                'ripple': primevue.ripple,
+            },
+            data() {
+                return {
+                    projectTasks: ref([]),
+                    days: ref([]),
+                    saving: ref(false),
+                    help: ref(false),
+                    tableHeight: ref('500px'),
+                    remainingReasons: ref([]),
+                    publishing: ref(false),
+                    dynamicMessage: ref(""),
+                    completeDynamicMessage: ref(""),
+                    messageStyle: ref({}),
+                    isSubmitDisabled: ref(false),
+                    isCompleteDisabled: ref(false),
+                    filter: ref(""),
+                    startDate: ref(new Date()),
+                    bookableResourceCategories: ref([]),
+                    defaultRole: ref(''),
+                    date: ref(),
+                    validated: ref(true),
+                    defaultValue: ref('Test'),
+                    submit: ref(false),
+                    frozenRow: ref([]),
+                    workTypes: ref([{ label: "Work", value: 192350000 },
+                    { label: "Out of Hours Work", value: 192354320 },
+                    { label: "Leave/Other", value: 1 },
+                    ]),
+                    loading: ref(false),
+                    settings: ref({}),
+                    todayIndex: ref(),
+                    autoSave: ref(false),
+                    userId: ref(),
+                    resourceId: ref(),
+                    menuFilters: ref(),
+                    menuItems: ref([
+                        {
+                            label: 'My Tasks',
+                            icon: 'pi pi-user',
+                            additive: true,
+                            checked: false,
+                            filterFunction: async (tasks) => {
+                                tasks.forEach((a) => { if (a.ownerId == this.userId || a.bookableId == this.resourceId) a.isFiltered = true })
+                            }
+                        },
+                        {
+                            label: 'Tasks with Time',
+                            icon: 'pi pi-clock',
+                            additive: true,
+                            checked: false,
+                            filterFunction: (tasks) => {
+                                tasks.forEach((a) => { if (a.entries.some(entry => entry.time !== null && entry.time !== "")) a.isFiltered = true });
+                            }
+                        },
+                        {
+                            label: 'Hide Completed Tasks',
+                            icon: 'pi pi-check-circle',
+                            additive: false,
+                            checked: false,
+                            filterFunction: (tasks) => {
+                                tasks.forEach((a) => { if (a.entries[7].reasonId == this.settings.COMPLETEDREASONID) a.isFiltered = false });
+                            }
+                        },
+                        {
+                            label: 'WS Internal',
+                            icon: 'pi pi-building',
+                            additive: true,
+                            checked: false,
+                            filterFunction: (tasks) => {
+                                tasks.forEach((a) => { if (a.projectid == '7d977b9a-45be-4a18-bbe3-66005a253b76') a.isFiltered = true });
+                            }
+                        },
+                        {
+                            label: 'Help Tasks',
+                            icon: 'pi pi-question-circle',
+                            additive: true,
+                            checked: false,
+                            filterFunction: (tasks) => {
+                                tasks.forEach((a) => { if (a.isHelpEntry) a.isFiltered = true });
+                            }
+                        },
+                    ]),
+                    localStore: ref({
+                        autoSave: false,
+                        filters: [false, false, false],
+                    }),
+                    statusMsg: ref("Up to date."),
+                    statusSeverity: ref('success'),
+                    processing: ref(false),
+                    completed: ref(false),
+                    requesthelp: ref(false),
+                    formData: {
+                        requestee: null,
+                        project: null,
+                        projectTask: null,
+                        reason: null,
+                        dateFrom: new Date(),
+                        dateTo: new Date(new Date().setDate(new Date().getDate() + 7))
+                    },
+                    errors: {},
+                    requestees: [],
+                    filteredRequestees: [],
+                    helpProjects: [],
+                    filteredhelpProjects: [],
+                    projectTaskHelpReasons: [],
+                    filteredProjectTaskHelpReasons: [],
+                    filteredhelpTasks: [],
+                    helpTasks: [],
+                    showProjectNotFoundMessage: false,
+                    showRequesteeNotFoundMessage: false,
+                    showNotFoundMessage: false,
+                    isProjectTaskEnabled: false,
+                }
+            },
+            computed: {
+                filteredProjectTasks() {
+                    let results = this.projectTasks;
+                    if (this.filter != "") {
+                        //const terms = this.filter.toLowerCase().split(' ');
+                        //results = this.projectTasks.filter(task => {
+                        //    for (let term of terms) {
+                        //        if ((task.taskName && task.taskName.toLowerCase().includes(term)) ||
+                        //            (task.customerName && task.customerName.toLowerCase().includes(term)) ||
+                        //            (task.projectName && task.projectName.toLowerCase().includes(term))) {
+                        //            return true;
+                        //        }
+                        //    }
+                        //    return false;
+                        //})
+
+                        const terms = this.filter.toLowerCase().trim();
+
+                        //Check for direct match with Project/Customer/Task
+                        let directMatchResults = this.projectTasks.filter(task =>
+                            task.projectName?.toLowerCase().includes(terms) ||
+                            task.customerName?.toLowerCase().includes(terms) ||
+                            task.taskName?.toLowerCase().includes(terms)
+                        );
+
+                        if (directMatchResults.length > 0) {
+                            return directMatchResults;
+                        }
+
+                        //Combination Search
+                        const termArray = terms.split(' ').filter(term => term.trim() !== '');
+
+                        results = this.projectTasks.filter(task => {
+                            if (termArray.length < 2) return false;
+
+                            let firstMatchField = '';
+                            let secondMatch = false;
+
+                            for (let i = 0; i < termArray.length; i++) {
+                                const term = termArray[i];
+
+                                if (!firstMatchField) {
+                                    if (task.projectName?.toLowerCase().includes(term)) firstMatchField = 'project';
+                                    else if (task.taskName?.toLowerCase().includes(term)) firstMatchField = 'task';
+                                    else if (task.customerName?.toLowerCase().includes(term)) firstMatchField = 'customer';
+                                } else {
+                                    if (firstMatchField !== 'project' && task.projectName?.toLowerCase().includes(term)) secondMatch = true;
+                                    else if (firstMatchField !== 'task' && task.taskName?.toLowerCase().includes(term)) secondMatch = true;
+                                    else if (firstMatchField !== 'customer' && task.customerName?.toLowerCase().includes(term)) secondMatch = true;
+                                }
+                            }
+
+                            return firstMatchField && secondMatch;
+                        });
+
+                        return results;
+                        //results = this.projectTasks.filter((a) => a.taskName.toLowerCase().includes(this.filter.toLowerCase()) || a.customerName.toLowerCase().includes(this.filter.toLowerCase()) || a.projectName.toLowerCase().includes(this.filter.toLowerCase()))
+                    }
+                    let isFiltered = false;
+                    let additiveItems = this.menuItems.some(item => item.additive && item.checked)
+                    if (additiveItems) {
+                        isFiltered = true;
+                        results.forEach((a) => a.isFiltered = false);
+                        this.menuItems.forEach(item => {
+                            if (item.checked && item.additive) {
+                                item.filterFunction(results);
+                            }
+                        })
+                    } else {
+                        results.forEach((a) => a.isFiltered = true);
+                    }
+
+                    this.menuItems.forEach(item => {
+                        if (item.checked && !item.additive) {
+                            isFiltered = true;
+                            item.filterFunction(results);
+                        }
+                    })
+                    return isFiltered ? results.filter((a) => a.isFiltered) : results;
+                },
+                filterBadge() {
+                    const arr = this.menuItems.filter((a) => a.checked);
+                    return (arr.length > 0);
+                },
+                isFormValid() {
+                    return (
+                        this.formData.requestee &&
+                        this.formData.project &&
+                        (!this.isProjectTaskEnabled || this.formData.projectTask) &&
+                        this.formData.reason &&
+                        this.formData.dateFrom &&
+                        this.formData.dateTo
+                    );
+                }
+            },
+            methods: {
+                async ProcessEntry(e, resourceId, t, status) {
+                    let res = null;
+                    if (e.entryId && (e.time == '0:00' || e.time == "")) {
+                        res = await fetch(`/api/data/v9.2/msdyn_timeentries(${e.entryId})`, {
+                            method: "DELETE", headers: STDHEADERS
+                        })
+                        if (res.status != 200 && res.status != 204) {
+                            status = false;
+                        } else {
+                            e.entryId = ''
+                            e.time = ''
+                            e.comment = ''
+                            e.changed = false;
+                        }
+
+                    } else if (e.entryId && e.changed) { // Update existing time entry (PATCH)
+                        res = await fetch(`/api/data/v9.2/msdyn_timeentries(${e.entryId})`, {
+                            method: "PATCH", headers: STDHEADERS,
+                            body: JSON.stringify({
+                                msdyn_description: e.comment,
+                                msdyn_duration: this.UnSimplify(e.time),
+                                "msdyn_resourceCategory@odata.bind": `/bookableresourcecategories(${t.role})`,
+                                msdyn_type: t.workType
+                            })
+                        })
+
+                        if (res.headers.get("OData-Entityid")) {
+                            const eId = res.headers.get("Odata-Entityid").split("(")[1].split(')')[0];
+                            e.entryId = eId;
+                            e.changed = false;
+                        }
+
+                        if (res.status != 200 && res.status != 204) {
+                            status = false;
+                        }
+                    } else if (e.time != '' && e.changed) { // Create new time entry (POST)
+                        let dDate;
+                        let myDate = new Date(this.startDate);
+                        console.log(myDate)
+                        myDate.setDate(myDate.getDate() + e.dateOffset);
+                        dDate = myDate.getUTCFullYear() + "-" + (myDate.getMonth() + 1) + "-" + (myDate.getDate());
+
+                        res = await fetch(`/api/data/v9.2/msdyn_timeentries`, {
+                            method: "post", headers: STDHEADERS,
+                            body: JSON.stringify({
+                                "msdyn_bookableresource@odata.bind": `/bookableresources(${resourceId})`,
+                                "msdyn_resourceCategory@odata.bind": `/bookableresourcecategories(${t.role})`,
+                                "msdyn_projectTask@odata.bind": `/msdyn_projecttasks(${t.taskid})`,
+                                "msdyn_project@odata.bind": `/msdyn_projects(${t.projectid})`,
+                                "ws_customer_account@odata.bind": `/accounts(${t.customerId})`,
+                                msdyn_description: e.comment,
+                                msdyn_duration: this.UnSimplify(e.time),
+                                msdyn_date: dDate,
+                                msdyn_type: t.workType
+                            })
+                        });
+
+                        if (res.headers.get("OData-Entityid")) {
+                            const eId = res.headers.get("Odata-Entityid").split("(")[1].split(')')[0];
+                            e.entryId = eId;
+                            e.changed = false;
+                        } else {
+                            e.class = 'empty';
+                        }
+
+                        if (res.status != 200 && res.status != 204) {
+                            status = false;
+                        }
+                    }
+                    return status;
+                },
+                async ProcessVariation(remains, resourceId, t, s) {
+                    let remainDate = null;
+                    if (remains.reasonId == this.settings.COMPLETEDREASONID) {
+                        remains.time = '0:00';
+                        remains.endDate = new Date();
+                    }
+                    if (remains.endDate) remainDate = remains.endDate.getFullYear() + "-" + ("" + (remains.endDate.getMonth() + 1)).padStart(2, "0") + "-" + ("" + remains.endDate.getDate()).padStart(2, "0");
+                    // This is the variation section
+                    if (remains.changed && remains.entryId && (remains.time == "")) { // If the remaining is being deleted.
+                        const res = await fetch(`/api/data/v9.2/ws_timesheetvariations(${remains.entryId})`, {
+                            method: "DELETE", headers: STDHEADERS
+                        });
+                        if (res.status != 200 && res.status != 204) {
+                            s.status = false;
+                        } else {
+                            remains.entryId = '';
+                            remains.time = '';
+                            remains.comment = '';
+                            remains.reasonId = null;
+                            remains.changed = false;
+                        }
+                    } else if (remains.changed && remains.entryId && remains.endDate) { // If the remaining column is being updated
+                        const res = await fetch(`/api/data/v9.2/ws_timesheetvariations(${remains.entryId})`, {
+                            method: "PATCH", headers: STDHEADERS,
+                            body: JSON.stringify({
+                                ws_estimatedenddate: remainDate,
+                                ws_comment: remains.comment,
+                                ws_remainingtime: this.UnSimplify(remains.time),
+                                "ws_ReasonId@odata.bind": `/ws_timesheetvariationreasons(${remains.reasonId})`,
+                            })
+                        })
+                        if (res.status != 200 && res.status != 204) {
+                            if (res.status == 400) {
+                                s.warning = false;
+                            } else {
+                                s.status = false;
+                            }
+                        } else {
+                            remains.changed = false;
+                        }
+                    } else if ((remains.time != '' && remains.comment != '' && remains.changed && remains.reasonId && remains.endDate) || (remains.time == '0:00' && remains.changed && remains.reasonId && remains.endDate)) { // Create a new Record.
+                        const res = await fetch(`/api/data/v9.2/ws_timesheetvariations`, {
+                            method: "post", headers: STDHEADERS,
+                            body: JSON.stringify({
+                                "ws_TaskId@odata.bind": `/msdyn_projecttasks(${t.taskid})`,
+                                "ws_ProjectId@odata.bind": `/msdyn_projects(${t.projectid})`,
+                                "ws_ReasonId@odata.bind": `/ws_timesheetvariationreasons(${remains.reasonId})`,
+                                "ws_ResourceId@odata.bind": `/bookableresources(${resourceId})`,
+                                ws_estimatedenddate: remainDate,
+                                ws_comment: remains.comment,
+                                ws_remainingtime: this.UnSimplify(remains.time),
+                            })
+                        });
+
+                        if (res.headers.get("OData-Entityid")) {
+                            const eId = res.headers.get("Odata-Entityid").split("(")[1].split(')')[0];
+                            remains.entryId = eId;
+                        }
+
+                        if (res.status != 200 && res.status != 204) {
+                            if (res.status == 400) {
+                                s.warning = false;
+                            } else {
+                                s.status = false;
+                            }
+                        } else {
+                            remains.changed = false;
+                        }
+                    }
+                    return s;
+                },
+                Saved() {
+                    this.saving = false;
+                },
+                async Save(normalsave = true) {
+                    // Need to filter out the remaining
+
+                    //if (this.projectTasks.filter((a) => a.validated == false).length > 0) {
+                    //    $toast.add({ severity: 'error', summary: 'Error', detail: 'Please fill in all the missing fields.', life: 2000 });
+                    //    return;
+                    //}
+                    while (this.saving) await this.sleep(200);
+                    this.saving = true;
+                    this.processing = true;
+                    this.statusMsg = "Saving changes...";
+                    this.statusSeverity = "info";
+                    // Loop through project task entries that have time (filter) and then check if they have a msdyn_timeentryid if yes update that record with new time and new comment
+                    // if not create a new msdyn_timeentry that is linked to the resource and the task that has the time and comment set the time entry id reference in the array.
+
+                    let status = true;
+                    let warning = true;
+                    let processed = false;
+                    try {
+                        const resourceId = await this.getCurrentResourceId();
+
+                        for (let t of this.projectTasks.filter((a) => a.type != "total")) {
+                            const remains = t.entries[7];
+                            console.log(remains);
+                            let entries = t.entries.filter((a) => a.changed && a.dateOffset >= 0 && a.readOnly == false);
+                            // Change back to false on each entity once posted/updated.
+                            for (let e of entries) {
+                                console.log(e);
+                                // if we have an entry id, then if time is blank, run to delete, if time is not blank, and comment is blank, skip, otherwise run
+                                // if no time entry, then only run if time and comment is not blank
+
+                                if (e.entryId) {
+                                    if (e.time != '' && e.comment == "") continue;
+                                    processed = true;
+                                    status = await this.ProcessEntry(e, resourceId, t, status);
+                                } else {
+                                    if (e.time != '' && e.comment != "") {
+                                        processed = true;
+                                        status = await this.ProcessEntry(e, resourceId, t, status);
+                                    } else if (e.time != '' && e.comment == "" && normalsave) {
+                                        processed = true;
+                                        status = false;
+                                    }
+                                }
+
+                            }
+                            if (t.type == "stdentry" && remains.changed) {
+                                let r = await this.ProcessVariation(remains, resourceId, t, { status, warning });
+                                processed = true;
+                                status = r.status;
+                                warning = r.warning;
+                            }
+                        }
+                    } catch (ex) {
+                        console.log(ex.message)
+                        $toast.add({ severity: 'error', summary: 'Unexpected Error', detail: 'Check console for more details.', life: 2000 });
+                    }
+
+                    this.saving = false;
+                    this.processing = false;
+
+                    let r = []
+                    for (let pt of this.projectTasks) {
+                        const filterArr = pt.entries.filter((a) => a.changed)
+                        const hasTimeAndComment = filterArr.filter((a) => a.comment != '' || a.time != '');
+                        r = [...r, ...hasTimeAndComment]
+                    }
+                    if ((!processed && !normalsave && r.length != 0) || r.length > 0) {
+                        this.statusMsg = 'Unsaved changes.';
+                        this.statusSeverity = "warn";
+                        return;
+                    }
+
+                    if (!warning) {
+                        $toast.add({ severity: 'warn', summary: 'Missing Fields', detail: 'Please fill in any mandatory missing fields.', life: 2000 });
+                    }
+
+                    if (status && warning) {
+                        //$toast.add({ severity: 'success', summary: 'Timesheet Saved', detail: 'Successfully Saved Timesheet.', life: 2000 });
+                        this.statusMsg = 'Up to date.';
+                        this.statusSeverity = "success";
+                        if (normalsave) await this.getProjectsAndTasks();
+                    } else if (warning) {
+                        $toast.add({ severity: 'error', summary: 'Error', detail: 'Error while attempting to save the Timesheet.', life: 2000 });
+                        this.statusMsg = 'Error while saving timesheet.';
+                        this.statusSeverity = "error";
+                    }
+                },
+                async PublishVariations() {
+                    if (this.publishing) return;
+                    this.publishing = true;
+                    await this.Save();
+
+                    if (this.projectTasks.filter((a) => a.validated == false).length > 0) {
+                        $toast.add({ severity: 'error', summary: 'Error', detail: 'Please fill in all the missing fields.', life: 2000 });
+                        this.publishing = false;
+                        this.processing = false;
+                        return;
+                    }
+                    let status = true;
+                    const projs = this.projectTasks.filter((a) => a.type != "total");
+                    for (let t of projs) {
+                        const entries = t.entries.filter((a) => a.entryId);
+                        if (entries.length > 0) {
+                            for (let e of entries) {
+                                // some logic to check if it is a reason or a time entrie. maybe checking if it contains a reasonid
+                                if (e.reasonId) {
+                                    const res = await fetch(`/api/data/v9.2/ws_timesheetvariations(${e.entryId})`, {
+                                        method: "PATCH", headers: STDHEADERS,
+                                        body: JSON.stringify({
+                                            statuscode: 100000001,
+                                        })
+                                    })
+                                    status = (res.status == 204 || res.status == 200);
+                                }
+                                else if (!e.readOnly) {
+                                    const res = await fetch(`/api/data/v9.2/msdyn_timeentries(${e.entryId})`, {
+                                        method: "PATCH", headers: STDHEADERS,
+                                        body: JSON.stringify({
+                                            msdyn_entrystatus: 192350003,
+                                        })
+                                    });
+                                    status = (res.status == 204 || res.status == 200);
+                                }
+                            }
+                        }
+                    }
+                    if (status) {
+                        $toast.add({ severity: 'success', summary: 'Published', detail: 'Successfully Published Timesheet', life: 2000 });
+                    } else {
+                        $toast.add({ severity: 'error', summary: 'Error', detail: 'Error while attempting to publish the Timesheet.', life: 2000 });
+                    }
+                    this.publishing = false;
+                    this.submit = false;
+                    await this.getProjectsAndTasks();
+                },
+                async Publish() {
+                    if (this.publishing) return;
+                    this.publishing = true;
+                    this.processing = true;
+                    await this.Save();
+
+                    if (this.projectTasks.filter((a) => a.validated == false).length > 0) {
+                        $toast.add({ severity: 'error', summary: 'Error', detail: 'Please fill in all the missing fields.', life: 2000 });
+                        this.publishing = false;
+                        this.processing = false;
+                        return;
+                    }
+                    let status = true;
+                    const projs = this.projectTasks.filter((a) => a.type != "total");
+                    for (let t of projs) {
+                        const entries = t.entries.filter((a) => a.entryId);
+                        if (entries.length > 0) {
+                            for (let e of entries) {
+                                if (!e.readOnly && !e.reasonId) {
+                                    const res = await fetch(`/api/data/v9.2/msdyn_timeentries(${e.entryId})`, {
+                                        method: "PATCH", headers: STDHEADERS,
+                                        body: JSON.stringify({
+                                            msdyn_entrystatus: 192350003,
+                                        })
+                                    });
+                                    status = (res.status == 204 || res.status == 200);
+                                }
+                            }
+                        }
+                    }
+                    if (status) {
+                        $toast.add({ severity: 'success', summary: 'Published', detail: 'Successfully Published Timesheet', life: 2000 });
+                    } else {
+                        $toast.add({ severity: 'error', summary: 'Error', detail: 'Error while attempting to publish the Timesheet.', life: 2000 });
+                    }
+                    this.publishing = false;
+                    this.submit = false;
+                    this.processing = false;
+                    await this.getProjectsAndTasks();
+                },
+                async Complete() {
+                    this.processing = true;
+                    if (this.projectTasks.filter((a) => a.validated == false).length > 0) {
+                        $toast.add({ severity: 'error', summary: 'Error', detail: 'Please fill in all the missing fields.', life: 2000 });
+                        this.publishing = false;
+                        this.processing = false;
+                        return;
+                    }
+                    // Submit the timesheet variation/s
+                    this.PublishVariations();
+
+                    let eDate;
+                    const currentMonday = this.getMondayOfCurrentWeek();
+
+                    // if in current week, set end date to the current day.
+                    // if not, end of the week (the sunday of the week).
+                    if (this.isSameDate(this.startDate, currentMonday)) {
+                        eDate = new Date();
+                    } else {
+                        eDate = new Date(this.startDate);
+                        eDate.setDate(this.startDate.getDate() + 6); // Get sunday
+                    }
+
+                    const fullName = await this.getUsersName();
+                    // POST new User Timesheet
+                    const name = this.startDate.getUTCFullYear() + "/" + (this.startDate.getMonth() + 1) + "/" + (this.startDate.getDate()) + " - " + fullName;
+                    const res = await fetch(`/api/data/v9.2/ws_usertimesheets`, {
+                        method: "POST", headers: STDHEADERS,
+                        body: JSON.stringify({
+                            ws_name: name,
+                            ws_startdate: this.startDate,
+                            ws_enddate: eDate,
+                        })
+                    });
+                    const status = (res.status == 204 || res.status == 200);
+                    this.processing = false;
+                    this.completed = false;
+                    if (status) {
+                        $toast.add({ severity: 'success', summary: 'Published', detail: 'Successfully Completed Timesheet', life: 2000 });
+                    } else {
+                        $toast.add({ severity: 'error', summary: 'Error', detail: 'Error while attempting to complete the Timesheet.', life: 2000 });
+                    }
+                },
+                async getUsersName() {
+                    const userID = await this.getWhoAmI();
+                    const res = await fetch(`/api/data/v9.2/systemusers(${userID})?$select=fullname`)
+                    const userName = await res.json();
+                    console.log(userName);
+                    return userName.fullname;
+                },
+                isSameDate(date1, date2) {
+                    return date1.getFullYear() === date2.getFullYear() &&
+                        date1.getMonth() === date2.getMonth() &&
+                        date1.getDate() === date2.getDate();
+                },
+                getMondayOfCurrentWeek() {
+                    const today = new Date();
+                    const dayOfWeek = today.getDay();
+                    const diff = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+                    const monday = new Date(today);
+                    monday.setDate(today.getDate() - diff);
+                    return monday;
+                },
+                async sleep(duration) { await new Promise(t => setTimeout(t, duration)); },
+                async AutoSave(ent) {
+                    console.log("Auto Saving.");
+                    this.Save(false);
+                },
+                OverallTotal() {
+                    let total = 0;
+                    for (let j of this.projectTasks) {
+                        if (j.type != 'total') {
+                            for (let k of j.entries)
+                                if (k.time && k.time != '' && j.entries.indexOf(k) < 7) {
+                                    let p = k.time.split(":");
+                                    if (p.length == 2 && this.IsNumber(p[0]) && this.IsNumber(p[1]))
+                                        total += parseInt(p[0]) * 60 + parseInt(p[1]);
+                                }
+                        }
+                    }
+                    if (total < 15) {
+                        return '0:00';
+                    } else {
+                        return this.Simplify('0:' + total, 0, true);
+                    }
+                },
+                DayTotal(i) {
+                    let total = 0;
+                    for (let j of this.projectTasks) {
+                        for (let k of j.entries) {
+                            if (k.time && k.time != '' && j.entries.indexOf(k) == i) {
+                                let p = k.time.split(":");
+                                if (p.length == 2 && this.IsNumber(p[0]) && this.IsNumber(p[1]))
+                                    total += parseInt(p[0]) * 60 + parseInt(p[1]);
+                            }
+                        }
+                    }
+                    if (total < 15) {
+                        return '0:00';
+                    } else {
+                        return this.Simplify('0:' + total, 0, true);
+                    }
+                },
+                TaskTotal(j) {
+                    let total = 0;
+                    for (let k of j.data.entries) {
+                        if (k.time && k.time != '' && j.data.entries.indexOf(k) < 7) {
+                            let p = k.time.split(":");
+                            if (p.length == 2 && this.IsNumber(p[0]) && this.IsNumber(p[1]))
+                                total += parseInt(p[0]) * 60 + parseInt(p[1]);
+                        }
+                    }
+                    if (total < 15) {
+                        return '0:00';
+                    } else {
+                        return this.Simplify('0:' + total, 0, true);
+                    }
+                },
+                IsNumber(n) {
+                    return !Number.isNaN(Number.parseInt(n)) && (('' + Number.parseInt(n)) === '' + n || ('0' + Number.parseInt(n)) === '' + n);
+                },
+                Simplify(n, i, t) {
+                    let parts = n.split(':');
+                    parts[0] = Number.parseInt(parts[0]);
+                    parts[1] = Number.parseInt(parts[1]);
+                    let totalMins;
+
+                    if (i == 7) {
+                        totalMins = Math.max(parts[0] * 60 + parts[1]);
+                    } else {
+                        totalMins = Math.max(parts[0] * 60 + parts[1], this.settings.MINIMUMTIME);
+                    }
+                    let roundedTotalMins = Math.ceil(totalMins / this.settings.TIMESTEP) * this.settings.TIMESTEP;
+
+                    if ((roundedTotalMins > 1440 && i != 7) && !t) {
+                        roundedTotalMins = 1440
+                    }
+
+                    parts[0] = Math.floor(roundedTotalMins / 60);
+                    parts[1] = roundedTotalMins % 60;
+
+                    if (parts[1] < 10) parts[1] = "0" + parts[1];
+                    return parts[0] + ":" + parts[1];
+                },
+                UnSimplify(n) {
+                    let parts = n.split(':');
+                    parts[0] = Number.parseInt(parts[0]);
+                    parts[1] = Number.parseInt(parts[1]);
+                    if (parts[0] >= 1) {
+                        parts[0] = parts[0] * 60
+                    }
+                    return parts[0] + parts[1];
+                },
+                checkEndDate(e) {
+                    if (e.data.type != 'stdentry') return
+                    const today = new Date()
+                    const endDate = new Date(e.data.entries[7].endDate)
+
+                    if (this.UnSimplify(e.data.entries[7].time) > 0 && today > endDate) {
+                        e.data.entries[7].endDate = '';
+                        e.data.entries[7].minDate = new Date();
+                        e.data.validated = false;
+                    }
+                },
+                convertDecimalHours(dec) {
+                    dec = parseFloat(dec);
+                    const hours = Math.floor(dec);
+                    const minutes = Math.round((dec - hours) * 60);
+                    const formattedMins = (minutes < 10 ? '0' : '') + minutes;
+                    return `${hours}:${formattedMins}`
+                },
+                validateTime(e, c, i) {
+                    e.data.validated = true;
+                    //for (let i = 0; i < 8 - (e.type == "intentry" ? 1 : 0); i++) {
+                    let num = e.data.entries[i].time;
+                    if (num.includes(".")) {
+                        console.log("Number entered is a decimal.")
+                        num = this.convertDecimalHours(num);
+                    }
+
+                    let parts = num.split(':');
+                    if (parts.length == 1 && this.IsNumber(num) && parseInt(num) < 10) num = this.Simplify(num + ":0", i);
+                    else if (parts.length == 1 && this.IsNumber(num)) num = this.Simplify("0:" + num, i);
+                    else if (parts.length == 2 && this.IsNumber(parts[0]) && this.IsNumber(parts[1])) { num = this.Simplify(num, i); }
+                    else if (parts.length == 2 && parts[0] == '' && this.IsNumber(parts[1])) { num = this.Simplify('0:' + parts[1], i); }
+                    else if (parts.length == 2 && parts[1] == '' && this.IsNumber(parts[0])) { num = this.Simplify(parts[0] + ':0', i); }
+                    else num = '';
+                    e.data.entries[i].time = num;
+                    if (e.data.entries[i].time != 0 && (e.data.entries[i].comment == "" || e.data.entries[i].comment == null) && e.data.entries[i].dateOffset >= 0) {
+                        e.data.entries[i].class = 'empty';
+                        e.data.validated = false;
+                    } else {
+                        e.data.entries[i].class = 'sml';
+                    }
+                    if (e.data.entries[i].time == '') {
+                        e.data.entries[i].comment = '';
+                    }
+                    if (c) {
+                        e.data.entries[i].changed = true;
+                        this.statusMsg = "Unsaved changes.";
+                        this.statusSeverity = "warn";
+                    }
+                    e.data.entries[i].placeholder = (e.data.entries[i].time != 0 && (e.data.entries[i].comment == "" || e.data.entries[i].comment == null)) ? 'Comment Required' : '';
+                    //}
+                    let remaining = false;
+                    for (let i of e.data.entries) {
+                        if (i.time != "" && !i.readOnly && e.type != 'intentry') {
+                            remaining = true;
+                        }
+                    }
+                    this.checkEndDate(e);
+                    if ((remaining || e.data.entries[7].time != 0) && e.data.entries[7].comment == "" && e.data.type != "intentry") {
+                        e.data.entries[7].class = 'empty';
+                        e.data.entries[7].timeClass = 'time timeReq';
+                        e.data.entries[7].placeholder = 'Comment Required';
+                        e.data.validated = false;
+                    }
+                    else {
+                        e.data.entries[7].class = 'sml';
+                        e.data.entries[7].timeClass = 'time';
+                        e.data.entries[7].placeholder = '';
+                    }
+
+                    // Check for the ENFORCEALLVARIATIONS
+                    if (this.settings.ENFORCEALLVARIATIONS && c == false) {
+                        e.data.validated = true;
+                        if (e.data.entries[7].time == '' || e.data.entries[7].comment == "") {
+                            e.data.entries[7].class = 'empty'
+                            e.data.entries[7].timeClass = 'time timeReq';
+                            e.data.entries[7].placeholder = 'Comment Required';
+                            e.data.validated = false;
+                        }
+                        else {
+                            e.data.entries[7].class = 'sml';
+                            e.data.entries[7].timeClass = 'time';
+                            e.data.entries[7].mandatory = false;
+                            e.data.entries[7].placeholder = '';
+                        }
+                    }
+
+                    if (e.data.enforceVariation) {
+                        if (e.data.entries[7].time == '' || e.data.entries[7].comment == "") {
+                            e.data.entries[7].class = 'empty';
+                            e.data.entries[7].timeClass = 'time timeReq';
+                            e.data.entries[7].placeholder = 'Comment Required';
+                            e.data.validated = false;
+                        } else {
+                            e.data.entries[7].class = 'sml';
+                            e.data.entries[7].timeClass = 'time';
+                            e.data.entries[7].mandatory = false;
+                            e.data.entries[7].placeholder = '';
+                        }
+                    }
+                    if (!e.data.entries[7].reasonId && e.data.entries[7].time != 0) {
+                        e.data.entries[7].mandatory = true;
+                        e.data.validated = false;
+                    } else {
+                        e.data.entries[7].mandatory = false;
+                    }
+
+                    if (e.data.entries[7].time === '0:00') {
+                        e.data.entries[7].class = 'sml';
+                        e.data.entries[7].timeClass = 'time';
+                        e.data.entries[7].placeholder = '';
+                    }
+
+                    if (e.data.entries[7].reasonId == this.settings.COMPLETEDREASONID) {
+                        e.data.entries[7].class = 'sml';
+                        e.data.entries[7].timeClass = 'time';
+                        e.data.entries[7].placeholder = '';
+                        e.data.entries[7].time = '';
+                        e.data.entries[7].endDate = '';
+                        e.data.entries[7].complete = true;
+                        e.data.validated = true;
+                    } else {
+                        e.data.entries[7].complete = false;
+                    }
+
+                    if (c && this.autoSave) {
+                        this.AutoSave(e);
+                    }
+                },
+                sizeMeDown(e, i) {
+                    e.data.entries[i].class = (e.data.entries[i].time != 0 && e.data.entries[i].comment == "") ? 'empty' : 'sml';
+                },
+                sizeMeUp(e, i) {
+                    e.data.entries[i].class = 'lg';
+                    e.data.entries[i].placeholder = (i == 7) ? this.settings.REMAININGPLACEHOLDER : this.settings.PLACEHOLDERCOMMENT;
+                },
+                variationChange(slotProp) {
+                    this.validateTime(slotProp, true, 7);
+                },
+                async getCurrentResourceId() {
+                    const userId = await this.getWhoAmI();
+                    const resource = await fetch(`/api/data/v9.2/bookableresources?$filter=_userid_value eq '${userId}' &$select=bookableresourceid`);
+                    const resourceId = await resource.json();
+                    this.resourceId = resourceId.value[0].bookableresourceid;
+                    return resourceId.value[0].bookableresourceid;
+                },
+                async getWhoAmI() {
+                    const response = await fetch(`/api/data/v9.2/WhoAmI`);
+                    const user = await response.json();
+                    let impersonate = localStorage.getItem("ws_impersonateUser");
+                    if (impersonate != null) {
+                        this.userId = impersonate;
+                        return impersonate;
+                    }
+                    this.userId = user.UserId;
+                    return user.UserId;
+                },
+                async getTimesheetVariation(resourceId) { // Recieving the (Remaining Column) / new end date.
+                    const response = await fetch(`/api/data/v9.2/ws_timesheetvariations?$filter=_ws_resourceid_value eq ${resourceId} and (statuscode eq 1)`);
+                    const variation = await response.json();
+                    return variation.value;
+                },
+                async getTimesheetVariationReasons() {
+                    const response = await fetch(`/api/data/v9.2/ws_timesheetvariationreasons?$select=ws_name`);
+                    const reasons = await response.json();
+                    const sortedReasons = reasons.value.sort(function (a, b) { return a.ws_name.localeCompare(b.ws_name) });
+                    return sortedReasons;
+                },
+                FormatDate(dt) {
+                    if (dt === new Date(8640000000000000)) return "Stardate 1,677,999";
+                    if (dt === new Date(-8640000000000000)) return "Stardate -2,323,000";
+                    return dt.getDate() + ' ' + this.MonthName(dt.getMonth()) + ' ' + dt.getUTCFullYear();
+                },
+                CreateBlankEntries(endDate) {
+                    return [
+                        { comment: '', class: 'sml', time: '', entryId: '', dateOffset: 0, changed: false, readOnly: false },
+                        { comment: '', class: 'sml', time: '', entryId: '', dateOffset: 1, changed: false, readOnly: false },
+                        { comment: '', class: 'sml', time: '', entryId: '', dateOffset: 2, changed: false, readOnly: false },
+                        { comment: '', class: 'sml', time: '', entryId: '', dateOffset: 3, changed: false, readOnly: false },
+                        { comment: '', class: 'sml', time: '', entryId: '', dateOffset: 4, changed: false, readOnly: false },
+                        { comment: '', class: 'sml', time: '', entryId: '', dateOffset: 5, changed: false, readOnly: false },
+                        { comment: '', class: 'sml', time: '', entryId: '', dateOffset: 6, changed: false, readOnly: false },
+                        { comment: '', class: 'sml', time: '', entryId: '', reasonId: '', endDate: '', changed: false, readOnly: false, mandatory: false, minDate: new Date(), complete: false }
+                    ];
+                },
+                CreateBlankEntry(project, projectid, task, taskid, customerName, customerid, roleid, workType, startDate, endDate, projectColor) {
+                    return {
+                        entries: this.CreateBlankEntries(endDate),
+                        projectName: project,
+                        taskName: task,
+                        customerName: customerName,
+                        customerId: customerid,
+                        taskid: taskid,
+                        projectid: projectid,
+                        startDate,
+                        endDate,
+                        role: roleid,
+                        workType,
+                        type: "stdentry",
+                        validated: true,
+                        styleClass: projectColor,
+                        workReadOnly: false,
+                        enforceVariation: false,
+                        disabled: false,
+                        bookableId: null,
+                        ownerId: null,
+                        isHelpEntry: false,
+                    }
+                },
+                async sortTasks(value) {
+                    return value;
+                    let data = [...value];
+                    let sortField = this.d_sortField;
+                    let sortOrder = this.d_sortOrder;
+
+                    data.sort((a, b) => {
+                        let value1 = a[sortField];
+                        let value2 = b[sortField];
+
+                        let result = null;
+                        if (value1 == null && value2 != null) result = -1;
+                        else if (value1 != null && value2 == null) result = 1;
+                        else if (value1 == null && value2 == null) result = 0;
+                        else if (typeof value1 === 'string' && typeof value2 === 'string') result = value1.localeCompare(value2, undefined, { numeric: true });
+                        else result = value1 < value2 ? -1 : value1 > value2 ? 1 : 0;
+
+                        return sortOrder * result;
+                    });
+                    return data;
+                },
+                async getProjectsAndTasks() {
+                    this.loading = true;
+                    this.remainingReasons = await this.getTimesheetVariationReasons();
+                    const resourceId = await this.getCurrentResourceId();
+                    const tsv = await this.getTimesheetVariation(resourceId);
+
+                    //get roles (bookableresourcecategory) and default role (bookableresourcecategoryassn)
+                    const bookableresourcecategoryreq = await fetch(`/api/data/v9.2/bookableresourcecategoryassns?$filter=_resource_value eq '${resourceId}' &$expand=ResourceCategory($select=bookableresourcecategoryid,name)`);
+                    const testVar = await bookableresourcecategoryreq.json();
+                    const varName = testVar.value.map(a => { return a.ResourceCategory });
+                    this.bookableResourceCategories = varName.sort(function (a, b) { return a.name.localeCompare(b.name) });
+                    const defaultrolereq = await fetch(`/api/data/v9.2/bookableresourcecategoryassns?$filter=_resource_value eq '${resourceId}' and msdyn_isdefault eq true`);
+                    const defaultroleval = (await defaultrolereq.json()).value;
+                    if (defaultroleval.length > 0) this.defaultRole = defaultroleval[0]._resourcecategory_value;
+
+                    const sdBuffer = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() - this.settings.TASKQUERYSTARTBUFFER);
+                    const edBuffer = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + 7 + this.settings.TASKQUERYENDBUFFER);
+
+                    const sd = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate());
+                    const ed = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + 7);
+
+                    const timeRes = await fetch(`/api/data/v9.2/msdyn_timeentries?$select=msdyn_type,msdyn_project,msdyn_projectTask,msdyn_date,_msdyn_project_value,_msdyn_projecttask_value,msdyn_duration,msdyn_timeentryid,msdyn_description,msdyn_entrystatus,_msdyn_resourcecategory_value&$filter=_msdyn_bookableresource_value eq '${resourceId}' and msdyn_start le ${ed.toISOString()} and msdyn_end ge ${sd.toISOString()} &$expand=msdyn_project($expand=msdyn_customer),msdyn_projectTask`);
+                    const timeEntries = (await timeRes.json()).value;
+
+
+                    const helpRes = await fetch(`/api/data/v9.2/ws_projecthelptaskses?$filter=(_ws_requestee_value eq '${resourceId}' and statecode eq 0 and _ws_projecttask_value ne null and ws_datefrom le ${ed.toISOString().split('T')[0]} and ws_dateto ge ${sd.toISOString().split('T')[0]}) &$expand=ws_project($expand=msdyn_customer),ws_ProjectTask`);
+                    const helpEntries = (await helpRes.json()).value;
+
+                    const userId = await this.getWhoAmI();
+
+                    const xml = `<fetch version="1.0" mapping="logical" distinct="true" no-lock="false"><entity name="msdyn_projecttask"><attribute name="msdyn_subject" /><attribute name="ws_istimecodeonly" /><attribute name="createdon" /><order attribute="msdyn_subject" descending="false" /><attribute name="msdyn_projecttaskid" /><attribute name="msdyn_project" /><attribute name="msdyn_start" /><attribute name="msdyn_finish" /><filter type="and"><condition attribute="ws_isresourcingcodeonly" operator="ne" value="true" /><condition attribute="msdyn_summary" operator="eq" value="false" /><condition attribute="statecode" operator="eq" value="0" /><condition attribute="msdyn_start" operator="on-or-before" value="${edBuffer.toISOString()}" /><filter type="or"><condition attribute="msdyn_finish" operator="null" /><condition attribute="msdyn_finish" operator="on-or-after" value="${sdBuffer.toISOString()}" /></filter><filter type="or" ><filter type="and" ><condition attribute="ws_timeloggingrulecode" operator="eq" value="100000001" entityname="aa" /><condition attribute="userid" operator="eq" value="${userId}" entityname="ax" /></filter><condition attribute="userid" operator="eq" value="${userId}" entityname="bb" /><condition attribute="msdyn_projectid" operator="eq" value="7d977b9a-45be-4a18-bbe3-66005a253b76" entityname="aa" /></filter></filter><link-entity name="incident" alias="case" link-type="outer" from="ws_projecttaskid" to="msdyn_projecttaskid" ><attribute name="ownerid" /></link-entity><link-entity name="msdyn_project" alias="aa" link-type="inner" from="msdyn_projectid" to="msdyn_project" ><filter type="or" ><condition attribute="ws_timeloggingrulecode" operator="eq" value="100000000" /><condition attribute="ws_timeloggingrulecode" operator="eq" value="100000001" /></filter><filter type="and"><condition attribute="statecode" operator="eq" value="0" /></filter><attribute name="ws_timeloggingrulecode" /><attribute name="ws_enforcetimesheetvariations" /><attribute name="msdyn_subject" /><attribute name="msdyn_customer" /><link-entity name="account" alias="acc" link-type="inner" from="accountid" to="msdyn_customer" ><attribute name="name" /></link-entity><link-entity name="msdyn_projectteam" alias="aw" link-type="outer" from="msdyn_project" to="msdyn_projectid" ><link-entity name="bookableresource" alias="ax" link-type="outer" from="bookableresourceid" to="msdyn_bookableresourceid" /></link-entity></link-entity><link-entity name="msdyn_resourceassignment" alias="ba" link-type="outer" from="msdyn_taskid" to="msdyn_projecttaskid" ><link-entity name="bookableresource" alias="bb" link-type="outer" from="bookableresourceid" to="msdyn_bookableresourceid"><attribute name="bookableresourceid" /></link-entity></link-entity></entity></fetch>`;
+
+                    const testXML = await fetch(`/api/data/v9.2/msdyn_projecttasks?fetchXml=${xml}`);
+                    const textXMLRes = (await testXML.json()).value;
+
+                    let todayI = new Date().getDay();
+                    this.todayIndex = (todayI == 0 ? 6 : todayI - 1);
+
+                    this.projectTasks = ref([]);
+                    let tmpProjectTasks = [];
+                    let projectColor = '';
+
+                    //Loop through actual entries and create / update projectTasks
+                    for (let t of timeEntries) {
+                        if (t.msdyn_type != 192350000 && t.msdyn_type != 192354320) {
+                            t.msdyn_type = 1;
+                        }
+
+                        if (!t.msdyn_project) t.msdyn_project = { msdyn_subject: "", msdyn_customer: { name: '' } }
+                        if (!t.msdyn_projectTask) t.msdyn_projectTask = { msdyn_subject: '' }
+
+                        let sdt = t.msdyn_projectTask?.msdyn_start ? new Date(t.msdyn_projectTask.msdyn_start) : new Date(-8640000000000000);
+                        let edt = t.msdyn_projectTask?.msdyn_finish ? new Date(t.msdyn_projectTask.msdyn_finish) : new Date(8640000000000000);
+
+                        let entry = tmpProjectTasks.filter((a) => a.taskid == t._msdyn_projecttask_value && a.workType == t.msdyn_type && a.role == t._msdyn_resourcecategory_value);
+                        let tsk = textXMLRes.filter((a) => a.msdyn_projecttaskid == t._msdyn_projecttask_value);
+                        if (entry.length == 0) {
+                            entry = this.CreateBlankEntry(t.msdyn_project.msdyn_subject, t._msdyn_project_value, t.msdyn_projectTask.msdyn_subject, t._msdyn_projecttask_value, t.msdyn_project.msdyn_customer.name, t.msdyn_project._msdyn_customer_value, t._msdyn_resourcecategory_value, t.msdyn_type, sdt, edt, projectColor);
+                            if ((t.msdyn_type != null && t.msdyn_type != 192350000) || (t._msdyn_resourcecategory_value != null && t._msdyn_resourcecategory_value != this.defaultRole)) entry.type = "intentry";
+                            tmpProjectTasks.push(entry);
+                        } else entry = entry[0];
+                        if (!tsk || !tsk[0] || (tsk[0]["aa.ws_timeloggingrulecode"] == 100000001 && tsk[0]["case.ownerid"] == null)) entry.type = "intentry";
+                        if (t.msdyn_project?.ws_timeloggingrulecode == 100000002) {
+                            for (let ets of entry.entries) {
+                                ets.readOnly = true;
+                            }
+                            entry.disabled = true;
+                        }
+
+
+                        let dateIndex = new Date(t.msdyn_date).getDay();
+                        dateIndex = (dateIndex == 0 ? 6 : dateIndex - 1);
+                        if (entry.entries[dateIndex].time != '' && entry.entries[dateIndex].time != null) {
+                            entry = this.CreateBlankEntry(t.msdyn_project.msdyn_subject, t._msdyn_project_value, t.msdyn_projectTask.msdyn_subject, t._msdyn_projecttask_value, t.msdyn_project.msdyn_customer.name, t.msdyn_project._msdyn_customer_value, t._msdyn_resourcecategory_value, t.msdyn_type, sdt, edt, projectColor);
+                            entry.type = "intentry";
+                            tmpProjectTasks.push(entry);
+                        }
+                        entry.entries[dateIndex].time = this.Simplify("0:" + t.msdyn_duration, dateIndex);
+                        entry.entries[dateIndex].entryId = t.msdyn_timeentryid;
+                        entry.entries[dateIndex].comment = t.msdyn_description;
+
+                        if (entry.workType == 1) {
+                            entry.entries.map((a) => a.readOnly = true);
+                        }
+
+                        if (t.msdyn_entrystatus == 192350003 || t.msdyn_entrystatus == 192354320 || t.msdyn_entrystatus == 192350002 || t.msdyn_entrystatus == 192350004) {
+                            entry.entries[dateIndex].readOnly = true;
+                        }
+                    }
+
+                    //loop through resource assignments, and if no matching entry found, create a new line
+                    for (let ra of textXMLRes) {
+
+                        let entry = tmpProjectTasks.filter((a) => a.taskid == ra.msdyn_projecttaskid && a.workType == 192350000 && a.role == this.defaultRole);
+                        if (entry.length == 0) {
+                            let sdt = new Date(ra.msdyn_start);
+                            let edt = new Date(ra.msdyn_finish);
+                            entry = this.CreateBlankEntry(ra['aa.msdyn_subject'], ra._msdyn_project_value, ra.msdyn_subject, ra.msdyn_projecttaskid, ra['acc.name'], ra['aa.msdyn_customer'], this.defaultRole, 192350000, sdt, edt, projectColor);
+                            tmpProjectTasks.push(entry);
+                        } else entry = entry[0];
+                        if (ra["ws_istimecodeonly"]) entry.type = 'intentry';
+                        // case owner doesn't match then set int entry. else if the bookableresourceid doesn't match.
+                        if (ra["aa.ws_timeloggingrulecode"] == 100000001) {
+                            if (ra["case.ownerid"] == null) {
+                                if (ra["bb.bookableresourceid"] != resourceId) entry.type = "intentry"
+                            }
+                            else if (ra["case.ownerid"] != userId) entry.type = "intentry";
+                        }
+
+                        //if (ra["aa.ws_timeloggingrulecode"] == 100000001 && ra["case.ownerid"] != null && ra["case.ownerid"] != userId ) entry.type = "intentry";
+                        //else if (ra["aa.ws_timeloggingrulecode"] == 100000001 && ra["case.ownerid"] == null && ra["bb.bookableresourceid"] != resourceId ) entry.type = "intentry";
+                        if (ra["aa.ws_enforcetimesheetvariations"] && !ra["ws_istimecodeonly"]) {
+                            entry.enforceVariation = true;
+                            entry.type = 'stdentry';
+                        }
+                        entry.ownerId = ra["case.ownerid"];
+                        entry.bookableId = ra["bb.bookableresourceid"];
+                    }
+
+                    //loop thorugh and add any captured remainings
+                    for (let remaining of tsv) {
+                        let edt = new Date(remaining.ws_estimatedenddate);
+                        let entry = tmpProjectTasks.filter((a) => a.taskid == remaining._ws_taskid_value && a.workType == 192350000 && a.role == this.defaultRole);
+                        if (entry.length == 0) continue;
+                        let ents = entry[0];
+
+                        ents.entries[7].comment = remaining.ws_comment;
+                        ents.entries[7].time = this.Simplify("0:" + remaining.ws_remainingtime, 7);
+                        ents.entries[7].entryId = remaining.ws_timesheetvariationid;
+                        ents.entries[7].reasonId = remaining._ws_reasonid_value;
+                        ents.entries[7].endDate = edt;
+
+                        if (remaining.statuscode == 100000001) {
+                            ents.entries[7].readOnly = true;
+                        }
+                    }
+
+                    //Loop through Help Taks
+                    for (let t of helpEntries) {
+                        let entry = tmpProjectTasks.filter((a) => a.taskid == t._ws_projecttask_value);
+                        if (entry.length == 0) {
+                            let sdt = t.ws_datefrom ? new Date(t.ws_datefrom) : new Date(-8640000000000000);
+                            let edt = t.ws_dateto ? new Date(t.ws_dateto) : new Date(8640000000000000);
+                            entry = this.CreateBlankEntry(t.ws_project.msdyn_subject, t._ws_project_value, t.ws_ProjectTask.msdyn_subject, t._ws_projecttask_value, t.ws_project.msdyn_customer.name, t.ws_project.msdyn_customer.accountid, this.defaultRole, 192350000, sdt, edt, projectColor);
+                            entry.isHelpEntry = true;
+                            entry.type = 'intentry';
+                            tmpProjectTasks.push(entry);
+                        } else entry = entry[0];
+                    }
+                    let lastProj;
+                    let newProj;
+                    for (let x of tmpProjectTasks) {
+                        for (let i = 0; i < 8; i++) this.validateTime({ data: x }, false, i);
+                    }
+                    let wsinternal = tmpProjectTasks.filter((a) => a.projectid == '7d977b9a-45be-4a18-bbe3-66005a253b76');
+                    for (let wsi of wsinternal) {
+                        if (wsi["ws_istimecodeonly"]) wsi.type = 'intentry';
+                        wsi.styleClass = this.settings.WALKERSCOTTCOLOR;
+                    }
+                    //sort the lot.
+                    this.projectTasks = await this.sortTasks(tmpProjectTasks);
+                    this.frozenRow = [];
+                    let total = {
+                        projectName: "",
+                        taskName: "Totals",
+                        customerName: "",
+                        type: "total",
+                        frozen: true,
+                        entries: [
+                            { comment: '', class: 'sml', time: '' },
+                            { comment: '', class: 'sml', time: '' },
+                            { comment: '', class: 'sml', time: '' },
+                            { comment: '', class: 'sml', time: '' },
+                            { comment: '', class: 'sml', time: '' },
+                            { comment: '', class: 'sml', time: '' },
+                            { comment: '', class: 'sml', time: '' },
+                            { comment: '', class: 'sml', time: '' }
+                        ]
+                    }
+                    this.frozenRow.unshift(total);
+                    this.loading = false;
+                },
+                async GetSetting(settingName) {
+                    const env = await fetch(`/api/data/v9.2/environmentvariabledefinitions?$select=defaultvalue&$filter=schemaname eq '${settingName}'`)
+                    const result = (await env.json()).value;
+                    if (result.length == 1) {
+                        const envDef = await fetch(`/api/data/v9.2/environmentvariablevalues?$select=value&$filter=_environmentvariabledefinitionid_value eq '${result[0].environmentvariabledefinitionid}'`);
+                        const result2 = (await envDef.json()).value;
+                        if (result2.length == 1) {
+                            return (result2[0].value);
+                        } else {
+                            return (result[0].defaultvalue);
+                        }
+                    }
+                },
+                MonthName(e) {
+                    switch (e) {
+                        case 0: return 'Jan';
+                        case 1: return 'Feb';
+                        case 2: return 'Mar';
+                        case 3: return 'Apr';
+                        case 4: return 'May';
+                        case 5: return 'Jun';
+                        case 6: return 'Jul';
+                        case 7: return 'Aug';
+                        case 8: return 'Sep';
+                        case 9: return 'Oct';
+                        case 10: return 'Nov';
+                        case 11: return 'Dec';
+                    }
+                },
+                DayName(e) {
+                    switch (e) {
+                        case 0: return 'Sun';
+                        case 1: return 'Mon';
+                        case 2: return 'Tue';
+                        case 3: return 'Wed';
+                        case 4: return 'Thu';
+                        case 5: return 'Fri';
+                        case 6: return 'Sat';
+                    }
+                },
+                changeDate(days) {
+                    this.startDate.setDate(this.startDate.getDate() + days);
+                    this.calculateWeekStart();
+                },
+                calculateWeekStart() {
+                    console.log("Calculate Week Start");
+                    this.days = ref([]);
+                    let dt = this.startDate;
+                    dt.setDate(dt.getDate() - (dt.getDay() == 0 ? 7 : dt.getDay()) + 1); // get monday of this week.
+                    this.startDate = new Date(dt);
+                    for (let t = 0; t < 7; t++) {
+                        this.days.push({
+                            text: this.DayName(dt.getDay()) + ' ' + dt.getDate(),
+                            date: dt,
+                            month: this.DayName(dt.getDay()) + ' ' + dt.getDate() + ' ' + this.MonthName(dt.getMonth()) + ' ' + dt.getUTCFullYear()
+                        });
+                        dt.setDate(dt.getDate() + 1);
+                    }
+                    this.getProjectsAndTasks();
+                },
+                checkOffset(offset) {
+                    let sd = new Date(this.startDate.valueOf());
+                    sd.setDate(sd.getDate() + offset);
+                    const today = new Date();
+                    return ((sd.getDate() == today.getDate()) && (sd.getMonth() == today.getMonth()) && (sd.getFullYear() == today.getFullYear()));
+                },
+                duplicateTask(slotProps) {
+                    let cpy = { ...slotProps };
+                    cpy.entries = this.CreateBlankEntries();
+                    cpy.type = "intentry";
+                    cpy.validated = true;
+                    this.projectTasks.splice(this.projectTasks.indexOf(slotProps) + 1, 0, cpy);
+                },
+                checkWorkType(slotProps) {
+                    if (slotProps.workType == 1) {
+                        slotProps.workType = 192350000;
+                    }
+                    // Add logic to make it so the fields say they have changed.
+                    for (let ent of slotProps.entries) {
+                        if (ent.comment != '' && ent.time != '') {
+                            ent.changed = true;
+                        }
+                    }
+                },
+                redirectUrl(entityType, id) {
+                    let appid = this.getUrlParameter("appid", window.parent.location.search);
+                    if (appid && appid.length > 0) appid = "?appid=" + appid + "&newWindow=true";
+                    else appid = "?newWindow=true";
+                    return window.parent.location.protocol + "//" + window.parent.location.host + "/main.aspx" + appid + "&pagetype=entityrecord&etn=" + entityType + "&id=" + id;
+                },
+                getUrlParameter(name, srch) {
+                    let regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+                    let results = regex.exec(srch);
+                    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+                },
+                toggleMenu(event) {
+                    this.$refs.menuFilters.toggle(event);
+                },
+                updateStorage(changedItem, value) {
+                    this.localStore.filters[changedItem] = value;
+                    this.setLocalStorage();
+                },
+                updateStorageAutoSave(value) {
+                    this.localStore.autoSave = value;
+                    this.setLocalStorage();
+                },
+                setLocalStorage() {
+                    const klevrTimesheetSettings = JSON.stringify(this.localStore);
+                    localStorage.setItem('klevr_timesheetUserSettings', klevrTimesheetSettings)
+                },
+                clearSearch() {
+                    this.filter = "";
+                },
+                clearFilters() {
+                    for (let i of this.menuItems) {
+                        i.checked = false;
+                    }
+                    this.localStore.filters = [false, false, false];
+                    this.clearSearch();
+                    this.setLocalStorage();
+                },
+                validateForm() {
+                    this.errors = {};
+                    if (!this.formData.requestee) this.errors.requestee = "Requestee is required";
+                    if (!this.formData.project) this.errors.project = "Project is required";
+                    if (this.isProjectTaskEnabled && !this.formData.projectTask) this.errors.projectTask = "Project Task is required";
+                    if (!this.formData.reason) this.errors.reason = "Reason is required";
+                    return Object.keys(this.errors).length === 0;
+                },
+                async submitHelpRequest() {
+                    if (!this.validateForm()) {
+                        return;
+                    }
+                    const userID = await this.getWhoAmI();
+                    const today = new Date();
+                    const endDate = new Date();
+                    endDate.setDate(today.getDate() + 7);
+                    const body = {
+                        "ws_requestee@odata.bind": `/bookableresources(${this.formData.requestee.id})`,
+                        "ws_project@odata.bind": `/msdyn_projects(${this.formData.project.id})`,
+                        "ws_reason@odata.bind": `/ws_projecthelptaskreasonses(${this.formData.reason.id})`,
+                        "ws_requestedby@odata.bind": `/systemusers(${userID})`,
+                        ws_datefrom: this.formData.dateFrom.toISOString().split('T')[0],
+                        ws_dateto: this.formData.dateTo.toISOString().split('T')[0],
+                    };
+                    if (this.isProjectTaskEnabled && this.formData.projectTask?.id) {
+                        body["ws_ProjectTask@odata.bind"] = `/msdyn_projecttasks(${this.formData.projectTask.id})`;
+                    }
+                    const res = await fetch(`/api/data/v9.2/ws_projecthelptaskses`, {
+                        method: "post",
+                        headers: STDHEADERS,
+                        body: JSON.stringify(body)
+                    });
+
+                    if (this.isProjectTaskEnabled && this.formData.projectTask?.id) {
+                        body["ws_ProjectTask@odata.bind"] = `/msdyn_projecttasks(${this.formData.projectTask.id})`;
+                    }
+
+                    if (res.status == 204 || res.status == 200) {
+                        this.requesthelp = false;
+                        this.$toast.add({ severity: 'success', summary: 'Success', detail: 'Successfully submitted Help Request.', life: 2000 });
+                    } else {
+                        $toast.add({ severity: 'error', summary: 'Error', detail: 'Error while attempting to submit help Request.', life: 2000 });
+                    }
+
+                    // Reset form fields
+                    this.formData = {
+                        requestee: null,
+                        projectTask: null,
+                        reason: null,
+                        project: null
+                    };
+                },
+                async fetchFormData() {
+                    this.fetchRequestees();
+                    this.fetchProjects();
+                    this.fetchHelpTasks();
+                    this.fetchTaskHelpReasons();
+                },
+                async fetchRequestees() {
+                    try {
+                        const response = await fetch(`/api/data/v9.2/bookableresources?$select=bookableresourceid,name&$filter=(statecode eq 0)`);
+                        const requesteesResponse = await response.json();
+                        if (requesteesResponse && requesteesResponse.value) {
+                            this.requestees = requesteesResponse.value.map((resource) => ({
+                                id: resource.bookableresourceid,
+                                name: resource.name,
+                            }))
+                                .sort((a, b) => a.name.localeCompare(b.name));
+                        }
+                    } catch (error) {
+                        console.error("Failed to fetch requestees:", error);
+                    }
+                },
+                searchRequestees(event) {
+                    const query = event.query.toLowerCase();
+                    this.filteredRequestees = this.requestees.filter((req) =>
+                        req.name.toLowerCase().includes(query)
+                    );
+
+                    this.showRequesteeNotFoundMessage = this.filteredRequestees.length === 0 && query.length > 0;
+                },
+                async fetchProjects() {
+                    try {
+                        const bookableResourceId = await this.getCurrentResourceId();
+                        const response = await fetch(`/api/data/v9.2/msdyn_projects?$select=msdyn_subject,msdyn_projectid,ws_projectid,ws_timeloggingrulecode&$expand=msdyn_msdyn_project_msdyn_projectteam_project($filter=(_msdyn_bookableresourceid_value eq ${bookableResourceId}))&$filter=(statecode eq 0) and (msdyn_msdyn_project_msdyn_projectteam_project/any(o1:(o1/_msdyn_bookableresourceid_value eq ${bookableResourceId})))&$orderby=msdyn_subject asc`);
+                        const projectsRes = await response.json();
+                        if (projectsRes && projectsRes.value) {
+                            this.helpProjects = projectsRes.value.map((x) => ({
+                                id: x.msdyn_projectid,
+                                name: x.ws_projectid + " - " + x.msdyn_subject,
+                                ws_timeloggingrulecode: x.ws_timeloggingrulecode 
+                            }))
+                        }
+                    } catch (error) {
+                        console.error("Failed to fetch projects:", error);
+                    }
+                },
+                searchProjects(event) {
+                    const query = event.query.toLowerCase();
+                    this.filteredhelpProjects = this.helpProjects.filter((req) =>
+                        req.name.toLowerCase().includes(query)
+                    );
+                    this.showProjectNotFoundMessage = this.filteredhelpProjects.length === 0 && query.length > 0;
+                },
+                async fetchHelpTasks() {
+                    try {
+                        if (this.formData.project && this.formData.project.id) {
+                            this.formData.projectTask = null;
+                            this.filteredhelpTasks = [];
+
+                            const projectId = this.formData.project.id;
+                            const bookableResourceId = await this.getCurrentResourceId();
+                            const response = await fetch(`/api/data/v9.2/msdyn_resourceassignments?$select=_msdyn_projectid_value,_msdyn_taskid_value&$expand=msdyn_projectid($select=_msdyn_customer_value,ws_projectid),msdyn_taskid($select=msdyn_subject,ws_projecttasknumber)&$filter=(statecode eq 0 and _msdyn_bookableresourceid_value eq ${bookableResourceId} and _msdyn_projectid_value eq ${projectId})`);
+                            const tasksRes = await response.json();
+                            if (tasksRes && tasksRes.value) {
+                                this.helpTasks = tasksRes.value
+                                    .filter(x => x.msdyn_taskid)
+                                    .sort((a, b) => a.msdyn_taskid.msdyn_subject.localeCompare(b.msdyn_taskid.msdyn_subject))
+                                    .map((x) => ({
+                                        id: x.msdyn_taskid.msdyn_projecttaskid,
+                                        name: `${x.msdyn_taskid.ws_projecttasknumber} - ${x.msdyn_taskid.msdyn_subject}`,
+                                    }));
+                            }
+                        } else {
+                            this.filteredhelpTasks = [];
+                            this.helpTasks = [];
+                            this.formData.projectTask = null;
+                        }
+
+                    } catch (error) {
+                        console.error("Failed to fetch project tasks:", error);
+                    }
+                },
+                searchHelpTasks(event) {
+                    const query = event.query.toLowerCase();
+                    this.filteredhelpTasks = this.helpTasks.filter((req) =>
+                        req.name.toLowerCase().includes(query)
+                    );
+                },
+                async fetchTaskHelpReasons() {
+                    try {
+                        const response = await fetch(`/api/data/v9.2/ws_projecthelptaskreasonses?$select=ws_name,ws_projecthelptaskreasonsid&$filter=(statecode eq 0)`);
+                        const data = await response.json();
+                        if (data && data.value) {
+                            this.projectTaskHelpReasons = data.value.map((x) => ({
+                                id: x.ws_projecthelptaskreasonsid,
+                                name: x.ws_name,
+                            }))
+                                .sort((a, b) => a.name.localeCompare(b.name));
+                        }
+                    } catch (error) {
+                        console.error("Failed to fetch requestees:", error);
+                    }
+                },
+                searchTaskHelpReasons(event) {
+                    const query = event.query.toLowerCase();
+                    this.filteredProjectTaskHelpReasons = this.projectTaskHelpReasons.filter((req) =>
+                        req.name.toLowerCase().includes(query)
+                    );
+
+                    this.showNotFoundMessage = this.filteredProjectTaskHelpReasons.length === 0 && query.length > 0;
+                },
+                onReasonSelect(event) {
+                    this.formData.reason = event.value;
+                },
+                onRequesteeSelect(event) {
+                    this.formData.requestee = event.value
+                },
+                submitClick() {
+                    if (this.projectTasks.filter((a) => a.validated == false).length > 0) {
+                        this.isSubmitDisabled = true;
+                        this.dynamicMessage = "Please fill in all the required fields highlighted in red to proceed with submission.";
+                        this.messageStyle = { color: "red", fontWeight: "bold" };
+                    } else {
+                        this.isSubmitDisabled = false;
+                        this.dynamicMessage = "Are you sure you want to submit your timesheet?";
+                        this.messageStyle = {};
+                    }
+                    this.submit = true
+                },
+                completeOnclick() {
+                    if (this.projectTasks.filter((a) => a.validated == false).length > 0) {
+                        this.isCompleteDisabled = true;
+                        this.completeDynamicMessage = "Please fill in all the required fields highlighted in red to proceed with Completion.";
+                        this.messageStyle = { color: "red", fontWeight: "bold" };
+                    } else {
+                        this.isCompleteDisabled = false;
+                        this.completeDynamicMessage = "Are you sure you want to Complete your timesheet?";
+                        this.messageStyle = {};
+                    }
+                    this.completed = true
+                },
+                handleTabNavigation(event, colIndex, rowIndex) {
+                    event.preventDefault();
+                    const table = this.$refs.dt.$el;
+                    const inputs = Array.from(table.querySelectorAll(`[data-column="${colIndex}"]`));
+
+                    let currentIndex = inputs.findIndex(el => el === event.target);
+
+                    if (event.shiftKey) {
+                        if (currentIndex > 0) {
+                            inputs[currentIndex - 1].focus();
+                        } else {
+                            const prevColumnInputs = Array.from(table.querySelectorAll(`[data-column="${colIndex - 1}"]`));
+                            if (prevColumnInputs.length > 0) {
+                                prevColumnInputs[prevColumnInputs.length - 1].focus();
+                            }
+                        }
+                    } else {
+                        if (currentIndex < inputs.length - 1) {
+                            inputs[currentIndex + 1].focus();
+                        } else {
+                            const nextColumnInputs = Array.from(table.querySelectorAll(`[data-column="${colIndex + 1}"]`));
+                            if (nextColumnInputs.length > 0) {
+                                nextColumnInputs[0].focus();
+                            }
+                        }
+                    }
+                },
+                onProjectSelect(event) {
+                    const selectedProject = event.value;
+                    if (selectedProject.ws_timeloggingrulecode === 100000000) {
+                        this.isProjectTaskEnabled = true;
+                    } else {
+                        this.isProjectTaskEnabled = false;
+                        this.formData.projectTask = null;
+                    }
+                }
+
+            },
+            watch: {
+                "formData.project": {
+                    handler: "fetchHelpTasks",
+                    immediate: true
+                }
+            },
+            async mounted() {
+                this.settings = JSON.parse(await this.GetSetting('ws_TimesheetConfiguration'));
+                this.startDate = new Date();
+                this.calculateWeekStart();
+                await this.$nextTick();
+                this.tableHeight = 'calc(100vh - ' + (document.getElementById('dt').getBoundingClientRect().top + 10) + 'px';
+
+                const userSettings = localStorage.getItem("klevr_timesheetUserSettings")
+                if (userSettings === null) {
+                    console.log("No user Settings.");
+                } else {
+                    this.localStore = JSON.parse(userSettings);
+                    this.autoSave = this.localStore.autoSave;
+                    this.menuItems[0].checked = this.localStore.filters[0];
+                    this.menuItems[1].checked = this.localStore.filters[1];
+                    this.menuItems[2].checked = this.localStore.filters[2];
+                }
+
+                this.fetchFormData();
+            }
+        }
+        var timesheetAppRoot = Vue.createApp(timesheet).directive("tooltip", primevue.tooltip);
+        timesheetAppRoot.config.globalProperties.$primevue = primevue;
+        timesheetAppRoot.use(primevue.toastservice);
+        window.$toast = timesheetAppRoot.config.globalProperties.$toast;
+        window.addEventListener('beforeunload', (event) => {
+            if (timesheetApp.statusSeverity === 'warn' || timesheetApp.statusSeverity === 'error') {
+                event.returnValue = 'You have unsaved changes, are you sure you want to leave?'
+            }
+        });
+
+        async function impersonate(email) {
+            if (email == null || email == '') {
+                localStorage.removeItem("ws_impersonateUser");
+                timesheetApp.getProjectsAndTasks();
+                return
+            }
+            const res = await fetch(`/api/data/v9.2/systemusers?$filter=internalemailaddress eq '${email}'`);
+            const json = await res.json();
+            localStorage.setItem("ws_impersonateUser", json.value[0].systemuserid);
+            await timesheetApp.getProjectsAndTasks();
+        }
+
+    </script>
+</head>
+<body>
+    <div id="timesheet">
+        <p-toast></p-toast>
+        <p-Dialog v-model:visible="help" modal header="Guide" :style="{ width: '75vw' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
+            <a :href="this.settings.HELPURL" v-if="this.settings.HELPURL" target="_blank"><p-button label="Open Wiki" style="margin-bottom: 10px;" class="mr-2 toolbarText buttonWidth" icon="pi pi-file-export"></p-button></a>
+            <div v-for="(item, index) in this.settings.HELPTEXT" :key="index"> &#x2705; {{ item }} </div>
+        </p-Dialog>
+
+        <p-Dialog v-model:visible="submit" modal header="Submit" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
+            <p :style="messageStyle">
+                {{ dynamicMessage }}
+            </p>
+            <p>
+                When Submitting your timesheet, you are submitting the entered time for review.<br><br>
+                Submitting your timesheet will not submit your TED remaining efforts and dates for review, this is done when Completing your timesheet. <br>
+                <br>
+                <p-button :style="{ float: 'right' }" type="button" :label="publishing ? 'Submitting': 'Submit'" icon="pi pi-file-export" :disabled="isSubmitDisabled" :loading="publishing" class="mr-2" @click="Publish()"></p-button>
+                <p-button :style="{ float: 'right' }" type="button" label="Cancel" @click="submit = false" class="mr-2 p-button-secondary"></p-button>
+            </p>
+        </p-Dialog>
+
+        <p-Dialog v-model:visible="completed" modal header="Complete" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
+            <p :style="messageStyle">
+                {{ completeDynamicMessage }}
+            </p>
+            <p>
+                <!--Are you sure you want to Complete your timesheet?<br><br>-->
+                By Completing your timesheet, you are indicating that you have finished entering time for the current period. Completing your timesheet will also submit all your TED remaing efforts and dates for review.<br>
+                <br>
+                <p-button :style="{ float: 'right' }" severity="success" type="button" label="Complete" icon="pi pi-check-circle" :disabled="isCompleteDisabled" class="mr-2" @click="Complete()"></p-button>
+                <p-button :style="{ float: 'right' }" type="button" label="Cancel" @click="completed = false" class="mr-2 p-button-secondary"></p-button>
+            </p>
+        </p-Dialog>
+
+        <p-Dialog v-model:visible="requesthelp" modal header="Request Help" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
+
+            <form @submit.prevent="submitHelpRequest" class="custom-form">
+
+                <div class="form-group">
+                    <label for="helprequestee">Requestee <span class="required">*</span></label>
+                    <p-autocomplete id="helprequestee"
+                                    v-model="selectedRequestee"
+                                    :suggestions="filteredRequestees"
+                                    field="name"
+                                    @complete="searchRequestees"
+                                    @item-select="onRequesteeSelect"
+                                    placeholder="Search Requestee"
+                                    dropdown>
+                    </p-autocomplete>
+                    <small v-if="errors.requestee" class="p-error">{{ errors.requestee }}</small>
+                    <small v-if="showRequesteeNotFoundMessage" class="p-error">No matching requestee found.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="helpproject">Project <span class="required">*</span></label>
+                    <p-autocomplete id="helpproject"
+                                    v-model="formData.project"
+                                    :suggestions="filteredhelpProjects"
+                                    field="name"
+                                    @complete="searchProjects"
+                                    @item-select="onProjectSelect"
+                                    placeholder="Search Project"
+                                    dropdown>
+                    </p-autocomplete>
+                    <small v-if="errors.project" class="p-error">{{ errors.project }}</small>
+                    <small v-if="showProjectNotFoundMessage" class="p-error">No matching project found.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="helpprojectTask">Project Task <span class="required">*</span></label>
+                    <p-autocomplete id="helpprojectTask"
+                                    v-model="formData.projectTask"
+                                    :suggestions="filteredhelpTasks"
+                                    field="name"
+                                    @complete="searchHelpTasks"
+                                    @input="fetchHelpTasks"
+                                    @dropdown="fetchHelpTasks"
+                                    placeholder="Search Project Task"
+                                    dropdown :disabled="!isProjectTaskEnabled">
+                    </p-autocomplete>
+                    <small v-if="errors.projectTask && isProjectTaskEnabled" class="p-error">{{ errors.projectTask }}</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="helpReason">Reason <span class="required">*</span></label>
+                    <p-autocomplete id="helpReason"
+                                    v-model="selectedReason"
+                                    :suggestions="filteredProjectTaskHelpReasons"
+                                    field="name"
+                                    @complete="searchTaskHelpReasons"
+                                    @item-select="onReasonSelect"
+                                    placeholder="Search Reason"
+                                    dropdown>
+                    </p-autocomplete>
+                    <small v-if="errors.reason" class="p-error">{{ errors.reason }}</small>
+                    <small v-if="showNotFoundMessage" class="p-error">No matching reason found.</small>
+                </div>
+
+                <div class="date-group">
+                    <div class="date-field">
+                        <label for="helpDateFrom">Date From</label>
+                        <p-calendar id="helpDateFrom"
+                                    v-model="formData.dateFrom"
+                                    dateFormat="dd/mm/yy"
+                                    :disabled="true">
+                        </p-calendar>
+                        <small v-if="errors.dateFrom" class="p-error">{{ errors.dateFrom }}</small>
+                    </div>
+
+                    <div class="date-field">
+                        <label for="helpDateTo">Date To</label>
+                        <p-calendar id="helpDateTo"
+                                    v-model="formData.dateTo"
+                                    dateFormat="dd/mm/yy"
+                                    :min-Date="formData.dateFrom">
+                        </p-calendar>
+                        <small v-if="errors.dateTo" class="p-error">{{ errors.dateTo }}</small>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <p-button type="submit" label="Submit" class="submit-button" :disabled="!isFormValid"></p-button>
+                </div>
+
+            </form>
+
+
+
+        </p-Dialog>
+
+
+        <div class="card flex flex-wrap gap-3 mb-3">
+
+            <!--<p-button type="button" :label="publishing ? 'Submitting': 'Submit'" icon="pi pi-file-export" :loading="publishing" class="mr-2" @click="Publish()"></p-button>-->
+            <p-button class="toolbarText" icon="pi pi-filter-slash" @click="clearFilters" text aria-label="Clear Filters" style="box-shadow: none;"></p-button>
+            <p-button v-if="!filterBadge" type="button" icon="pi pi-filter" label="Filters" outlined @click="toggleMenu" class="toolbarText" aria-haspopup="true" aria-controls="overlay_menu"></p-button>
+            <p-button v-if="filterBadge" label="Filters" icon="pi pi-exclamation-triangle" severity="warning" @click="toggleMenu" serverity="warning" class="toolbarText" aria-haspopup="true" aria-controls="overlay_menu" style="color: white;"></p-button>
+            <p-menu ref="menuFilters" id="overlay_menu" :model="menuItems" :popup="true" style="width: 260px;">
+                <template #item="{ item, props }">
+                    <a v-ripple class="flex align-items-center menuBox">
+                        <div style="display: flex; align-content: stretch; width: 250px;">
+                            <div style="width: 200px;">
+                                <span :class="item.icon" />
+                                <span class="ml-2 p-component">{{ item.label }}</span>
+                            </div>
+                            <div style="width: 30px;">
+                                <p-inputswitch v-model="item.checked" @change="updateStorage(this.menuItems.indexOf(item), item.checked);" class="ml" style="margin-left: 80;"></p-inputswitch>
+                            </div>
+                        </div>
+                    </a>
+                </template>
+            </p-menu>
+
+            <span class="p-input-icon-left ml-2 mr-2">
+                <i class="pi pi-search"></i>
+                <p-inputtext v-model="filter" class="toolbarText buttonWidth" style="height: 100%" placeholder="Search"></p-inputtext>
+                <i v-if="filter" class="pi pi-times" style="margin-left: -30px" @click="clearSearch"></i>
+            </span>
+
+            <p-button icon="pi pi-angle-left" class="toolbarText" aria-label="Left" @click="changeDate(-7)" :disabled="processing"></p-button>
+            <p-calendar class="toolbarText custom-label-font" v-model="startDate" showIcon @blur="calculateWeekStart()" date-Format="dd/mm/yy" :disabled="processing"></p-calendar>
+            <p-button icon="pi pi-angle-right" aria-label="Right" class="toolbarText" @click="changeDate(7)" :disabled="processing"></p-button>
+            <p-button v-tooltip="'Save Frequently'" :label="saving ? 'Saving': 'Save'" @click="Save()" :loading="saving" outlined class="mr-2 ml-2 toolbarText buttonWidth" icon="pi pi-save" :disabled="processing"></p-button>
+            <!--<p-button v-tooltip="'Submit Daily'" label="Submit" @click="submit = true" class="mr-2 toolbarText buttonWidth" icon="pi pi-file-export" :disabled="processing"></p-button>-->
+            <p-button v-tooltip="'Submit Daily'" label="Submit" @click="submitClick()" class="mr-2 toolbarText buttonWidth custom-label-font" icon="pi pi-file-export" :disabled="processing"></p-button>
+            <p-button v-tooltip="'Complete Weekly'" label="Complete" severity="success" @click="completeOnclick()" class="mr-2 toolbarText buttonWidth custom-label-font" icon="pi pi-check-circle" :disabled="processing"></p-button>
+            <div class="flex align-items-center toolbarText">
+                <p-checkbox input-Id="autosave" v-model="this.autoSave" :binary="true" @change="updateStorageAutoSave(this.autoSave)"></p-checkbox>
+                <label for="autosave" style="font-size: 1em;" class="ml-2 p-component"> Autosave </label>
+            </div>
+
+            <div class="ml toolbarText" style="vertical-align: middle">
+                <p-message class="statusMsg p-component mr-2" :severity="statusSeverity" :closable="false" style="float: left; margin-top: 1px; margin-bottom: 0; min-width: 110px; height: 35px">{{this.statusMsg}}</p-message>
+                <p-button v-tooltip="'Request for time code'" label="Get Help" icon="pi pi-question-circle" severity="success" @click="requesthelp = true" class="mr-2 toolbarText buttonWidth" :disabled="processing"></p-button>
+                <p-button label="Guide" @click="help = true" icon="pi pi-info-circle" class="mr-2 toolbarText buttonWidth" outlined></p-button>
+                <a href="/webresources/ws_timesheet.html" target="_blank" class="ml-1"><p-button style="box-shadow: none;" class="toolbarText" icon="pi pi-external-link" text aria-label="Fullscreen"></p-button></a>
+            </div>
+        </div>
+        <p-datatable ref="dt" :value="filteredProjectTasks" id="dt" :multi-Sort-Meta='[{"field":"projectName","order":1}, {"field": "taskName", "order": 1}]' sort-Mode="multiple" :loading="loading" striped-Rows
+                     sort-Field="projectName" :sort-Order="1" scrollable :scroll-Height="tableHeight" :table-Style="{'min-width': '50rem', 'min-height': loading ? '500px' : '0px'  }" :row-Style="(row) => {return row.styleClass}" :frozen-Value="frozenRow">
+            <p-Column field="projectName" header="">
+                <template #body="slotProps">
+                    <div :title="slotProps.data.projectName">
+                        <p-button v-tooltip="'Copy Row to change role or work type for time on the same day.'" text @click="duplicateTask(slotProps.data)" v-if="slotProps.data.type!='total' && !slotProps.data.disabled && slotProps.data.workType!=1" icon="pi pi-copy"></p-button>
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column field="customerName" sortable header="Customer">
+                <template #body="slotProps">
+                    <div class="projectColumn" :title="slotProps.data.customerName">
+                        <a target="_blank" :href="redirectUrl('account', slotProps.data.customerId)">{{slotProps.data.customerName}}</a>
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column field="projectName" sortable header="Project">
+                <template #body="slotProps">
+                    <div class="projectColumn" :title="slotProps.data.projectName">
+                        <a target="_blank" :href="redirectUrl('msdyn_project', slotProps.data.projectid)">{{slotProps.data.projectName}}</a>
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column field="taskName" sortable header="Task">
+                <template #body="slotProps">
+                    <div class="projectColumn" :title="slotProps.data.taskName">
+                        <a v-if="slotProps.data.type != 'total'" target="_blank" :href="redirectUrl('msdyn_projecttask', slotProps.data.taskid)">{{slotProps.data.taskName}}</a>
+                        <span v-if="slotProps.data.type == 'total'" class="totals">{{slotProps.data.taskName}}</span>
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column field="role" header="Role / Work Type" style="vertical-align: top">
+                <template #body="slotProps">
+                    <p-dropdown :disabled="slotProps.data.workType==1" class="dropdown" v-if="slotProps.data.type!='total' && slotProps.data.type!='projectHeader'" v-model="slotProps.data.role" :options="bookableResourceCategories" option-Label="name" option-Value="bookableresourcecategoryid" placeholder="Select a Role"></p-dropdown>
+                    <br />
+                    <p-dropdown :disabled="slotProps.data.workType==1" class="dropdown" style="margin-top: 5px" v-if="slotProps.data.type!='total' && slotProps.data.type!='projectHeader'" v-model="slotProps.data.workType" :options="workTypes" option-Label="label" option-Value="value" placeholder="Select a Work Type" :disabled="slotProps.data.workReadOnly" @change="checkWorkType(slotProps.data)"></p-dropdown>
+                </template>
+            </p-Column>
+            <p-Column v-for="(d, i) in days" :key="i" :pt="{headerCell: {style: {'text-align': 'right'}}}" field="entries[i]" :header="d.text" style="width: 80px; vertical-align: top; text-align: right;" :class="{weekends: i == 5 || i == 6, today: checkOffset(i) }">
+                <template #body="slotProps">
+                    <div v-if="slotProps.data.type!='total' && slotProps.data.type!='projectHeader'">
+                        <input type="text" class="time" @blur="validateTime(slotProps, true, i)" v-model="slotProps.data.entries[i].time" :disabled="slotProps.data.entries[i].readOnly" :data-column="i" :data-row="slotProps.index" @keydown.tab.prevent="handleTabNavigation($event, i, slotProps.index)" style="text-align: right">
+                        <br />
+                        <textarea :title="slotProps.data.entries[i].comment" :class="slotProps.data.entries[i].class" @focus="sizeMeUp(slotProps, i)" maxlength="100"
+                                  @blur="sizeMeDown(slotProps, i); validateTime(slotProps, true, i);" v-model="slotProps.data.entries[i].comment" :placeholder="slotProps.data.entries[i].placeholder" :disabled="slotProps.data.entries[i].readOnly" :data-column="i" :data-row="slotProps.index" @keydown.tab.prevent="handleTabNavigation($event, i, slotProps.index)"></textarea>
+                    </div>
+                    <div v-if="slotProps.data.type=='total'" style="text-align: right" class="totals">
+                        {{DayTotal(i)}}
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column header="Total" :pt="{headerCell: {style: {'text-align': 'right'}}}" style="width: 70px; vertical-align: top" class="totals">
+                <template #body="slotProps">
+                    <div v-if="slotProps.data.type=='total'" style="text-align: right">
+                        {{OverallTotal()}}
+                    </div>
+                    <div v-if="slotProps.data.type!='total' && slotProps.data.type!='projectHeader'" style="text-align: right">
+                        {{TaskTotal(slotProps)}}
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column field="entries[7]" header="Remaining" style="width: 80px; vertical-align: top">
+                <template #body="slotProps">
+                    <div v-if="slotProps.data.type=='stdentry'">
+                        <input v-if="!slotProps.data.entries[7].complete" type="text" :class="slotProps.data.entries[7].timeClass" @blur="validateTime(slotProps, true, 7); variationChange(slotProps)" v-model="slotProps.data.entries[7].time" :disabled="slotProps.data.entries[7].readOnly" style="text-align: right"> &nbsp;
+                        <br />
+                        <textarea v-if="!slotProps.data.entries[7].complete" :title="slotProps.data.entries[7].comment" :class="slotProps.data.entries[7].class" @focus="sizeMeUp(slotProps, 7)" maxlength="2000"
+                                  @blur="sizeMeDown(slotProps, 7); validateTime(slotProps, true, 7)" v-model="slotProps.data.entries[7].comment" :placeholder="slotProps.data.entries[7].placeholder" :disabled="slotProps.data.entries[7].readOnly"></textarea>
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column field="entries[7]" header="Reason" style="vertical-align: top">
+                <template #body="slotProps">
+                    <div v-if="slotProps.data.type=='stdentry'">
+                        <p-dropdown class="dropdown" v-model="slotProps.data.entries[7].reasonId" :class="slotProps.data.entries[7].reasonClass" :style="{'border-color': slotProps.data.entries[7].mandatory ? 'red' : '' }" :options="remainingReasons" option-value="ws_timesheetvariationreasonid" option-Label="ws_name" placeholder="Select a Reason" :disabled="slotProps.data.entries[7].readOnly" @change="variationChange(slotProps)"></p-dropdown>
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column field="entries[7]" header="Scheduled" style="width: 100px; vertical-align: top">
+                <template #body="slotProps">
+                    <div v-if="slotProps.data.type=='stdentry'" style="text-wrap: nowrap">
+                        {{FormatDate(slotProps.data.startDate)}} to <br /> {{FormatDate(slotProps.data.endDate)}}
+                    </div>
+                </template>
+            </p-Column>
+            <p-Column field="entries[7]" header="Finish Date" style="width: 200px; vertical-align: top">
+                <template #body="slotProps">
+                    <div v-if="slotProps.data.type=='stdentry'">
+                        <p-calendar v-if="!slotProps.data.entries[7].complete" v-model="slotProps.data.entries[7].endDate" showIcon :style="{'width': '100px'}" :class="{'null-calendar': slotProps.data.entries[7].endDate == '' && slotProps.data.entries[7].time != ''}" date-Format="dd/mm/yy" @blur="variationChange(slotProps)" :disabled="slotProps.data.entries[7].readOnly" :min-Date="slotProps.data.entries[7].minDate"></p-calendar>
+                    </div>
+                </template>
+            </p-Column>
+        </p-datatable>
+    </div>
+    <script>var timesheetApp = timesheetAppRoot.mount("#timesheet");</script>
+</body>
+</html>

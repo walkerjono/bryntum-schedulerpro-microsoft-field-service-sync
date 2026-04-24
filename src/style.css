@@ -58,6 +58,15 @@ html {
   border-top: 2px solid #ddd;
 }
 
+#timesheet-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 100%;
+  min-height: 0;
+  font-size: 14px;
+  overflow: hidden;
+}
+
 main {
   position: relative;
   height: 100vh;
@@ -195,4 +204,717 @@ main {
 .b-toolbar-row-1 .b-zoomoutbutton,
 .b-toolbar-row-1 .b-zoominbutton {
   font-size: 14px;
+}
+
+/* ── Timesheet Panel ─────────────────────────────────────────────── */
+
+#timesheet-panel {
+  display: none;
+  flex-direction: column;
+  border-top: 2px solid #ddd;
+  background: #fafafa;
+  max-height: 40vh;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+/* Header */
+.ts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #f0f0f0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ts-header__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.ts-header__title .fa-clock {
+  color: #4991e5;
+}
+
+.ts-header__summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ts-total {
+  font-size: 13px;
+  color: #555;
+}
+
+/* Buttons */
+.ts-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.ts-btn:hover {
+  background: #eee;
+}
+
+.ts-btn--submit-all {
+  color: #4991e5;
+  border-color: #4991e5;
+}
+
+.ts-btn--submit-all:hover {
+  background: #edf4fd;
+}
+
+.ts-btn--close {
+  color: #999;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+}
+
+.ts-btn--close:hover {
+  color: #333;
+}
+
+/* Body (scrollable) */
+.ts-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.ts-empty {
+  padding: 24px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+.ts-loading {
+  padding: 24px;
+  text-align: center;
+  color: #666;
+}
+
+/* Grid table */
+.ts-grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ts-grid th {
+  position: sticky;
+  top: 0;
+  background: #f7f7f7;
+  border-bottom: 2px solid #ddd;
+  padding: 6px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #666;
+  letter-spacing: 0.3px;
+}
+
+.ts-grid tr:hover {
+  background: #f3f9ff;
+}
+
+.ts-cell {
+  padding: 6px 12px;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.ts-cell--hours {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 500;
+}
+
+.ts-cell--actions {
+  text-align: right;
+}
+
+/* Status badges */
+.ts-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ts-badge--draft {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.ts-badge--submitted {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ts-badge--approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.ts-badge--returned {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ts-badge--recall-requested {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* Action buttons */
+.ts-action {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ts-action--delete {
+  color: #999;
+}
+
+.ts-action--delete:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.ts-action--submit {
+  color: #999;
+}
+
+.ts-action--submit:hover {
+  color: #4991e5;
+  background: #edf4fd;
+}
+
+/* ── Timesheet Grid View (Bryntum) ──────────────────────────────── */
+
+/* Week label */
+.ts-week-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ts-week-text {
+  font-size: 14px;
+  color: #333;
+}
+
+/* Status indicator badge in toolbar */
+.ts-status-indicator {
+  display: flex;
+  align-items: center;
+  margin-inline-start: 8px;
+}
+
+/* Entry count label */
+.ts-entry-count {
+  display: flex;
+  align-items: center;
+  margin-inline-end: 8px;
+}
+
+.ts-entry-count-text {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* Approver comments widget */
+.ts-approver-comments {
+  display: flex;
+  align-items: center;
+  margin-inline-start: 8px;
+  max-width: 300px;
+}
+
+.ts-approver-text {
+  font-size: 12px;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ts-approver-text .fa-comment {
+  margin-right: 4px;
+  color: #b45309;
+}
+
+/* Day cell styling */
+.ts-day-cell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 4px;
+  position: relative;
+}
+
+.ts-day-cell.ts-has-value {
+  font-weight: 600;
+}
+
+/* Comment triangle indicators */
+.ts-comment-triangle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 10px 10px 0;
+  border-color: transparent;
+  pointer-events: none;
+}
+.ts-comment-missing {
+  border-right-color: #e74c3c; /* red — comment required */
+}
+.ts-comment-present {
+  border-right-color: #27ae60; /* green — has comment */
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Description popup */
+.ts-description-popup {
+  border-radius: 6px;
+}
+
+.ts-description-popup .b-textareafield {
+  font-size: 13px;
+}
+
+.ts-day-cell.ts-readonly {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ts-day-cell.ts-total-row {
+  font-weight: 700;
+  background: #f5f5f5;
+}
+
+/* Weekend column tint */
+.ts-weekend-col .b-grid-cell {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Variation cell */
+.ts-variation-cell {
+  cursor: pointer;
+  color: #555;
+  transition: color 0.15s;
+}
+
+.ts-variation-cell:hover {
+  color: #4991e5;
+}
+
+.ts-variation-icon {
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.4;
+}
+
+.ts-variation-cell:hover .ts-variation-icon {
+  opacity: 1;
+}
+
+/* Toast notifications */
+.ts-toast {
+  border-radius: 6px !important;
+  font-size: 13px;
+  padding: 10px 16px !important;
+}
+
+.ts-toast .fa {
+  margin-right: 6px;
+}
+
+.ts-toast-success {
+  background: #065f46 !important;
+  color: #d1fae5 !important;
+}
+
+.ts-toast-info {
+  background: #1e40af !important;
+  color: #dbeafe !important;
+}
+
+.ts-toast-error {
+  background: #991b1b !important;
+  color: #fee2e2 !important;
+}
+
+/* Confirm dialog */
+.ts-confirm-dialog .b-popup-content {
+  padding: 16px;
+}
+
+/* Read-only grid overlay class */
+.ts-grid-readonly .b-grid-cell {
+  cursor: default;
+}
+
+/* ── Project Picker Dialog ───────────────────────────────────────── */
+
+.ts-project-picker .b-popup-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ts-picker-mode-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.ts-picker-mode-toggle .b-button {
+  flex: 1;
+}
+
+.ts-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ts-picker-code {
+  color: #888;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+/* ── Impersonation / Resource Selector ───────────────────────────── */
+
+.ts-resource-combo {
+  min-width: 220px;
+  max-width: 300px;
+}
+
+.ts-resource-combo .b-field-inner {
+  font-size: 13px;
+}
+
+.ts-resource-item {
+  padding: 2px 0;
+}
+
+.ts-impersonation-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ts-impersonation-banner .fa-user-secret {
+  font-size: 14px;
+}
+
+/* ── Grid Filter Field ───────────────────────────────────────────── */
+
+.ts-filter-field {
+  min-width: 180px;
+}
+
+.ts-filter-field .b-field-inner {
+  font-size: 13px;
+}
+
+.ts-filter-field .b-icon-search {
+  opacity: 0.5;
+}
+
+/* ── Phase 13: Row-Level Status Tinting ──────────────────────────── */
+
+/* Submitted week → subtle blue tint on data rows */
+.ts-status-submitted .b-grid-row:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(59, 130, 246, 0.04);
+}
+
+/* Approved week → subtle green tint on data rows */
+.ts-status-approved .b-grid-row:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+/* Returned week → subtle red tint on data rows */
+.ts-status-returned .b-grid-row:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(239, 68, 68, 0.04);
+}
+
+/* Recall Requested → subtle purple tint */
+.ts-status-recall-requested .b-grid-row:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(139, 92, 246, 0.04);
+}
+
+/* ── Row Type Styling ────────────────────────────────────────────── */
+
+/* Totals row — bold cells, distinct background */
+.ts-row-totals .b-grid-cell {
+  font-weight: 700;
+  background-color: #f5f5f5 !important;
+  border-top: 2px solid #ddd;
+}
+
+/* Help task row — italic project name */
+.ts-row-helptask .b-grid-cell:first-child {
+  font-style: italic;
+  color: #666;
+}
+
+/* Dirty (unsaved) row — left accent bar */
+.ts-row-dirty {
+  position: relative;
+}
+
+.ts-row-dirty::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #f59e0b;
+  z-index: 1;
+}
+
+/* ── Column Headers ──────────────────────────────────────────────── */
+
+/* Compact, aligned headers */
+.ts-grid .b-grid-header {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #555;
+}
+
+/* Day column headers — centered text */
+.ts-grid .b-grid-header[data-column^="day"] {
+  text-align: center;
+}
+
+/* ── Toolbar Responsive Layout ───────────────────────────────────── */
+
+/* Ensure toolbar wraps gracefully on narrow screens */
+.ts-grid > .b-toolbar {
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+}
+
+/* Toolbar button sizing */
+.ts-grid > .b-toolbar .b-button {
+  white-space: nowrap;
+}
+
+/* On narrow viewports, shrink resource combo and filter */
+@media (max-width: 1024px) {
+  .ts-resource-combo {
+    min-width: 160px;
+    max-width: 200px;
+  }
+
+  .ts-filter-field {
+    min-width: 140px;
+  }
+
+  .ts-approver-comments {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ts-resource-combo {
+    min-width: 120px;
+    max-width: 160px;
+  }
+
+  .ts-filter-field {
+    min-width: 120px;
+  }
+
+  .ts-week-text {
+    font-size: 12px;
+  }
+
+  .ts-approver-comments {
+    display: none;
+  }
+}
+
+/* ── Cell Interaction Polish ─────────────────────────────────────── */
+
+/* Editable day cells — hover highlight */
+.ts-day-cell:not(.ts-readonly):hover {
+  background-color: rgba(73, 145, 229, 0.08);
+  cursor: text;
+}
+
+/* Currently editing cell — accent border */
+.ts-grid .b-grid-cell.b-editing {
+  outline: 2px solid #4991e5;
+  outline-offset: -2px;
+}
+
+/* Selected cell highlight */
+.ts-grid .b-grid-cell.b-selected {
+  background-color: rgba(73, 145, 229, 0.1) !important;
+}
+
+/* ── Scrollbar Polish ────────────────────────────────────────────── */
+
+.ts-grid .b-grid-body-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.ts-grid .b-grid-body-container::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.ts-grid .b-grid-body-container::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ── Transitions ─────────────────────────────────────────────────── */
+
+/* Smooth background transitions for status tinting */
+.ts-grid .b-grid-cell {
+  transition: background-color 0.2s ease;
+}
+
+/* ── Grid Stripe Override ────────────────────────────────────────── */
+
+/* Keep stripe feature subtle with status tinting */
+.ts-grid .b-grid-row.b-odd .b-grid-cell {
+  background-color: rgba(0, 0, 0, 0.015);
+}
+
+/* Status tints override stripe for submitted/approved/returned */
+.ts-status-submitted .b-grid-row.b-odd:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(59, 130, 246, 0.06);
+}
+
+.ts-status-approved .b-grid-row.b-odd:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(16, 185, 129, 0.07);
+}
+
+.ts-status-returned .b-grid-row.b-odd:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(239, 68, 68, 0.06);
+}
+
+/* ── Dark Mode Support (Bryntum Stockholm Dark) ──────────────────── */
+
+.b-theme-stockholm-dark .ts-day-cell.ts-has-value {
+  color: #93c5fd;
+}
+
+.b-theme-stockholm-dark .ts-day-cell.ts-readonly {
+  opacity: 0.5;
+}
+
+.b-theme-stockholm-dark .ts-row-totals .b-grid-cell {
+  background-color: #2a2a2a !important;
+}
+
+.b-theme-stockholm-dark .ts-badge--draft {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+.b-theme-stockholm-dark .ts-badge--submitted {
+  background: #422006;
+  color: #fcd34d;
+}
+
+.b-theme-stockholm-dark .ts-badge--approved {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+.b-theme-stockholm-dark .ts-badge--returned {
+  background: #450a0a;
+  color: #fca5a5;
+}
+
+.b-theme-stockholm-dark .ts-impersonation-banner {
+  background: #422006;
+  color: #fbbf24;
+}
+
+.b-theme-stockholm-dark .ts-approver-text {
+  background: #422006;
+  color: #fcd34d;
+}
+
+.b-theme-stockholm-dark .ts-toast-success {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+}
+
+.b-theme-stockholm-dark .ts-toast-error {
+  background: #450a0a !important;
+  color: #fca5a5 !important;
+}
+
+.b-theme-stockholm-dark .ts-toast-info {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+.b-theme-stockholm-dark .ts-variation-cell:hover {
+  color: #93c5fd;
+}
+
+.b-theme-stockholm-dark .ts-row-dirty::before {
+  background: #d97706;
+}
+
+.b-theme-stockholm-dark .ts-status-submitted .b-grid-row:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.b-theme-stockholm-dark .ts-status-approved .b-grid-row:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.b-theme-stockholm-dark .ts-status-returned .b-grid-row:not(.ts-row-totals) .b-grid-cell {
+  background-color: rgba(239, 68, 68, 0.08);
 }

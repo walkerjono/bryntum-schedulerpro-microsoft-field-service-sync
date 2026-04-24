@@ -34,7 +34,7 @@ vi.mock('@bryntum/schedulerpro', () => {
                     rawValue = data[name];
                 }
                 else {
-                    rawValue = fieldDef.defaultValue ?? undefined;
+                    rawValue = 'defaultValue' in fieldDef ? fieldDef.defaultValue : undefined;
                 }
 
                 // Run the convert function if present
@@ -47,8 +47,17 @@ vi.mock('@bryntum/schedulerpro', () => {
             }
         }
 
-        set(values: Record<string, unknown>): void {
-            Object.assign(this, values);
+        get(field: string): unknown {
+            return this[field];
+        }
+
+        set(fieldOrValues: string | Record<string, unknown>, value?: unknown): void {
+            if (typeof fieldOrValues === 'string') {
+                this[fieldOrValues] = value;
+            }
+            else {
+                Object.assign(this, fieldOrValues);
+            }
         }
     }
 
@@ -66,6 +75,64 @@ vi.mock('@bryntum/schedulerpro', () => {
 
     class SchedulerPro {}
     class ResourceHistogram {}
+
+    // ── Mock Bryntum UI Widgets ─────────────────────────────────────
+    // Used by timesheetVariationDialog and others
+
+    class Widget {
+        [key: string]: unknown;
+        _handlers: Record<string, ((...args: unknown[]) => void)[]>;
+
+        constructor(config?: Record<string, unknown>) {
+            this._handlers = {};
+            if (config) Object.assign(this, config);
+        }
+
+        on(event: string, handler: (...args: unknown[]) => void): void {
+            if (!this._handlers[event]) this._handlers[event] = [];
+            this._handlers[event]!.push(handler);
+        }
+
+        destroy(): void { /* no-op */ }
+    }
+
+    class NumberField extends Widget {}
+    class Combo extends Widget {}
+    class DateField extends Widget {}
+    class TextAreaField extends Widget {}
+    class Button extends Widget {}
+    class Container extends Widget {}
+    class TextField extends Widget {}
+
+    class Popup extends Widget {
+        widgetMap: Record<string, Widget> = {};
+
+        constructor(config?: Record<string, unknown>) {
+            super(config);
+            // Build widgetMap from items config
+            const items = config?.items as Record<string, Record<string, unknown>> | undefined;
+            if (items) {
+                for (const [key, itemCfg] of Object.entries(items)) {
+                    const ref = (itemCfg.ref as string) ?? key;
+                    const w = new Widget(itemCfg);
+                    this.widgetMap[ref] = w;
+                    // Nested items (e.g. buttonBar)
+                    if (itemCfg.items) {
+                        for (const [subKey, subCfg] of Object.entries(itemCfg.items as Record<string, Record<string, unknown>>)) {
+                            const subRef = (subCfg.ref as string) ?? subKey;
+                            this.widgetMap[subRef] = new Widget(subCfg);
+                        }
+                    }
+                }
+            }
+        }
+
+        close(): void { /* no-op */ }
+    }
+
+    class Toast {
+        static show: (...args: unknown[]) => void = vi.fn();
+    }
 
     const DateHelper = {
         format(date: Date | string, format: string): string {
@@ -93,13 +160,24 @@ vi.mock('@bryntum/schedulerpro', () => {
     };
 
     return {
+        Model,
         EventModel,
         ResourceModel,
         SchedulerPro,
         ResourceHistogram,
         DateHelper,
         LocaleHelper,
-        LocaleManager
+        LocaleManager,
+        Widget,
+        NumberField,
+        Combo,
+        DateField,
+        TextAreaField,
+        Button,
+        Container,
+        TextField,
+        Popup,
+        Toast
     };
 });
 

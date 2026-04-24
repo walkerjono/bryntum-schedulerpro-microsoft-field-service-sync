@@ -31,6 +31,9 @@ import {
     wireRefreshButton,
     createHistogram
 } from './app/uiSetup';
+import { isTimesheetEnabled } from './app/timesheetState';
+import { initRouter, navigate, onRouteChange, type RouteChangeEvent } from './app/router';
+import { activateTimesheetView } from './app/timesheetView';
 import type { AppWidgetMap } from './types/bryntum.d';
 
 const signInLink = typeof document !== 'undefined' ? document.getElementById('signin') : null;
@@ -127,6 +130,36 @@ async function displayUI(): Promise<void> {
 
     // ── Auto-expand tree if filters were restored ───────────────────
     autoExpandForFilters(scheduler, histogram, widgets);
+
+    // ── Wire timesheet navigation (resource click → #/timesheet) ──────
+    if (isTimesheetEnabled()) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (scheduler as any).on('cellClick', ({ record, column }: { record: any; column: any }) => {
+            // Only trigger on leaf resource rows (not tree group parents) in the name column
+            if (column?.field === 'name' && record?.id && !record.isGroupHeader && !record.children?.length) {
+                navigate('timesheet', { resource : String(record.id) });
+            }
+        });
+
+        // Listen for route changes to manage view visibility
+        onRouteChange((event: RouteChangeEvent) => {
+            if (event.route === 'planner') {
+                // Returning to planner — resize scheduler/histogram since they were hidden
+                scheduler.setTimeSpan(scheduler.startDate, scheduler.endDate);
+            }
+            else if (event.route === 'timesheet') {
+                // Activate the timesheet view (lazy init + data load)
+                activateTimesheetView().catch((err) =>
+                    console.error('[main] Failed to activate timesheet view:', err)
+                );
+            }
+        });
+
+        console.log('[main] Timesheet navigation wired');
+    }
+
+    // ── Initialise router ───────────────────────────────────────────
+    initRouter();
 
     // Expose for debugging
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

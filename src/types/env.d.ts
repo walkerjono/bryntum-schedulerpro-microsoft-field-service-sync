@@ -29,6 +29,12 @@ interface ImportMetaEnv {
     readonly VITE_UNDERALLOCATED_THRESHOLD?: string;
     /** Over-allocated threshold percentage (default: '110') */
     readonly VITE_OVERALLOCATED_THRESHOLD?: string;
+    /** Enable timesheet panel feature: 'true' | 'false' (default: 'false') */
+    readonly VITE_TIMESHEET_ENABLED?: string;
+    /** Maximum hours per single time entry (default: '24') */
+    readonly VITE_TIMESHEET_MAX_HOURS?: string;
+    /** Minimum time entry increment in hours (default: '0.25') */
+    readonly VITE_TIMESHEET_MIN_INCREMENT?: string;
 }
 
 interface ImportMeta {
