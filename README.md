@@ -12,8 +12,11 @@ The starter repository uses [Vite](https://vitejs.dev/) with TypeScript, which i
 Install the Vite dev dependency by running the following command:
 
 ```sh
-npm install
+npm login --registry=https://npm.bryntum.com
 ```
+
+- Login: Use your email as user name replacing "@" with ".." (E.g. user..yourdomain.com)
+- Password: "trial" word with no quotes
 
 Install the Bryntum Scheduler Pro component by first following the [Using Bryntum NPM repository and packages](https://bryntum.com/products/schedulerpro/docs/guide/SchedulerPro/npm-repository) guide to access the private Bryntum repository. Then, install the component. If you have a Bryntum license, use the following command:
 
